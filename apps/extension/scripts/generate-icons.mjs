@@ -1,4 +1,4 @@
-import { mkdirSync, writeFileSync } from "node:fs";
+import { copyFileSync, existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { deflateSync } from "node:zlib";
@@ -7,6 +7,7 @@ const scriptDir = dirname(fileURLToPath(import.meta.url));
 const iconDir = join(scriptDir, "..", "public", "icons");
 const desktopIconDir = join(scriptDir, "..", "..", "desktop", "src-tauri", "icons");
 const desktopPublicDir = join(scriptDir, "..", "..", "desktop", "public");
+const soulIconDir = join(scriptDir, "..", "..", "..", "assets", "bots", "soul", "icons");
 const sizes = [16, 32, 48, 128, 256];
 
 const colors = {
@@ -24,6 +25,10 @@ mkdirSync(iconDir, { recursive: true });
 mkdirSync(desktopIconDir, { recursive: true });
 mkdirSync(desktopPublicDir, { recursive: true });
 
+if (copySoulIcons()) {
+  process.exit(0);
+}
+
 const desktopPngs = [];
 for (const size of sizes) {
   const png = createIconPng(size);
@@ -38,6 +43,41 @@ writeFileSync(join(desktopIconDir, "128x128@2x.png"), desktopPngs.find((entry) =
 writeFileSync(join(desktopIconDir, "icon.png"), desktopPngs.find((entry) => entry.size === 256).png);
 writeFileSync(join(desktopIconDir, "icon.ico"), createIco(desktopPngs));
 writeFileSync(join(desktopPublicDir, "favicon.ico"), createIco(desktopPngs));
+
+function copySoulIcons() {
+  const iconSources = new Map([
+    [16, "chrome-extension-icon-16.png"],
+    [32, "chrome-extension-icon-32.png"],
+    [48, "chrome-extension-icon-48.png"],
+    [128, "chrome-extension-icon-128.png"],
+    [256, "clawd-windows-256.png"]
+  ]);
+  const windowsIconPath = join(soulIconDir, "clawd-windows.ico");
+  const everySourceExists =
+    existsSync(windowsIconPath) && [...iconSources.values()].every((fileName) => existsSync(join(soulIconDir, fileName)));
+
+  if (!everySourceExists) {
+    return false;
+  }
+
+  for (const [size, fileName] of iconSources) {
+    copyFileSync(join(soulIconDir, fileName), join(iconDir, `clawdbot-${size}.png`));
+  }
+
+  copyFileSync(join(soulIconDir, "chrome-extension-icon-32.png"), join(desktopIconDir, "32x32.png"));
+  copyFileSync(join(soulIconDir, "chrome-extension-icon-128.png"), join(desktopIconDir, "128x128.png"));
+  copyFileSync(join(soulIconDir, "clawd-windows-256.png"), join(desktopIconDir, "128x128@2x.png"));
+  copyFileSync(join(soulIconDir, "clawd-windows-256.png"), join(desktopIconDir, "icon.png"));
+  copyFileSync(windowsIconPath, join(desktopIconDir, "icon.ico"));
+  copyFileSync(windowsIconPath, join(desktopPublicDir, "favicon.ico"));
+
+  const avatarPath = join(soulIconDir, "clawd-avatar-1024.png");
+  if (existsSync(avatarPath)) {
+    writeFileSync(join(iconDir, "clawd-avatar-1024.png"), readFileSync(avatarPath));
+  }
+
+  return true;
+}
 
 function createIconPng(size) {
   const buffer = new Uint8Array(size * size * 4);

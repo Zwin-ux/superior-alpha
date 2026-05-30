@@ -10,7 +10,7 @@ $artifactRoot = Join-Path $repoRoot ".clawdbot\artifacts\windows"
 $publishDir = Join-Path $artifactRoot "publish\SUPERIOR"
 $msiPath = Join-Path $artifactRoot "SUPERIOR-0.7.0-alpha-win-x64.msi"
 $installerSource = Join-Path $repoRoot "apps\windows\installer\Product.wxs"
-$iconPath = Join-Path $repoRoot "apps\desktop\src-tauri\icons\icon.ico"
+$iconPath = Join-Path $repoRoot "assets\bots\soul\icons\clawd-windows.ico"
 $localDotnet = Join-Path $repoRoot ".clawdbot\toolchains\dotnet\dotnet.exe"
 
 function Get-DotnetExe {

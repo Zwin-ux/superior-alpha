@@ -8,8 +8,25 @@ Bot assets should read as handmade clay pieces, not generic mascot vectors.
 - `clawdbot-clay-asset-sheet.png`: bot variants, skill attachments, pigment palette, and tiny icon targets.
 - `clawdbot-launcher-window-reference.png`: old PC launcher framing reference with clay controls and workshop props.
 - `repo-reader-gear-placeholder.svg`: temporary tiny clay gear for the runnable Repo Reader side slot.
+- `soul/clawdbot-workshop-target.png`: current soul brief workshop target composition.
+- `soul/clawd-hermes-avatar.png`: clean-install Clawd/Hermes avatar source.
+- `soul/clawd-hermes-multiplatform-icons.png`: one-spore-many-shells platform icon direction.
 
 Generated text in these images is reference only. Final labels must come from Figma/code.
+
+## Soul Asset Shelf
+
+The `soul/` shelf came from `clawdbot_codex_soul_brief` and is now the default cross-platform identity source.
+
+- `soul/icons/clawd-windows.ico`: Windows app, installer, and taskbar icon.
+- `soul/icons/chrome-extension-icon-16.png`, `32.png`, `48.png`, `128.png`: Chrome static manifest icons.
+- `soul/icons/clawd-windows-256.png`: large Windows/desktop fallback icon.
+- `soul/icons/clawd-macos-1024.png`: macOS starter icon.
+- `soul/icons/clawd-pwa-512.png`: web/PWA starter icon.
+- `soul/icons/clawd-mobile-512.png`: future mobile starter icon.
+- `soul/icons/clawd-daemon-64.png`: daemon/CLI status mark.
+
+Runtime customized icons can still be generated from `BotIdentity`; these assets set the clean-install face.
 
 ## 0.3 Runtime Shelf
 

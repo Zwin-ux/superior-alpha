@@ -7,13 +7,13 @@ namespace Superior.Windows.Controls;
 public sealed class ClayBotBench : FrameworkElement
 {
     public static readonly DependencyProperty BotBodyProperty =
-        DependencyProperty.Register(nameof(BotBody), typeof(string), typeof(ClayBotBench), RenderProperty("gremlin"));
+        DependencyProperty.Register(nameof(BotBody), typeof(string), typeof(ClayBotBench), RenderProperty("orb"));
 
     public static readonly DependencyProperty BotColorProperty =
-        DependencyProperty.Register(nameof(BotColor), typeof(string), typeof(ClayBotBench), RenderProperty("moss"));
+        DependencyProperty.Register(nameof(BotColor), typeof(string), typeof(ClayBotBench), RenderProperty("lavender"));
 
     public static readonly DependencyProperty BotEyeProperty =
-        DependencyProperty.Register(nameof(BotEye), typeof(string), typeof(ClayBotBench), RenderProperty("pixel"));
+        DependencyProperty.Register(nameof(BotEye), typeof(string), typeof(ClayBotBench), RenderProperty("glow"));
 
     public static readonly DependencyProperty EquippedSkillsCsvProperty =
         DependencyProperty.Register(nameof(EquippedSkillsCsv), typeof(string), typeof(ClayBotBench), RenderProperty(""));

@@ -67,6 +67,10 @@ The shared package should own the bot identity model so each surface renders the
 - `browserLinkState`
 - `iconVariant`
 
+`BotIdentity` is the one active local bot. `BotSpore` is the safe portable seed that can move across shells later. A spore may include appearance, enabled skills, safe pairing IDs, and preferences; it must not include raw pairing tokens, API keys, cookies, or OS credentials.
+
+Current identity rule: one spore, many shells. Windows, Chrome, macOS, web, CLI, and mobile can have native presentations, but they should reuse the same Clawd/Hermes identity instead of inventing separate bots.
+
 The shared package should also own the `Superior` skill catalog:
 
 - `id`

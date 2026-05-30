@@ -53,9 +53,9 @@
           <controls:ClayBotBench Width="70"
                                  Height="58"
                                  HorizontalAlignment="Left"
-                                 BotBody="gremlin"
-                                 BotColor="mossGreen"
-                                 BotEye="pixel" />
+                                 BotBody="orb"
+                                 BotColor="lavender"
+                                 BotEye="glow" />
           <TextBlock Text="SUPERIOR"
                      Margin="0,8,0,36"
                      FontSize="30"
@@ -92,9 +92,9 @@
       <controls:ClayBotBench x:Name="Bench"
                              Grid.Row="0"
                              Margin="34,20,34,0"
-                             BotBody="gremlin"
-                             BotColor="mossGreen"
-                             BotEye="pixel" />
+                             BotBody="orb"
+                             BotColor="lavender"
+                             BotEye="glow" />
       <Border Grid.Row="1"
               Margin="38,0,38,24"
               Padding="18"
@@ -115,22 +115,22 @@
                        FontWeight="Black"
                        Foreground="{StaticResource ClayMuted}" />
             <TextBlock x:Name="BotNameText"
-                       Text="Superior"
+                       Text="Clawd"
                        FontSize="38"
                        FontWeight="Black"
                        Foreground="{StaticResource ClayText}" />
           </StackPanel>
           <StackPanel Grid.Column="1">
             <TextBlock Text="BODY" FontSize="11" FontWeight="Black" Foreground="{StaticResource ClayMuted}" />
-            <TextBlock x:Name="BodyText" Text="Gremlin" FontWeight="Bold" />
+            <TextBlock x:Name="BodyText" Text="orb" FontWeight="Bold" />
           </StackPanel>
           <StackPanel Grid.Column="2">
             <TextBlock Text="COLOR" FontSize="11" FontWeight="Black" Foreground="{StaticResource ClayMuted}" />
-            <TextBlock x:Name="ColorText" Text="Moss Green" FontWeight="Bold" />
+            <TextBlock x:Name="ColorText" Text="lavender" FontWeight="Bold" />
           </StackPanel>
           <StackPanel Grid.Column="3">
             <TextBlock Text="EYE" FontSize="11" FontWeight="Black" Foreground="{StaticResource ClayMuted}" />
-            <TextBlock x:Name="EyeText" Text="Pixel" FontWeight="Bold" />
+            <TextBlock x:Name="EyeText" Text="glow" FontWeight="Bold" />
           </StackPanel>
         </Grid>
       </Border>

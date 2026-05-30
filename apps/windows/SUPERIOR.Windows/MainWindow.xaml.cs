@@ -411,9 +411,9 @@ public partial class MainWindow : Window
         var baseBot = setupDraftBot ?? currentBot ?? new BotIdentity(
             Id: "active-clawd",
             Name: "Clawd",
-            Body: "gremlin",
-            Color: "mossGreen",
-            Eye: "pixel",
+            Body: "orb",
+            Color: "lavender",
+            Eye: "glow",
             Skills: new[] { "page-explainer", "article-xray", "repo-reader" },
             StarterPresetId: "clawd");
         var now = DateTimeOffset.UtcNow.ToString("O");

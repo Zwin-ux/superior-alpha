@@ -317,6 +317,51 @@ export interface BotStarterPreset {
   slotNotes: Partial<Record<SkillSlot, string>>;
 }
 
+export type BotSpecies = "clawd" | "hermes";
+
+export interface BotSporePairingState {
+  status: "unpaired" | "pairing" | "ready" | "error";
+  safePairingId?: string;
+  lastSeenAt?: string;
+}
+
+export interface BotSpore {
+  schemaVersion: "0.1";
+  id: string;
+  name: string;
+  species: BotSpecies;
+  appearance: {
+    body: BotBody;
+    color: BotColorId;
+    eye: BotEye;
+    crown?: string;
+    side?: string;
+    badge?: string;
+    charm?: string;
+    avatarAsset: string;
+  };
+  skills: Array<{
+    id: SkillId;
+    label: string;
+    enabled: boolean;
+    source: "local" | "extension" | "cloud" | "dev";
+  }>;
+  pairings: {
+    browser?: BotSporePairingState;
+    windows?: BotSporePairingState;
+    macos?: BotSporePairingState;
+    chromeExtension?: BotSporePairingState;
+    web?: BotSporePairingState;
+  };
+  preferences: {
+    animationIntensity: "low" | "medium" | "high";
+    voice?: string;
+    theme: "clay-workshop";
+  };
+  createdAt: string;
+  updatedAt: string;
+}
+
 export const skillCatalog: Record<SkillId, SkillDefinition> = {
   "page-explainer": {
     id: "page-explainer",
@@ -534,9 +579,9 @@ export const botStarterPresets: readonly BotStarterPreset[] = [
     id: "clawd",
     name: "Clawd",
     role: "Starter builder",
-    body: "gremlin",
-    color: "mossGreen",
-    eye: "pixel",
+    body: "orb",
+    color: "lavender",
+    eye: "glow",
     skills: ["page-explainer", "article-xray", "repo-reader"],
     slotNotes: {
       eye: "X-Ray lens",
@@ -589,9 +634,9 @@ export function sanitizeSkillIds(skills: SkillId[]): SkillId[] {
 export const DEFAULT_BOT_IDENTITY: BotIdentity = {
   id: "local-default",
   name: "Clawd",
-  body: "gremlin",
-  color: "mossGreen",
-  eye: "pixel",
+  body: "orb",
+  color: "lavender",
+  eye: "glow",
   skills: [...defaultSkillLoadout],
   starterPresetId: "clawd",
   rules: [
@@ -611,9 +656,9 @@ export const DEFAULT_BOT_IDENTITY: BotIdentity = {
   },
   iconVariant: {
     surface: "launcher",
-    body: "gremlin",
-    color: "mossGreen",
-    eye: "pixel"
+    body: "orb",
+    color: "lavender",
+    eye: "glow"
   }
 };
 
@@ -709,7 +754,7 @@ function normalizeBotName(name: string): string {
   const trimmedName = name.trim();
 
   if (!trimmedName || trimmedName === "Claw") {
-    return "Superior";
+    return "Clawd";
   }
 
   return trimmedName;
@@ -730,6 +775,77 @@ export function getEquippedSkillSlots(bot: BotIdentity): SkillSlot[] {
 
     return slots;
   }, []);
+}
+
+export function createBotSporeFromIdentity(bot: BotIdentity): BotSpore {
+  const equippedSkills = bot.skills
+    .map((skillId) => skillCatalog[skillId])
+    .filter((skill): skill is SkillDefinition => Boolean(skill));
+  const slotParts = equippedSkills.reduce<Partial<Record<SkillSlot, string>>>((parts, skill) => {
+    if (!parts[skill.slot]) {
+      parts[skill.slot] = skill.id;
+    }
+
+    return parts;
+  }, {});
+  const browserPairing = toSporePairing(bot.browserLinkState);
+  const species: BotSpecies = bot.starterPresetId === "hermes" ? "hermes" : "clawd";
+  const createdAt = bot.createdAt ?? new Date().toISOString();
+  const updatedAt = bot.updatedAt ?? createdAt;
+
+  return {
+    schemaVersion: "0.1",
+    id: bot.id,
+    name: bot.name,
+    species,
+    appearance: {
+      body: bot.body,
+      color: bot.color,
+      eye: bot.eye,
+      ...(slotParts.crown ? { crown: slotParts.crown } : {}),
+      ...(slotParts.side ? { side: slotParts.side } : {}),
+      ...(slotParts.badge ? { badge: slotParts.badge } : {}),
+      ...(slotParts.charm ? { charm: slotParts.charm } : {}),
+      avatarAsset: "assets/bots/soul/icons/clawd-avatar-1024.png"
+    },
+    skills: equippedSkills.map((skill) => ({
+      id: skill.id,
+      label: skill.label,
+      enabled: true,
+      source: "local"
+    })),
+    pairings: {
+      ...(browserPairing ? { browser: browserPairing, chromeExtension: browserPairing } : {})
+    },
+    preferences: {
+      animationIntensity: "medium",
+      theme: "clay-workshop"
+    },
+    createdAt,
+    updatedAt
+  };
+}
+
+function toSporePairing(browserLinkState: BrowserLinkState): BotSporePairingState | undefined {
+  if (browserLinkState.status === "offline") {
+    return {
+      status: "error",
+      ...(browserLinkState.extensionId ? { safePairingId: browserLinkState.extensionId } : {}),
+      ...(browserLinkState.lastSeenAt ? { lastSeenAt: browserLinkState.lastSeenAt } : {})
+    };
+  }
+
+  if (browserLinkState.status === "paired") {
+    return {
+      status: "ready",
+      ...(browserLinkState.extensionId ? { safePairingId: browserLinkState.extensionId } : {}),
+      ...(browserLinkState.lastSeenAt ? { lastSeenAt: browserLinkState.lastSeenAt } : {})
+    };
+  }
+
+  return {
+    status: browserLinkState.status
+  };
 }
 
 export function createBotIconSvg(bot: BotIdentity, size = 64): string {

@@ -6,6 +6,18 @@ This document keeps SUPERIOR from drifting into generic AI software.
 
 The product should behave like a small desktop game tool: obvious controls, visible state, direct feedback, and a creature that earns its personality through motion and use.
 
+## Soul Brief
+
+The project soul is captured in [codex-soul-brief.md](codex-soul-brief.md).
+
+North star:
+
+> Does this make Clawd feel more real, more portable, or more useful?
+
+If the answer is no, simplify it.
+
+The current identity rule is `one spore, many shells`: one active bot identity should carry through Windows, Chrome, macOS, web, CLI, and future mobile shells. Platform code can be native and different, but it should not invent a different bot.
+
 ## Valve-Inspired Lessons
 
 These notes are inspired by public Valve/Source material, not copied as a style guide.

@@ -6,6 +6,7 @@ import {
   createArticleXrayRequest,
   createBotIconSvg,
   createBotIdentityFromStarterPreset,
+  createBotSporeFromIdentity,
   createBrowserPairingCompleteRequest,
   createCustomSkillImportRequest,
   createExplainPageRequest,
@@ -55,6 +56,30 @@ describe("shared SUPERIOR contracts", () => {
       expect(preset.skills.length).toBeGreaterThan(0);
       expect(preset.skills.every((skillId) => runnableIds.has(skillId))).toBe(true);
     }
+  });
+
+  it("creates a portable spore without raw secrets", () => {
+    const bot = updateBotIdentity(createBotIdentityFromStarterPreset("clawd"), {
+      name: "Desk Clawd"
+    });
+    const spore = createBotSporeFromIdentity({
+      ...bot,
+      browserLinkState: {
+        status: "paired",
+        pairingToken: "raw_pairing_token_should_not_export",
+        extensionId: "extension_safe_id",
+        lastSeenAt: new Date(0).toISOString()
+      }
+    });
+
+    expect(spore.schemaVersion).toBe("0.1");
+    expect(spore.name).toBe("Desk Clawd");
+    expect(spore.species).toBe("clawd");
+    expect(spore.appearance.body).toBe("orb");
+    expect(spore.appearance.avatarAsset).toContain("clawd-avatar");
+    expect(spore.pairings.browser?.status).toBe("ready");
+    expect(spore.pairings.browser?.safePairingId).toBe("extension_safe_id");
+    expect(JSON.stringify(spore)).not.toContain("raw_pairing_token");
   });
 
   it("keeps the user loadout limited to runnable fixed-slot skills", () => {
@@ -157,7 +182,7 @@ describe("shared SUPERIOR contracts", () => {
     expect(functionRequest.type).toBe("superior-function-run");
     expect(functionRequest.requestId).toMatch(/^function_/);
     expect(functionRequest.functionId).toBe("article-xray");
-    expect(functionRequest.bot?.body).toBe("gremlin");
+    expect(functionRequest.bot?.body).toBe("orb");
   });
 
   it("creates typed SUPERIOR Browser requests for saved repo playpens", () => {
@@ -239,7 +264,7 @@ describe("shared SUPERIOR contracts", () => {
   });
 
   it("maps bot identity to clay CSS variables", () => {
-    expect(makeBotCssVars(DEFAULT_BOT_IDENTITY)["--bot-clay"]).toBe("#7f9b64");
+    expect(makeBotCssVars(DEFAULT_BOT_IDENTITY)["--bot-clay"]).toBe("#aa8ac2");
   });
 
   it("keeps icon identity in sync with customization", () => {

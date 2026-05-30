@@ -7,6 +7,6 @@
     <ImplicitUsings>enable</ImplicitUsings>
     <AssemblyName>SUPERIOR.Windows</AssemblyName>
     <RootNamespace>Superior.Windows</RootNamespace>
-    <ApplicationIcon>..\..\desktop\src-tauri\icons\icon.ico</ApplicationIcon>
+    <ApplicationIcon>..\..\..\assets\bots\soul\icons\clawd-windows.ico</ApplicationIcon>
   </PropertyGroup>
 </Project>
