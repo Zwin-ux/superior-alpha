@@ -13,8 +13,8 @@ SUPERIOR is an alpha native app and browser extension where a small clay robot b
 | Windows EXE | Chrome Extension | macOS |
 | --- | --- | --- |
 | ![Windows alpha](assets/github/platform-windows.svg) | ![Chrome extension](assets/github/platform-chrome.svg) | ![macOS planned](assets/github/platform-mac.svg) |
-| Alpha MSI built | Store ZIP built | Planned after Windows proof |
-| [Download alpha MSI](https://github.com/Zwin-ux/superior-alpha/releases/tag/v0.8.0-alpha) | [Download MV3 ZIP](https://github.com/Zwin-ux/superior-alpha/releases/tag/v0.8.0-alpha) | Native lane, not a web wrapper |
+| Alpha MSI | Chrome alpha | Soon |
+| [Download MSI](https://github.com/Zwin-ux/superior-alpha/releases/tag/v0.8.0-alpha) | [Download ZIP](https://github.com/Zwin-ux/superior-alpha/releases/tag/v0.8.0-alpha) | Soon |
 
 ## Showpiece
 
