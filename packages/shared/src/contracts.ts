@@ -518,6 +518,168 @@ export interface CustomSkillImportError {
   message: string;
 }
 
+export const superiorFunctionIds = [
+  "page-explainer",
+  "article-xray",
+  "repo-reader",
+  "superior-browser-start",
+  "superior-browser-stop",
+  "custom-skill-import-proposal"
+] as const;
+
+export type SuperiorFunctionId = (typeof superiorFunctionIds)[number];
+export type SuperiorFunctionRunnerKind = "local" | "model" | "browser" | "repo" | "proposal";
+export type SuperiorFunctionSurface = "workshop" | "extension" | "browser-runtime";
+export type SuperiorFunctionStatus = "runnable" | "proposal";
+export type SuperiorFunctionPermission =
+  | "browser-pairing"
+  | "browser-runtime"
+  | "local-files"
+  | "model-provider"
+  | "repo-network";
+export type SuperiorFunctionRunStatus = "completed" | "failed";
+export type SuperiorFunctionRunEventKind =
+  | "queued"
+  | "validated"
+  | "running"
+  | "model_called"
+  | "browser_context_received"
+  | "result_saved"
+  | "failed";
+export type SuperiorFunctionErrorCode =
+  | "unknown_function"
+  | "bad_request"
+  | "missing_permission"
+  | "missing_config"
+  | "unauthorized"
+  | "empty_input"
+  | "not_found"
+  | "unknown_repo"
+  | "rate_limited"
+  | "missing_browser"
+  | "missing_extension"
+  | "launch_failed"
+  | "not_running"
+  | "runner_failed";
+
+export interface SuperiorBotReaction {
+  type: "superior-bot-reaction";
+  state: "running" | "success" | "failure";
+  pulseKey: string;
+  label: string;
+  detail?: string;
+  skillId?: SkillId;
+  slot?: SkillSlot;
+  createdAt: string;
+}
+
+export interface SuperiorFunctionDefinition {
+  type: "superior-function-definition";
+  id: SuperiorFunctionId;
+  label: string;
+  shortLabel: string;
+  status: SuperiorFunctionStatus;
+  runnerKind: SuperiorFunctionRunnerKind;
+  surfaces: SuperiorFunctionSurface[];
+  permissions: SuperiorFunctionPermission[];
+  skillId?: SkillId;
+  slot?: SkillSlot;
+  category?: SkillCategory;
+  attachment: string;
+  effect: string;
+}
+
+export interface SuperiorFunctionCatalogResponse {
+  type: "superior-function-catalog";
+  items: SuperiorFunctionDefinition[];
+  createdAt: string;
+}
+
+export interface SuperiorFunctionRunRequest {
+  type: "superior-function-run";
+  requestId: string;
+  functionId: SuperiorFunctionId;
+  input: unknown;
+  bot?: BotIdentity;
+  createdAt: string;
+}
+
+export interface SuperiorFunctionRunEvent {
+  type: "superior-function-run-event";
+  id: string;
+  runId: string;
+  requestId: string;
+  functionId: SuperiorFunctionId;
+  kind: SuperiorFunctionRunEventKind;
+  label: string;
+  detail?: string;
+  createdAt: string;
+}
+
+export interface SuperiorFunctionRunResult {
+  type: "superior-function-run-result";
+  requestId: string;
+  runId: string;
+  functionId: SuperiorFunctionId;
+  status: "completed";
+  result: unknown;
+  events: SuperiorFunctionRunEvent[];
+  botReaction: SuperiorBotReaction;
+  createdAt: string;
+}
+
+export interface SuperiorFunctionError {
+  type: "superior-function-error";
+  requestId?: string;
+  runId?: string;
+  functionId?: SuperiorFunctionId;
+  code: SuperiorFunctionErrorCode;
+  message: string;
+  events?: SuperiorFunctionRunEvent[];
+  botReaction?: SuperiorBotReaction;
+  createdAt: string;
+}
+
+export interface SuperiorFunctionRunSummary {
+  type: "superior-function-run-summary";
+  runId: string;
+  requestId: string;
+  functionId: SuperiorFunctionId;
+  label: string;
+  status: SuperiorFunctionRunStatus;
+  summary: string;
+  botReaction: SuperiorBotReaction;
+  createdAt: string;
+}
+
+export interface SuperiorFunctionRunsResponse {
+  type: "superior-function-runs";
+  items: SuperiorFunctionRunSummary[];
+  createdAt: string;
+}
+
+export interface SuperiorFunctionRunEventsResponse {
+  type: "superior-function-run-events";
+  runId: string;
+  items: SuperiorFunctionRunEvent[];
+  createdAt: string;
+}
+
+export function createSuperiorFunctionRunRequest(input: {
+  functionId: SuperiorFunctionId;
+  input: unknown;
+  bot?: BotIdentity;
+}): SuperiorFunctionRunRequest {
+  return {
+    type: "superior-function-run",
+    requestId: createLocalId("function"),
+    functionId: input.functionId,
+    input: input.input,
+    ...(input.bot ? { bot: input.bot } : {}),
+    createdAt: new Date().toISOString()
+  };
+}
+
 export function createExplainPageRequest(input: {
   pairingToken: string;
   bot: BotIdentity;

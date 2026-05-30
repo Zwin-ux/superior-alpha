@@ -7,7 +7,12 @@ Last checked: 2026-05-30
 - Root typecheck passes: `corepack pnpm typecheck`
 - Root tests pass: `corepack pnpm test`
 - Root build passes: `corepack pnpm build`
+- Host contract fixture passes: `corepack pnpm fixture:host-contract`
 - Extension MV3 build passes: `corepack pnpm --filter @clawdbot/extension build`
+- Extension Chrome store package passes: `corepack pnpm extension:store-package`
+- Extension Chrome store artifact produced: `.clawdbot/artifacts/extension/SUPERIOR-0.8.0-chrome-mv3.zip`
+- Extension store validator confirms MV3, `SUPERIOR` name, version `0.8.0`, exact permissions, localhost-only host permissions, popup, worker, controlled-profile content script, and `16/32/48/128/256` icons.
+- GitHub README is the public alpha hub with `ALPHA BUILD` stamp, workshop imagery, and SVG platform cards for Windows, Chrome, and macOS.
 - Windows desktop bundle passes: `corepack pnpm --filter @clawdbot/desktop tauri:build`
 - NSIS installer produced: `apps/desktop/src-tauri/target/release/bundle/nsis/SUPERIOR_0.2.0_x64-setup.exe`
 - MSI produced: `apps/desktop/src-tauri/target/release/bundle/msi/SUPERIOR_0.2.0_x64_en-US.msi`
@@ -53,6 +58,35 @@ Last checked: 2026-05-30
 - Desktop browser QA confirms Browser Link shows compact playpen notes.
 - Desktop browser QA confirms Repo Reader shows `Start Playpen` after a saved repo read and updates to active playpen state after start.
 - Desktop browser QA confirms the Continue tray renders real recent skill results and hides the empty placeholder.
+- Native Windows lane is scaffolded under `apps/windows` as a `.NET` WPF app source path, not a web wrapper.
+- Repo-local .NET SDK installed under `.clawdbot/toolchains/dotnet`.
+- Native Windows toolchain check passes: `corepack pnpm windows:check`.
+- Native Windows launch smoke passes: compiled WPF EXE starts without Vite and stays alive for smoke.
+- Native Windows proof gate passes: `corepack pnpm windows:proof`.
+- Native Windows shell starts the local dev daemon when it is offline, then reads health, bot identity, function catalog, and recent function proof through daemon contracts.
+- Native Windows shell reads saved repo workspaces, SUPERIOR Browser runtime state, and recent playpen notes through daemon contracts.
+- Native Windows shell exposes native `Start Playpen` and `Stop` controls for saved repo workspaces.
+- Native Windows shell exposes scheduled-task service controls for status, start, stop, install, and uninstall.
+- Native Windows service lifecycle smoke passes as recoverable `needs-admin` on this machine: `corepack pnpm windows:service-smoke`.
+- Elevated Windows service lifecycle smoke is admin-verified: `SUPERIOR Daemon Smoke` installed as a scheduled task, reported `Ready`, then uninstalled cleanly.
+- Native Windows shell exposes a GitHub repo URL field and `Read Repo` action.
+- Native Repo Loop smoke passes: `corepack pnpm windows:native-loop-smoke`.
+- Native Repo Loop proof used `https://github.com/openai/openai-node`, saved workspace `openai/openai-node`, launched Edge fallback, paired through session attach, ran Article X-Ray, recorded `skill_ran`, and stopped the playpen.
+- Latest native loop fixture report: `.clawdbot/verification/native-loop-fixture-1780162908113.json`.
+- Native Windows publish passes: `corepack pnpm windows:publish`.
+- Native Windows MSI builds: `corepack pnpm windows:msi`.
+- MSI artifact produced: `.clawdbot/artifacts/windows/SUPERIOR-0.7.0-alpha-win-x64.msi`.
+- Installed-loop smoke passes: `corepack pnpm windows:installed-loop-smoke`.
+- Installed-loop smoke installed to `%LOCALAPPDATA%\Programs\SUPERIOR`, launched the installed WPF app, verified packaged Node, packaged daemon, and packaged extension resources, used `%APPDATA%\SUPERIOR\.clawdbot`, ran the native repo loop, then uninstalled.
+- Windows beta gate passes: `corepack pnpm windows:beta-gate`.
+- Latest installed-loop fixture report: `.clawdbot/verification/native-loop-fixture-1780162908113.json`.
+- Private hub package builds with public-safe validation: `corepack pnpm --filter @clawdbot/hub build`.
+- Vercel protected deployment is ready: `https://hub-o0anzynn0-zwin-uxs-projects.vercel.app`.
+- Vercel Authentication is enabled for production deployment URLs and all previews.
+- Unauthenticated `curl -I https://hub-o0anzynn0-zwin-uxs-projects.vercel.app` returns `401 Unauthorized`.
+- Public production aliases for the hub were removed after confirming they were not protected by standard deployment protection.
+- Latest host fixture report: `.clawdbot/verification/host-contract-fixture-1780162930107.json`.
+- Latest extension skill fixture report: `.clawdbot/verification/extension-skill-fixture-1780164331918.json`.
 
 ## Environment Gate
 
@@ -68,17 +102,29 @@ The packaged alpha carries a private Windows Node runtime. If the app cannot fin
 
 GitHub may rate-limit unauthenticated Repo Reader calls. Add `GITHUB_TOKEN` or `GH_TOKEN` to the local daemon environment when running repeated repo reads.
 
+The Chrome Web Store privacy policy source exists at `docs/extension-privacy.md`, but the final public GitHub URL cannot return `200` until this repo has a configured remote/public docs location. GitHub Releases artifact links are also blocked until that remote exists.
+
 ## Current Alpha Shape
 
 SUPERIOR now has:
 
 - A packaged Windows exe/installer.
+- A native Windows source lane under `apps/windows` for the official EXE path.
+- A repeatable native proof gate that builds the WPF app, smoke-launches the EXE, and runs host contract fixtures.
+- Native Windows scheduled-task service controls and a smoke path that reports policy blocks as `needs-admin`; elevated admin smoke verifies install/uninstall works.
+- A native repo loop path in the `.NET` app: repo URL input, Repo Reader, saved workspace state, playpen start/stop, and proof notes.
+- A native MSI path with packaged Node, daemon, and MV3 extension resources.
+- Native OpenAI key controls that save the daemon-readable key file under `%APPDATA%\SUPERIOR\.clawdbot\.env.local`.
+- A static private Vercel hub under `apps/hub` for release proof, platform status, artifact links, caveats, and agent packets.
+- A GitHub-first public hub in `README.md` with visual alpha positioning and platform status.
 - A desktop-managed local daemon boundary.
 - A packaged daemon runtime with bundled Node.
 - A packaged MV3 extension folder for Chrome/Edge `Load unpacked`.
 - User-local packaged key/state lookup under `%APPDATA%\SUPERIOR\.clawdbot\`.
 - First-run key folder visibility in the Workshop Options tray.
 - A Chrome/Edge extension build.
+- A Chrome Web Store package artifact for `0.8.0`.
+- A Chrome Web Store listing packet and privacy policy source doc.
 - Pairing token protection between extension and daemon.
 - A model-backed Page Explainer.
 - A deterministic Article X-Ray.

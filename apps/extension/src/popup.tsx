@@ -15,9 +15,17 @@ import {
   skillLabels
 } from "@clawdbot/shared";
 import { captureActivePage, clearPairingToken, getPairingToken, readPairingToken, savePairingToken } from "./browser";
-import { loadBotIdentity } from "./botStorage";
+import { botIdentityStorageKey, normalizeBotIdentity } from "./botStorage";
 import { updateFavicon } from "./favicon";
-import { renderBotIconSet } from "./icon";
+import {
+  PairingStaleError,
+  isArticleXrayError,
+  isArticleXrayResult,
+  isExplainPageError,
+  isExplainPageResult,
+  runBrowserSkill
+} from "./functionClient";
+import { refreshActionIcon, syncBotIdentityFromDaemon } from "./identitySync";
 import "./popup.css";
 
 const daemonUrl = "http://127.0.0.1:5317";
@@ -42,12 +50,11 @@ function Popup(): React.ReactElement {
     let disposed = false;
 
     async function refreshBot(): Promise<void> {
-      const nextBot = await loadBotIdentity();
+      const nextBot = await syncBotIdentityFromDaemon({ force: true });
 
       if (!disposed) {
         setBot(nextBot);
         updateFavicon(nextBot);
-        await setActionIcon(nextBot);
       }
     }
 
@@ -56,6 +63,28 @@ function Popup(): React.ReactElement {
     return () => {
       disposed = true;
     };
+  }, []);
+
+  useEffect(() => {
+    if (typeof chrome === "undefined" || !chrome.storage?.onChanged) {
+      return;
+    }
+
+    const handleStorageChange = (changes: { [key: string]: chrome.storage.StorageChange }, areaName: string): void => {
+      if (areaName !== "local" || !changes[botIdentityStorageKey]?.newValue) {
+        return;
+      }
+
+      const nextBot = normalizeBotIdentity(changes[botIdentityStorageKey].newValue as Partial<typeof DEFAULT_BOT_IDENTITY>);
+
+      setBot(nextBot);
+      updateFavicon(nextBot);
+      void refreshActionIcon(nextBot);
+    };
+
+    chrome.storage.onChanged.addListener(handleStorageChange);
+
+    return () => chrome.storage.onChanged.removeListener(handleStorageChange);
   }, []);
 
   async function checkHealth(): Promise<void> {
@@ -117,6 +146,10 @@ function Popup(): React.ReactElement {
       }
 
       await savePairingToken(pairingToken);
+      const nextBot = await syncBotIdentityFromDaemon({ force: true });
+
+      setBot(nextBot);
+      updateFavicon(nextBot);
       setPairingTokenInput("");
       setBrowserStatus(payload.browserLinkState.status);
       setMessage("Browser paired.");
@@ -175,34 +208,24 @@ function Popup(): React.ReactElement {
 
       setMessage("Asking SUPERIOR...");
 
-      const response = await fetch(`${daemonUrl}/explain`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          "X-Clawdbot-Pairing-Token": pairingToken
-        },
-        body: JSON.stringify(request)
+      const payload = await runBrowserSkill<ExplainPageResult, ExplainPageError>({
+        functionId: "page-explainer",
+        input: request,
+        pairingToken,
+        legacyPath: "/explain",
+        isExpectedResult: isExplainPageResult,
+        isLegacyError: isExplainPageError
       });
-
-      const payload = (await response.json()) as ExplainPageResult | ExplainPageError;
-
-      if (payload.type === "explain-page-error") {
-        if (payload.code === "unauthorized") {
-          await markPairingStale(payload.message);
-          return;
-        }
-
-        throw new Error(payload.message);
-      }
-
-      if (!response.ok) {
-        throw new Error("SUPERIOR returned an unexpected response.");
-      }
 
       setResult(payload);
       setStatus("ready");
       setMessage("Done.");
     } catch (error) {
+      if (error instanceof PairingStaleError) {
+        await markPairingStale(error.message);
+        return;
+      }
+
       setMessage(error instanceof Error ? error.message : "SUPERIOR could not explain this page.");
     } finally {
       setBusySkill(null);
@@ -224,34 +247,24 @@ function Popup(): React.ReactElement {
 
       setMessage("Cleaning this page...");
 
-      const response = await fetch(`${daemonUrl}/skills/article-xray`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          "X-Clawdbot-Pairing-Token": pairingToken
-        },
-        body: JSON.stringify(request)
+      const payload = await runBrowserSkill<ArticleXrayResult, ArticleXrayError>({
+        functionId: "article-xray",
+        input: request,
+        pairingToken,
+        legacyPath: "/skills/article-xray",
+        isExpectedResult: isArticleXrayResult,
+        isLegacyError: isArticleXrayError
       });
-
-      const payload = (await response.json()) as ArticleXrayResult | ArticleXrayError;
-
-      if (payload.type === "article-xray-error") {
-        if (payload.code === "unauthorized") {
-          await markPairingStale(payload.message);
-          return;
-        }
-
-        throw new Error(payload.message);
-      }
-
-      if (!response.ok) {
-        throw new Error("SUPERIOR returned an unexpected response.");
-      }
 
       setResult(payload);
       setStatus("ready");
       setMessage("Article X-Ray ready.");
     } catch (error) {
+      if (error instanceof PairingStaleError) {
+        await markPairingStale(error.message);
+        return;
+      }
+
       setMessage(error instanceof Error ? error.message : "SUPERIOR could not X-Ray this page.");
     } finally {
       setBusySkill(null);
@@ -347,16 +360,6 @@ function Popup(): React.ReactElement {
       ) : null}
     </main>
   );
-}
-
-async function setActionIcon(bot: typeof DEFAULT_BOT_IDENTITY): Promise<void> {
-  try {
-    await chrome.action.setIcon({
-      imageData: renderBotIconSet(bot)
-    });
-  } catch {
-    // Popup previews still work if Chrome delays action icon updates.
-  }
 }
 
 createRoot(document.getElementById("root")!).render(<Popup />);

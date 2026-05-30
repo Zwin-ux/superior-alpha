@@ -2,6 +2,8 @@ node_modules/
 dist/
 coverage/
 .clawdbot/
+.vercel/
+apps/**/.vercel/
 *.tsbuildinfo
 .env
 .env.*
@@ -13,6 +15,8 @@ target/
 apps/desktop/src-tauri/target/
 apps/desktop/src-tauri/resources/node/node.exe
 apps/desktop/src-tauri/resources/extension/
+apps/windows/**/bin/
+apps/windows/**/obj/
 
 # OS and editor files
 .DS_Store

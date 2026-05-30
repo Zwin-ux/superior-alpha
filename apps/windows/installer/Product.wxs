@@ -1,0 +1,43 @@
+<Wix xmlns="http://wixtoolset.org/schemas/v4/wxs">
+  <Package
+    Name="SUPERIOR"
+    Manufacturer="SUPERIOR"
+    Version="$(var.ProductVersion)"
+    UpgradeCode="{E24C3342-0579-4475-8E6D-B7C04A1889D9}"
+    Scope="perUser">
+    <SummaryInformation Description="SUPERIOR native Windows app" Manufacturer="SUPERIOR" />
+    <MajorUpgrade DowngradeErrorMessage="A newer version of SUPERIOR is already installed." />
+    <MediaTemplate EmbedCab="yes" />
+
+    <StandardDirectory Id="LocalAppDataFolder">
+      <Directory Id="LocalProgramsFolder" Name="Programs">
+        <Directory Id="INSTALLFOLDER" Name="SUPERIOR" />
+      </Directory>
+    </StandardDirectory>
+
+    <StandardDirectory Id="ProgramMenuFolder">
+      <Directory Id="ApplicationProgramsFolder" Name="SUPERIOR" />
+    </StandardDirectory>
+
+    <Icon Id="SuperiorIcon.ico" SourceFile="$(var.IconPath)" />
+
+    <Component Id="ApplicationShortcut" Directory="ApplicationProgramsFolder" Guid="{7E00F205-5A7F-43B7-8846-274DF7D2F00B}">
+      <Shortcut
+        Id="ApplicationStartMenuShortcut"
+        Name="SUPERIOR"
+        Description="Open SUPERIOR"
+        Target="[INSTALLFOLDER]SUPERIOR.Windows.exe"
+        WorkingDirectory="INSTALLFOLDER"
+        Icon="SuperiorIcon.ico" />
+      <RemoveFolder Id="RemoveApplicationProgramsFolder" Directory="ApplicationProgramsFolder" On="uninstall" />
+      <RegistryValue Root="HKCU" Key="Software\SUPERIOR" Name="Installed" Type="integer" Value="1" KeyPath="yes" />
+    </Component>
+
+    <Feature Id="ProductFeature" Title="SUPERIOR" Level="1">
+      <Files Directory="INSTALLFOLDER" Include="$(var.PublishDir)\**">
+        <Exclude Files="$(var.PublishDir)\**\*.pdb" />
+      </Files>
+      <ComponentRef Id="ApplicationShortcut" />
+    </Feature>
+  </Package>
+</Wix>

@@ -1,23 +1,22 @@
-import { useEffect, useMemo, useState } from "react";
+import { type CSSProperties, useEffect, useMemo, useRef, useState } from "react";
 import {
-  BotBody,
-  BotColorId,
-  BotEye,
   BotIdentity,
   CustomSkillImportProposal,
   DaemonHealth,
+  DEFAULT_BOT_IDENTITY,
   RecentSkillResult,
   RepoWorkspaceRecord,
   RepoReaderResult,
   SkillId,
   SkillDefinition,
+  SuperiorBotReaction,
   SuperiorBrowserEvent,
   SuperiorBrowserState,
-  botBodies,
+  SuperiorFunctionRunSummary,
   botBodyCatalog,
   botEyeCatalog,
-  botEyes,
   clayPigments,
+  getClayAssetRuntimePath,
   makeBotCssVars,
   runnableSkillShelf,
   skillCatalog,
@@ -26,14 +25,24 @@ import {
   updateBotIdentity
 } from "@clawdbot/shared";
 import { loadBotIdentity, saveBotIdentity } from "./botStorage";
-import { ClayBot } from "./components/ClayBot";
+import {
+  AssemblyDropState,
+  AssemblyPart,
+  AssemblySlotTarget,
+  getAssemblyCameraMode,
+  getAssemblyParts,
+  getSkillLoadoutAfterEquip,
+  findAssemblyPart
+} from "./assembly";
 import { LauncherMenu } from "./components/LauncherMenu";
 import { StatusBar } from "./components/StatusBar";
+import { WorkbenchRenderer } from "./components/workbench/WorkbenchRenderer";
 import {
   DaemonLaunchResult,
   ensureLocalDaemon,
   fetchDaemonBotIdentity,
   fetchDaemonHealth,
+  fetchRecentFunctionRuns,
   fetchRepoWorkspaceRecords,
   fetchRecentSkillResults,
   fetchSuperiorBrowserEvents,
@@ -62,6 +71,9 @@ export function App(): React.ReactElement {
   const [healthError, setHealthError] = useState<string | null>(null);
   const [daemonLaunch, setDaemonLaunch] = useState<DaemonLaunchResult | null>(null);
   const [botIdentity, setBotIdentity] = useState(() => loadBotIdentity());
+  const [activeAssemblyPartId, setActiveAssemblyPartId] = useState<string | null>(null);
+  const [assemblyDropState, setAssemblyDropState] = useState<AssemblyDropState>("idle");
+  const [assemblySnapKey, setAssemblySnapKey] = useState(0);
   const [pairingToken, setPairingToken] = useState<string | null>(null);
   const [pairingError, setPairingError] = useState<string | null>(null);
   const [pairingBusy, setPairingBusy] = useState(false);
@@ -81,6 +93,9 @@ export function App(): React.ReactElement {
   const [superiorBrowserBusy, setSuperiorBrowserBusy] = useState(false);
   const [superiorBrowserError, setSuperiorBrowserError] = useState<string | null>(null);
   const [recentResults, setRecentResults] = useState<RecentSkillResult[]>([]);
+  const [recentFunctionRuns, setRecentFunctionRuns] = useState<SuperiorFunctionRunSummary[]>([]);
+  const [botReaction, setBotReaction] = useState<SuperiorBotReaction | null>(null);
+  const lastReactionPulseKeyRef = useRef<string | null>(null);
 
   const bot = useMemo(
     () =>
@@ -95,7 +110,34 @@ export function App(): React.ReactElement {
       ),
     [botIdentity, health]
   );
-  const botStyle = useMemo(() => makeBotCssVars(bot), [bot]);
+  const botStyle = useMemo<CSSProperties>(
+    () =>
+      ({
+        ...makeBotCssVars(bot),
+        "--workshop-key-art-url": `url("${getClayAssetRuntimePath("workshop-key-art")}")`,
+        "--clay-asset-sheet-url": `url("${getClayAssetRuntimePath("clay-asset-sheet")}")`,
+        "--workshop-scene-url": `url("${getClayAssetRuntimePath("workshop-scene")}")`,
+        "--menu-rail-clay-url": `url("${getClayAssetRuntimePath("menu-rail-clay")}")`,
+        "--tray-surface-url": `url("${getClayAssetRuntimePath("tray-surface")}")`,
+        "--table-slab-url": `url("${getClayAssetRuntimePath("table-slab")}")`,
+        "--menu-slab-default-url": `url("${getClayAssetRuntimePath("menu-slab-default")}")`,
+        "--menu-slab-hover-url": `url("${getClayAssetRuntimePath("menu-slab-hover")}")`,
+        "--menu-slab-pressed-url": `url("${getClayAssetRuntimePath("menu-slab-pressed")}")`,
+        "--panel-raised-url": `url("${getClayAssetRuntimePath("panel-raised")}")`,
+        "--panel-pressed-url": `url("${getClayAssetRuntimePath("panel-pressed")}")`
+      }) as CSSProperties,
+    [bot]
+  );
+  const assemblyParts = useMemo(() => getAssemblyParts(bot), [bot]);
+  const activeAssemblyPart = useMemo(
+    () => findAssemblyPart(assemblyParts, activeAssemblyPartId),
+    [activeAssemblyPartId, assemblyParts]
+  );
+  const assemblyActiveTarget = getAssemblyActiveTarget(activeAssemblyPart);
+  const assemblyCameraMode =
+    selectedMenu === "New Bot" || selectedMenu === "Customize Bot"
+      ? getAssemblyCameraMode(activeAssemblyPart, assemblyDropState)
+      : "idle";
   const selectedRepoWorkspace = useMemo(
     () => (repoReaderResult ? findRepoWorkspaceForResult(repoWorkspaces, repoReaderResult) : null),
     [repoReaderResult, repoWorkspaces]
@@ -110,9 +152,10 @@ export function App(): React.ReactElement {
 
     async function refresh(): Promise<void> {
       try {
-        const [nextHealth, nextRecentResults, nextRepoWorkspaces, superiorBrowserState] = await Promise.all([
+        const [nextHealth, nextRecentResults, nextFunctionRuns, nextRepoWorkspaces, superiorBrowserState] = await Promise.all([
           fetchDaemonHealth(),
           fetchRecentSkillResults(),
+          fetchRecentFunctionRuns(),
           fetchRepoWorkspaceRecords(),
           fetchSuperiorBrowserState()
         ]);
@@ -124,10 +167,12 @@ export function App(): React.ReactElement {
         if (!disposed) {
           setHealth(nextHealth);
           setRecentResults(nextRecentResults.items);
+          setRecentFunctionRuns(nextFunctionRuns.items);
           setRepoWorkspaces(nextRepoWorkspaces.items);
           setSuperiorBrowserState(inspectedBrowserState);
           setSuperiorBrowserEvents(nextSuperiorBrowserEvents.items);
           setHealthError(null);
+          pulseBotReaction(nextFunctionRuns.items[0]?.botReaction);
         }
       } catch {
         if (!disposed) {
@@ -254,19 +299,105 @@ export function App(): React.ReactElement {
     });
   }
 
-  function toggleSkill(skillId: SkillId): void {
+  function pulseBotReaction(reaction: SuperiorBotReaction | undefined): void {
+    if (!reaction || reaction.pulseKey === lastReactionPulseKeyRef.current) {
+      return;
+    }
+
+    lastReactionPulseKeyRef.current = reaction.pulseKey;
+    setBotReaction(reaction);
+    window.setTimeout(() => {
+      setBotReaction((currentReaction) => (currentReaction?.pulseKey === reaction.pulseKey ? null : currentReaction));
+    }, 3600);
+  }
+
+  function equipSkill(skillId: SkillId): void {
     setBotIdentity((currentBot) => {
-      const hasSkill = currentBot.skills.includes(skillId);
-      const targetSkill = skillCatalog[skillId];
-      const skills = hasSkill
-        ? currentBot.skills.filter((existingSkill) => existingSkill !== skillId)
-        : [
-            ...currentBot.skills.filter((existingSkill) => skillCatalog[existingSkill].slot !== targetSkill.slot),
-            skillId
-          ];
       const nextBot = updateBotIdentity(currentBot, {
-        skills: skills.length > 0 ? skills : currentBot.skills
+        skills: getSkillLoadoutAfterEquip(currentBot, skillId)
       });
+
+      saveBotIdentity(nextBot);
+      void saveDaemonBotIdentity(nextBot).catch(() => undefined);
+
+      return nextBot;
+    });
+  }
+
+  function applyAssemblyPart(part: AssemblyPart | null): void {
+    if (!part) {
+      setAssemblyDropState("invalid");
+      window.setTimeout(() => setAssemblyDropState("idle"), 420);
+      return;
+    }
+
+    setActiveAssemblyPartId(part.id);
+
+    if (part.kind === "body") {
+      commitBotIdentity({ body: part.body });
+    } else if (part.kind === "color") {
+      commitBotIdentity({ color: part.color });
+    } else if (part.kind === "eye") {
+      commitBotIdentity({ eye: part.eye });
+    } else {
+      equipSkill(part.skillId);
+    }
+
+    setAssemblyDropState("snapped");
+    setAssemblySnapKey((key) => key + 1);
+    window.setTimeout(() => {
+      setAssemblyDropState("idle");
+      setActiveAssemblyPartId(null);
+    }, 640);
+  }
+
+  function applyAssemblyPartId(partId: string | null): void {
+    applyAssemblyPart(findAssemblyPart(assemblyParts, partId));
+  }
+
+  function beginAssemblyDrag(partId: string): void {
+    setActiveAssemblyPartId(partId);
+    setAssemblyDropState("dragging");
+  }
+
+  function finishAssemblyDrag(): void {
+    setAssemblyDropState((currentState) => (currentState === "snapped" ? currentState : "idle"));
+  }
+
+  function handleAssemblyStageDragOver(event: React.DragEvent<HTMLDivElement>): void {
+    const partId = getAssemblyPartIdFromDrag(event) ?? activeAssemblyPartId;
+
+    if (!partId) {
+      return;
+    }
+
+    event.preventDefault();
+    setActiveAssemblyPartId(partId);
+    setAssemblyDropState((currentState) => (currentState === "valid" ? currentState : "valid"));
+  }
+
+  function handleAssemblyStageDrop(event: React.DragEvent<HTMLDivElement>): void {
+    event.preventDefault();
+    applyAssemblyPartId(getAssemblyPartIdFromDrag(event) ?? activeAssemblyPartId);
+  }
+
+  function handleMenuSelect(menuItem: MenuItem): void {
+    setSelectedMenu(menuItem);
+
+    if (menuItem !== "New Bot") {
+      return;
+    }
+
+    setBotIdentity((currentBot) => {
+      const nextBot = updateBotIdentity(
+        {
+          ...DEFAULT_BOT_IDENTITY,
+          id: currentBot.id,
+          rules: currentBot.rules,
+          browserLinkState: currentBot.browserLinkState
+        },
+        {}
+      );
 
       saveBotIdentity(nextBot);
       void saveDaemonBotIdentity(nextBot).catch(() => undefined);
@@ -469,13 +600,24 @@ export function App(): React.ReactElement {
             <span className="brand-mark" aria-hidden="true" />
             <h1>SUPERIOR</h1>
           </div>
-          <LauncherMenu items={menuItems} selectedItem={selectedMenu} onSelect={setSelectedMenu} />
+          <LauncherMenu items={menuItems} selectedItem={selectedMenu} onSelect={handleMenuSelect} />
         </aside>
 
         <section className="workbench" aria-label="SUPERIOR workshop">
           <div className="scene-light" aria-hidden="true" />
           <div className="shelf-line" aria-hidden="true" />
-          <ClayBot bot={bot} />
+          <WorkbenchRenderer
+            bot={bot}
+            cameraMode={assemblyCameraMode}
+            activeTarget={assemblyActiveTarget}
+            dropState={assemblyDropState}
+            snapKey={assemblySnapKey}
+            functionReaction={botReaction}
+            onAssemblyDragOver={handleAssemblyStageDragOver}
+            onAssemblyDragLeave={() => setAssemblyDropState((state) => (state === "valid" ? "dragging" : state))}
+            onAssemblyDrop={handleAssemblyStageDrop}
+          />
+          {botReaction ? <BotReactionStamp reaction={botReaction} /> : null}
           <section className="workbench-panel" aria-label="Bot setup">
             <div>
               <p className="panel-kicker">CREATE BOT</p>
@@ -498,6 +640,7 @@ export function App(): React.ReactElement {
           {selectedMenu === "Continue" ? (
             <>
               <StatusOverviewPanel health={health} healthError={healthError} daemonLaunch={daemonLaunch} />
+              <FunctionProofStrip runs={recentFunctionRuns} />
               <RecentList items={recentResults} />
             </>
           ) : null}
@@ -555,10 +698,13 @@ export function App(): React.ReactElement {
               <h3>Clay Parts Tray</h3>
               <CustomizationPanel
                 bot={bot}
-                onBodyChange={(body) => commitBotIdentity({ body })}
-                onColorChange={(color) => commitBotIdentity({ color })}
-                onEyeChange={(eye) => commitBotIdentity({ eye })}
-                onToggleSkill={toggleSkill}
+                parts={assemblyParts}
+                activePartId={activeAssemblyPartId}
+                dropState={assemblyDropState}
+                onPartSelect={setActiveAssemblyPartId}
+                onPartApply={(partId) => applyAssemblyPartId(partId)}
+                onPartDragStart={beginAssemblyDrag}
+                onPartDragEnd={finishAssemblyDrag}
               />
             </section>
           ) : null}
@@ -624,6 +770,29 @@ function getDaemonLaunchLabel(status: DaemonLaunchResult["status"]): string {
     default:
       return "failed";
   }
+}
+
+function BotReactionStamp(props: { reaction: SuperiorBotReaction }): React.ReactElement {
+  return (
+    <div className="bot-reaction-stamp" data-state={props.reaction.state} aria-live="polite">
+      <span>{props.reaction.slot ? skillSlotLabels[props.reaction.slot] : "Bench"}</span>
+      <strong>{props.reaction.label}</strong>
+    </div>
+  );
+}
+
+function FunctionProofStrip(props: { runs: SuperiorFunctionRunSummary[] }): React.ReactElement {
+  const latestRun = props.runs[0];
+
+  return (
+    <section className="function-proof-strip" aria-label="Function proof">
+      <div>
+        <span>Function Proof</span>
+        <strong>{latestRun ? latestRun.label : "empty"}</strong>
+      </div>
+      <em data-status={latestRun?.status ?? "idle"}>{latestRun ? latestRun.botReaction.label : "Run a part."}</em>
+    </section>
+  );
 }
 
 function RecentList(props: { items: RecentSkillResult[] }): React.ReactElement {
@@ -969,6 +1138,38 @@ function getDropTargetLabel(dropState: "idle" | "hover" | "picked"): string {
   return "Drop JS/TS folder";
 }
 
+function getAssemblyActiveTarget(part: AssemblyPart | null): AssemblySlotTarget | null {
+  return part?.target ?? null;
+}
+
+function getAssemblyPartIdFromDrag(event: React.DragEvent): string | null {
+  return event.dataTransfer.getData("application/x-superior-part") || event.dataTransfer.getData("text/plain") || null;
+}
+
+function getAssemblyPartTokenStyle(part: AssemblyPart): CSSProperties {
+  if (part.kind === "color") {
+    return { "--assembly-part-color": part.swatch } as CSSProperties;
+  }
+
+  if (part.kind === "body") {
+    return { "--assembly-part-color": "var(--bot-clay)" } as CSSProperties;
+  }
+
+  if (part.kind === "eye") {
+    return { "--assembly-part-color": part.eye === "glow" || part.eye === "lens" ? "#bfefff" : "#15120f" } as CSSProperties;
+  }
+
+  return { "--assembly-part-color": "#d8a849" } as CSSProperties;
+}
+
+function formatAssemblyTarget(target: AssemblySlotTarget): string {
+  if (target === "face") {
+    return "eye";
+  }
+
+  return target;
+}
+
 function BrowserLinkPanel(props: {
   health: DaemonHealth | null;
   pairingBusy: boolean;
@@ -1213,80 +1414,164 @@ function SetupCell(props: { label: string; value: string }): React.ReactElement 
 
 function CustomizationPanel(props: {
   bot: BotIdentity;
-  onBodyChange: (body: BotBody) => void;
-  onColorChange: (color: BotColorId) => void;
-  onEyeChange: (eye: BotEye) => void;
-  onToggleSkill: (skillId: SkillId) => void;
+  parts: AssemblyPart[];
+  activePartId: string | null;
+  dropState: AssemblyDropState;
+  onPartSelect: (partId: string) => void;
+  onPartApply: (partId: string) => void;
+  onPartDragStart: (partId: string) => void;
+  onPartDragEnd: () => void;
 }): React.ReactElement {
-  const skillChoices = runnableSkillShelf;
+  const activePart = findAssemblyPart(props.parts, props.activePartId);
 
   return (
-    <div className="customizer" aria-label="Bot customization">
-      <LoadoutPanel bot={props.bot} />
+    <div className="customizer assembly-customizer" data-drop-state={props.dropState} aria-label="Bot assembly">
+      <LoadoutPanel bot={props.bot} label="Slots" />
+      <AssemblySlotRack bot={props.bot} activePart={activePart} onPartApply={props.onPartApply} />
+      <AssemblyPartGroup
+        label="Body"
+        parts={props.parts.filter((part) => part.kind === "body")}
+        activePartId={props.activePartId}
+        onPartSelect={props.onPartSelect}
+        onPartApply={props.onPartApply}
+        onPartDragStart={props.onPartDragStart}
+        onPartDragEnd={props.onPartDragEnd}
+      />
+      <AssemblyPartGroup
+        label="Color"
+        parts={props.parts.filter((part) => part.kind === "color")}
+        activePartId={props.activePartId}
+        onPartSelect={props.onPartSelect}
+        onPartApply={props.onPartApply}
+        onPartDragStart={props.onPartDragStart}
+        onPartDragEnd={props.onPartDragEnd}
+      />
+      <AssemblyPartGroup
+        label="Eye"
+        parts={props.parts.filter((part) => part.kind === "eye")}
+        activePartId={props.activePartId}
+        onPartSelect={props.onPartSelect}
+        onPartApply={props.onPartApply}
+        onPartDragStart={props.onPartDragStart}
+        onPartDragEnd={props.onPartDragEnd}
+      />
+      <AssemblyPartGroup
+        label="Skills"
+        parts={props.parts.filter((part) => part.kind === "skill")}
+        activePartId={props.activePartId}
+        onPartSelect={props.onPartSelect}
+        onPartApply={props.onPartApply}
+        onPartDragStart={props.onPartDragStart}
+        onPartDragEnd={props.onPartDragEnd}
+      />
+    </div>
+  );
+}
 
-      <ChoiceGroup label="Parts">
-        {skillChoices.map((skill) => (
-          <button
-            key={skill.id}
-            className="choice-chip skill-choice"
-            type="button"
-            aria-pressed={props.bot.skills.includes(skill.id)}
-            onClick={() => props.onToggleSkill(skill.id)}
-            title={`${skill.attachment}: ${skill.effect}`}
-          >
-            <span className={`skill-dot skill-dot-${skill.source}`} />
-            <span>{skill.shortLabel}</span>
-          </button>
+function AssemblyPartGroup(props: {
+  label: string;
+  parts: AssemblyPart[];
+  activePartId: string | null;
+  onPartSelect: (partId: string) => void;
+  onPartApply: (partId: string) => void;
+  onPartDragStart: (partId: string) => void;
+  onPartDragEnd: () => void;
+}): React.ReactElement {
+  return (
+    <fieldset className="assembly-group">
+      <legend>{props.label}</legend>
+      <div className="assembly-part-grid">
+        {props.parts.map((part) => (
+          <AssemblyPartButton
+            key={part.id}
+            part={part}
+            active={props.activePartId === part.id}
+            onPartSelect={props.onPartSelect}
+            onPartApply={props.onPartApply}
+            onPartDragStart={props.onPartDragStart}
+            onPartDragEnd={props.onPartDragEnd}
+          />
         ))}
-      </ChoiceGroup>
+      </div>
+    </fieldset>
+  );
+}
 
-      <ChoiceGroup label="Body">
-        {botBodies.map((body) => (
-          <button
-            key={body}
-            className="choice-chip body-choice"
-            type="button"
-            aria-pressed={props.bot.body === body}
-            onClick={() => props.onBodyChange(body)}
-            title={botBodyCatalog[body].silhouette}
-          >
-            <span className={`choice-creature choice-creature-${body}`} />
-            <span>{botBodyCatalog[body].label}</span>
-          </button>
-        ))}
-      </ChoiceGroup>
+function AssemblyPartButton(props: {
+  part: AssemblyPart;
+  active: boolean;
+  onPartSelect: (partId: string) => void;
+  onPartApply: (partId: string) => void;
+  onPartDragStart: (partId: string) => void;
+  onPartDragEnd: () => void;
+}): React.ReactElement {
+  return (
+    <button
+      className={`assembly-part assembly-part-${props.part.kind}`}
+      data-active={props.active}
+      data-equipped={props.part.equipped}
+      draggable
+      type="button"
+      title={props.part.detail}
+      onClick={() => props.onPartSelect(props.part.id)}
+      onDoubleClick={() => props.onPartApply(props.part.id)}
+      onDragStart={(event) => {
+        event.dataTransfer.effectAllowed = "copy";
+        event.dataTransfer.setData("application/x-superior-part", props.part.id);
+        event.dataTransfer.setData("text/plain", props.part.id);
+        props.onPartDragStart(props.part.id);
+      }}
+      onDragEnd={props.onPartDragEnd}
+    >
+      <span className="assembly-part-token" style={getAssemblyPartTokenStyle(props.part)} aria-hidden="true" />
+      <span>
+        <strong>{props.part.label}</strong>
+        <em>{formatAssemblyTarget(props.part.target)}</em>
+      </span>
+    </button>
+  );
+}
 
-      <ChoiceGroup label="Color">
-        {(Object.keys(clayPigments) as BotColorId[]).map((color) => (
-          <button
-            key={color}
-            className="choice-chip pigment-choice"
-            type="button"
-            aria-pressed={props.bot.color === color}
-            onClick={() => props.onColorChange(color)}
-            title={clayPigments[color].label}
-          >
-            <span className="pigment-swatch" style={{ backgroundColor: clayPigments[color].hex }} />
-            <span>{clayPigments[color].label}</span>
-          </button>
-        ))}
-      </ChoiceGroup>
+function AssemblySlotRack(props: {
+  bot: BotIdentity;
+  activePart: AssemblyPart | null;
+  onPartApply: (partId: string) => void;
+}): React.ReactElement {
+  const equippedBySlot = skillSlots.map((slot) => ({
+    target: slot,
+    label: skillSlotLabels[slot],
+    value: props.bot.skills.map((skillId) => skillCatalog[skillId]).find((skill) => skill.slot === slot)?.shortLabel ?? "Empty"
+  }));
+  const slots: Array<{ target: AssemblySlotTarget; label: string; value: string }> = [
+    { target: "body", label: "Body", value: botBodyCatalog[props.bot.body].label },
+    { target: "color", label: "Color", value: clayPigments[props.bot.color].label },
+    { target: "face", label: "Eye", value: botEyeCatalog[props.bot.eye].label },
+    ...equippedBySlot
+  ];
 
-      <ChoiceGroup label="Eye">
-        {botEyes.map((eye) => (
+  return (
+    <div className="assembly-slot-rack" aria-label="Snap slots">
+      {slots.map((slot) => {
+        const valid = props.activePart?.target === slot.target;
+
+        return (
           <button
-            key={eye}
-            className="choice-chip eye-choice"
+            key={slot.target}
+            className="assembly-slot-button"
+            data-valid={valid}
             type="button"
-            aria-pressed={props.bot.eye === eye}
-            onClick={() => props.onEyeChange(eye)}
-            title={botEyeCatalog[eye].expression}
+            disabled={!valid || !props.activePart}
+            onClick={() => {
+              if (props.activePart) {
+                props.onPartApply(props.activePart.id);
+              }
+            }}
           >
-            <span className={`eye-sample eye-sample-${eye}`} />
-            <span>{botEyeCatalog[eye].label}</span>
+            <span>{slot.label}</span>
+            <strong>{slot.value}</strong>
           </button>
-        ))}
-      </ChoiceGroup>
+        );
+      })}
     </div>
   );
 }
@@ -1308,15 +1593,6 @@ function LoadoutPanel(props: { bot: BotIdentity; label?: string }): React.ReactE
           </div>
         ))}
       </div>
-    </fieldset>
-  );
-}
-
-function ChoiceGroup(props: { label: string; children: React.ReactNode }): React.ReactElement {
-  return (
-    <fieldset className="choice-group">
-      <legend>{props.label}</legend>
-      <div>{props.children}</div>
     </fieldset>
   );
 }

@@ -1,0 +1,265 @@
+<Window x:Class="Superior.Windows.MainWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:controls="clr-namespace:Superior.Windows.Controls"
+        Title="SUPERIOR"
+        Width="1160"
+        Height="720"
+        MinWidth="980"
+        MinHeight="620"
+        Background="#193034"
+        Loaded="OnLoaded">
+  <Window.Resources>
+    <Style x:Key="TrayCardStyle" TargetType="Border">
+      <Setter Property="Margin" Value="0,0,0,8" />
+      <Setter Property="Padding" Value="12" />
+      <Setter Property="Background" Value="#C99462" />
+      <Setter Property="CornerRadius" Value="13" />
+      <Setter Property="BorderBrush" Value="#F4DDAE" />
+      <Setter Property="BorderThickness" Value="1" />
+    </Style>
+    <Style TargetType="Button">
+      <Setter Property="Height" Value="44" />
+      <Setter Property="Margin" Value="0,0,0,10" />
+      <Setter Property="Padding" Value="16,8" />
+      <Setter Property="FontWeight" Value="Black" />
+      <Setter Property="FontSize" Value="15" />
+      <Setter Property="Foreground" Value="#2D211A" />
+      <Setter Property="Background" Value="#E0A548" />
+      <Setter Property="BorderBrush" Value="#9D6530" />
+      <Setter Property="BorderThickness" Value="2" />
+    </Style>
+  </Window.Resources>
+  <Grid Margin="18">
+    <Grid.ColumnDefinitions>
+      <ColumnDefinition Width="220" />
+      <ColumnDefinition Width="*" />
+      <ColumnDefinition Width="330" />
+    </Grid.ColumnDefinitions>
+
+    <Border Grid.ColumnSpan="3"
+            Background="#E2B982"
+            BorderBrush="#2F2118"
+            BorderThickness="3"
+            CornerRadius="22" />
+
+    <Border Grid.Column="0"
+            Margin="3"
+            Padding="24"
+            Background="#BF895C"
+            CornerRadius="19,0,0,19">
+      <DockPanel LastChildFill="True">
+        <StackPanel DockPanel.Dock="Top">
+          <controls:ClayBotBench Width="70"
+                                 Height="58"
+                                 HorizontalAlignment="Left"
+                                 BotBody="gremlin"
+                                 BotColor="mossGreen"
+                                 BotEye="pixel" />
+          <TextBlock Text="SUPERIOR"
+                     Margin="0,8,0,36"
+                     FontSize="30"
+                     FontWeight="Black"
+                     Foreground="{StaticResource ClayText}" />
+        </StackPanel>
+        <StackPanel VerticalAlignment="Center">
+          <Button Content="Continue" Click="OnRefreshClicked" />
+          <Button Content="New Bot" />
+          <Button Content="Customize Bot" />
+          <Button Content="Skills" />
+          <Button Content="Browser Link" Click="OnPairClicked" />
+          <Button Content="Options" />
+          <Button Content="Quit" Click="OnQuitClicked" />
+        </StackPanel>
+      </DockPanel>
+    </Border>
+
+    <Grid Grid.Column="1" Margin="3">
+      <Grid.RowDefinitions>
+        <RowDefinition Height="*" />
+        <RowDefinition Height="154" />
+      </Grid.RowDefinitions>
+      <Border Grid.RowSpan="2">
+        <Border.Background>
+          <LinearGradientBrush StartPoint="0,0" EndPoint="0,1">
+            <GradientStop Color="#AFC7C0" Offset="0" />
+            <GradientStop Color="#8FB2B8" Offset="0.48" />
+            <GradientStop Color="#A76B44" Offset="0.49" />
+            <GradientStop Color="#86523A" Offset="1" />
+          </LinearGradientBrush>
+        </Border.Background>
+      </Border>
+      <controls:ClayBotBench x:Name="Bench"
+                             Grid.Row="0"
+                             Margin="34,20,34,0"
+                             BotBody="gremlin"
+                             BotColor="mossGreen"
+                             BotEye="pixel" />
+      <Border Grid.Row="1"
+              Margin="38,0,38,24"
+              Padding="18"
+              Background="#EFD3A4"
+              BorderBrush="#FFF1C8"
+              BorderThickness="2"
+              CornerRadius="18">
+        <Grid>
+          <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="*" />
+            <ColumnDefinition Width="110" />
+            <ColumnDefinition Width="130" />
+            <ColumnDefinition Width="110" />
+          </Grid.ColumnDefinitions>
+          <StackPanel>
+            <TextBlock Text="CREATE BOT"
+                       FontSize="12"
+                       FontWeight="Black"
+                       Foreground="{StaticResource ClayMuted}" />
+            <TextBlock x:Name="BotNameText"
+                       Text="Superior"
+                       FontSize="38"
+                       FontWeight="Black"
+                       Foreground="{StaticResource ClayText}" />
+          </StackPanel>
+          <StackPanel Grid.Column="1">
+            <TextBlock Text="BODY" FontSize="11" FontWeight="Black" Foreground="{StaticResource ClayMuted}" />
+            <TextBlock x:Name="BodyText" Text="Gremlin" FontWeight="Bold" />
+          </StackPanel>
+          <StackPanel Grid.Column="2">
+            <TextBlock Text="COLOR" FontSize="11" FontWeight="Black" Foreground="{StaticResource ClayMuted}" />
+            <TextBlock x:Name="ColorText" Text="Moss Green" FontWeight="Bold" />
+          </StackPanel>
+          <StackPanel Grid.Column="3">
+            <TextBlock Text="EYE" FontSize="11" FontWeight="Black" Foreground="{StaticResource ClayMuted}" />
+            <TextBlock x:Name="EyeText" Text="Pixel" FontWeight="Bold" />
+          </StackPanel>
+        </Grid>
+      </Border>
+    </Grid>
+
+    <Border Grid.Column="2"
+            Margin="3"
+            Padding="24"
+            Background="#EAC997"
+            CornerRadius="0,19,19,0">
+      <ScrollViewer VerticalScrollBarVisibility="Auto">
+      <StackPanel>
+        <TextBlock Text="Continue"
+                   FontSize="30"
+                   FontWeight="Black"
+                   Foreground="{StaticResource ClayText}" />
+        <TextBlock Text="Native bench."
+                   Margin="0,0,0,18"
+                   Foreground="{StaticResource ClayMuted}" />
+
+        <Border Style="{StaticResource TrayCardStyle}">
+          <StackPanel>
+            <TextBlock Text="DAEMON" FontSize="11" FontWeight="Black" Foreground="{StaticResource ClayMuted}" />
+            <TextBlock x:Name="DaemonStatusText" Text="Checking" FontWeight="Bold" />
+            <TextBlock x:Name="DaemonDetailText" Text="local service" FontSize="11" Foreground="{StaticResource ClayMuted}" />
+            <TextBlock x:Name="InstalledRuntimeStatusText" Text="runtime pending" FontSize="11" Foreground="{StaticResource ClayMuted}" />
+          </StackPanel>
+        </Border>
+
+        <Border Style="{StaticResource TrayCardStyle}">
+          <StackPanel>
+            <TextBlock Text="SERVICE" FontSize="11" FontWeight="Black" Foreground="{StaticResource ClayMuted}" />
+            <TextBlock x:Name="ServiceStatusText" Text="Checking" FontWeight="Bold" />
+            <TextBlock x:Name="ServiceDetailText" Text="scheduled task" FontSize="11" Foreground="{StaticResource ClayMuted}" TextWrapping="Wrap" />
+            <WrapPanel Margin="0,10,0,0">
+              <Button Content="Start" Click="OnServiceStartClicked" />
+              <Button Content="Stop" Margin="8,0,0,10" Click="OnServiceStopClicked" />
+              <Button Content="Install" Margin="0,0,0,10" Click="OnServiceInstallClicked" />
+              <Button Content="Uninstall" Margin="8,0,0,10" Click="OnServiceUninstallClicked" />
+            </WrapPanel>
+          </StackPanel>
+        </Border>
+
+        <Border Style="{StaticResource TrayCardStyle}">
+          <StackPanel>
+            <TextBlock Text="OPENAI" FontSize="11" FontWeight="Black" Foreground="{StaticResource ClayMuted}" />
+            <TextBlock x:Name="OpenAiStatusText" Text="Checking" FontWeight="Bold" />
+            <TextBlock x:Name="OpenAiDetailText" Text="key path pending" FontSize="11" Foreground="{StaticResource ClayMuted}" TextWrapping="Wrap" />
+            <PasswordBox x:Name="OpenAiKeyBox"
+                         Height="34"
+                         Margin="0,7,0,8"
+                         Padding="8,5"
+                         FontWeight="Bold" />
+            <WrapPanel>
+              <Button Content="Save Key" Click="OnSaveOpenAiKeyClicked" />
+              <Button Content="Clear" Margin="8,0,0,10" Click="OnClearOpenAiKeyClicked" />
+              <Button Content="Test" Margin="0,0,0,10" Click="OnTestOpenAiKeyClicked" />
+            </WrapPanel>
+          </StackPanel>
+        </Border>
+
+        <Border Style="{StaticResource TrayCardStyle}">
+          <StackPanel>
+            <TextBlock Text="BROWSER" FontSize="11" FontWeight="Black" Foreground="{StaticResource ClayMuted}" />
+            <TextBlock x:Name="BrowserStatusText" Text="Checking" FontWeight="Bold" />
+            <TextBlock x:Name="ExtensionStatusText" Text="extension pending" FontSize="11" Foreground="{StaticResource ClayMuted}" />
+          </StackPanel>
+        </Border>
+
+        <Border Style="{StaticResource TrayCardStyle}">
+          <StackPanel>
+            <TextBlock Text="REPO" FontSize="11" FontWeight="Black" Foreground="{StaticResource ClayMuted}" />
+            <TextBox x:Name="RepoUrlText"
+                     Text="https://github.com/openai/openai-node"
+                     Height="34"
+                     Margin="0,7,0,8"
+                     Padding="8,5"
+                     FontWeight="Bold" />
+            <Button x:Name="ReadRepoButton" Content="Read Repo" Click="OnReadRepoClicked" />
+            <TextBlock x:Name="RepoReadStatusText" Text="empty" FontWeight="Bold" />
+            <TextBlock x:Name="RepoSurfaceText" Text="surface pending" FontSize="11" Foreground="{StaticResource ClayMuted}" TextWrapping="Wrap" />
+            <TextBlock x:Name="RepoRoleText" Text="role pending" FontSize="11" Foreground="{StaticResource ClayMuted}" TextWrapping="Wrap" />
+            <TextBlock x:Name="RepoNextMoveText" Text="next move pending" FontSize="11" Foreground="{StaticResource ClayMuted}" TextWrapping="Wrap" />
+          </StackPanel>
+        </Border>
+
+        <Border Style="{StaticResource TrayCardStyle}">
+          <StackPanel>
+            <TextBlock Text="PLAYPEN" FontSize="11" FontWeight="Black" Foreground="{StaticResource ClayMuted}" />
+            <TextBlock Text="LOOP" FontSize="11" FontWeight="Black" Foreground="{StaticResource ClayMuted}" Margin="0,0,0,2" />
+            <TextBlock x:Name="NativeLoopStatusText" Text="idle" FontWeight="Bold" />
+            <Rectangle Height="1" Fill="#9D6530" Opacity="0.35" Margin="0,8,0,8" />
+            <TextBlock x:Name="PlaypenStatusText" Text="Closed" FontWeight="Bold" />
+            <TextBlock x:Name="RepoStatusText" Text="No saved repo" FontSize="11" Foreground="{StaticResource ClayMuted}" TextWrapping="Wrap" />
+            <TextBlock x:Name="PlaypenDetailText" Text="" FontSize="11" Foreground="{StaticResource ClayMuted}" TextWrapping="Wrap" />
+          </StackPanel>
+        </Border>
+
+        <Border Style="{StaticResource TrayCardStyle}">
+          <StackPanel>
+            <TextBlock Text="NOTES" FontSize="11" FontWeight="Black" Foreground="{StaticResource ClayMuted}" />
+            <TextBlock x:Name="PlaypenEventText" Text="empty" FontWeight="Bold" TextWrapping="Wrap" />
+          </StackPanel>
+        </Border>
+
+        <Border Style="{StaticResource TrayCardStyle}" Margin="0,18,0,0">
+          <StackPanel>
+            <TextBlock Text="FUNCTION PROOF" FontSize="11" FontWeight="Black" Foreground="{StaticResource ClayMuted}" />
+            <TextBlock x:Name="FunctionProofText" Text="empty" FontWeight="Bold" />
+          </StackPanel>
+        </Border>
+
+        <StackPanel Orientation="Horizontal" Margin="0,18,0,0">
+          <Button Content="Refresh" Click="OnRefreshClicked" />
+          <Button Content="Pair" Margin="8,0,0,0" Click="OnPairClicked" />
+        </StackPanel>
+
+        <StackPanel Orientation="Horizontal">
+          <Button x:Name="StartPlaypenButton" Content="Start Playpen" Click="OnStartPlaypenClicked" />
+          <Button x:Name="StopPlaypenButton" Content="Stop" Margin="8,0,0,0" Click="OnStopPlaypenClicked" />
+        </StackPanel>
+
+        <TextBlock x:Name="PairingTokenText"
+                   Margin="0,14,0,0"
+                   TextWrapping="Wrap"
+                   FontWeight="Bold"
+                   Foreground="{StaticResource ClayText}" />
+      </StackPanel>
+      </ScrollViewer>
+    </Border>
+  </Grid>
+</Window>

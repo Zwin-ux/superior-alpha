@@ -5,7 +5,8 @@ export function renderBotIconSet(bot: BotIdentity): Record<number, ImageData> {
     16: renderBotIconData(bot, 16),
     32: renderBotIconData(bot, 32),
     48: renderBotIconData(bot, 48),
-    128: renderBotIconData(bot, 128)
+    128: renderBotIconData(bot, 128),
+    256: renderBotIconData(bot, 256)
   };
 }
 
@@ -49,6 +50,18 @@ export function renderBotIconData(bot: BotIdentity, size: number): ImageData {
   }
   context.fill();
 
+  context.fillStyle = "rgba(255,248,229,0.24)";
+  context.beginPath();
+  context.ellipse(center - headRadius * 0.18, center - headRadius * 0.32, headRadius * 0.66, headRadius * 0.2, -0.32, 0, Math.PI * 2);
+  context.fill();
+
+  context.fillStyle = "rgba(64,45,31,0.13)";
+  context.beginPath();
+  context.ellipse(center + headRadius * 0.32, center + headRadius * 0.46, headRadius * 0.48, headRadius * 0.2, -0.2, 0, Math.PI * 2);
+  context.fill();
+
+  drawClayDents(context, pigment, center, headRadius, size);
+
   if (bot.body === "orb") {
     context.fillStyle = "rgba(223,248,255,0.34)";
     context.beginPath();
@@ -84,6 +97,38 @@ export function renderBotIconData(bot: BotIdentity, size: number): ImageData {
   context.fill();
 
   return context.getImageData(0, 0, size, size);
+}
+
+function drawClayDents(
+  context: OffscreenCanvasRenderingContext2D,
+  pigment: (typeof clayPigments)[keyof typeof clayPigments],
+  center: number,
+  headRadius: number,
+  size: number
+): void {
+  const dents = [
+    [-0.52, -0.32, 0.04, pigment.shadow, 0.18],
+    [-0.08, -0.56, 0.035, pigment.shadow, 0.14],
+    [0.44, -0.22, 0.04, pigment.shadow, 0.16],
+    [-0.28, 0.36, 0.035, pigment.highlight, 0.18],
+    [0.3, 0.28, 0.032, pigment.highlight, 0.14]
+  ] as const;
+
+  for (const [x, y, radius, color, alpha] of dents) {
+    context.fillStyle = withAlpha(color, alpha);
+    context.beginPath();
+    context.arc(center + headRadius * x, center + headRadius * y, Math.max(0.8, size * radius), 0, Math.PI * 2);
+    context.fill();
+  }
+}
+
+function withAlpha(hex: string, alpha: number): string {
+  const normalized = hex.replace("#", "");
+  const r = Number.parseInt(normalized.slice(0, 2), 16);
+  const g = Number.parseInt(normalized.slice(2, 4), 16);
+  const b = Number.parseInt(normalized.slice(4, 6), 16);
+
+  return `rgba(${r},${g},${b},${alpha})`;
 }
 
 function drawSkillAttachments(

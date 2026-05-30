@@ -12,10 +12,15 @@ export async function captureActivePage(): Promise<PageContext> {
     throw new Error("No active browser tab found.");
   }
 
+  return capturePageFromTab(tab.id);
+}
+
+export async function capturePageFromTab(tabId: number, selectedTextOverride?: string): Promise<PageContext> {
   const [capture] = await chrome.scripting.executeScript({
-    target: { tabId: tab.id },
-    func: () => {
-      const selection = window.getSelection()?.toString().trim() ?? "";
+    target: { tabId },
+    args: [selectedTextOverride ?? ""],
+    func: (contextSelection: string) => {
+      const selection = contextSelection.trim() || window.getSelection()?.toString().trim() || "";
       const bodyText = document.body?.innerText?.replace(/\s+/g, " ").trim() ?? "";
       const selectors = [
         "article h1",
@@ -62,10 +67,7 @@ export async function captureActivePage(): Promise<PageContext> {
                 ? "quote"
                 : "paragraph";
 
-          return {
-            type,
-            text
-          };
+          return { type, text };
         })
         .filter((block): block is { type: string; text: string } => Boolean(block))
         .filter((block) => {

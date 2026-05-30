@@ -1,9 +1,26 @@
-import { renderBotIconSet } from "./icon";
-import { loadBotIdentity } from "./botStorage";
-import { BotIdentity, createSuperiorBrowserActivePageReport } from "@clawdbot/shared";
+import { botIdentityStorageKey } from "./botStorage";
+import {
+  ArticleXrayError,
+  ArticleXrayResult,
+  BotIdentity,
+  ExplainPageError,
+  ExplainPageResult,
+  createArticleXrayRequest,
+  createExplainPageRequest,
+  createSuperiorBrowserActivePageReport
+} from "@clawdbot/shared";
+import { capturePageFromTab, clearPairingToken, readPairingToken } from "./browser";
+import {
+  PairingStaleError,
+  isArticleXrayError,
+  isArticleXrayResult,
+  isExplainPageError,
+  isExplainPageResult,
+  runBrowserSkill
+} from "./functionClient";
+import { refreshActionIcon, syncBotIdentityFromDaemon } from "./identitySync";
 
 const daemonUrl = "http://127.0.0.1:5317";
-const pairingStorageKey = "clawdbotPairingToken";
 let lastActivePageSignature = "";
 let lastActivePageReportedAt = 0;
 
@@ -19,40 +36,40 @@ chrome.runtime.onInstalled.addListener(() => {
     contexts: ["page", "selection"]
   });
 
-  void refreshActionIcon();
+  void syncBotIdentityFromDaemon({ force: true });
   void reportActiveTabSoon();
 });
 
 chrome.runtime.onStartup.addListener(() => {
-  void refreshActionIcon();
+  void syncBotIdentityFromDaemon({ force: true });
   void reportActiveTabSoon();
 });
 
 chrome.storage.onChanged.addListener((changes, areaName) => {
-  if (areaName === "local" && changes.clawdbotBotIdentity) {
-    void refreshActionIcon();
+  if (areaName === "local" && changes[botIdentityStorageKey]) {
+    void refreshActionIcon(changes[botIdentityStorageKey].newValue as Partial<BotIdentity> | undefined);
   }
 
   if (areaName === "local" && changes.clawdbotPairingToken) {
+    void syncBotIdentityFromDaemon();
     void reportActiveTabSoon();
   }
 });
 
-chrome.contextMenus.onClicked.addListener(() => {
-  if (chrome.action.openPopup) {
-    void chrome.action.openPopup();
-  }
+chrome.contextMenus.onClicked.addListener((info, tab) => {
+  void handleContextMenuClick(info, tab);
 });
 
 chrome.runtime.onMessage.addListener((message: unknown) => {
   const candidate = message as { type?: string; bot?: BotIdentity };
 
   if (candidate.type === "superior-set-action-icon" && candidate.bot) {
-    void setActionIcon(candidate.bot);
+    void refreshActionIcon(candidate.bot);
   }
 });
 
 chrome.tabs.onActivated.addListener((activeInfo) => {
+  void syncBotIdentityFromDaemon();
   void reportTabById(activeInfo.tabId);
 });
 
@@ -64,29 +81,10 @@ chrome.tabs.onUpdated.addListener((tabId, changeInfo, tab) => {
 
 chrome.windows.onFocusChanged.addListener((windowId) => {
   if (windowId !== chrome.windows.WINDOW_ID_NONE) {
+    void syncBotIdentityFromDaemon();
     void reportActiveTabSoon();
   }
 });
-
-async function refreshActionIcon(): Promise<void> {
-  try {
-    const bot = await loadBotIdentity();
-
-    await setActionIcon(bot);
-  } catch {
-    // Chrome can reject icon updates before the extension action is ready.
-  }
-}
-
-async function setActionIcon(bot: BotIdentity): Promise<void> {
-  try {
-    await chrome.action.setIcon({
-      imageData: renderBotIconSet(bot)
-    });
-  } catch {
-    // Chrome can reject icon updates before the extension action is ready.
-  }
-}
 
 async function reportActiveTabSoon(): Promise<void> {
   const [tab] = await chrome.tabs.query({
@@ -143,11 +141,108 @@ async function reportTabById(tabId: number): Promise<void> {
   }
 }
 
-async function readPairingToken(): Promise<string | null> {
-  const result = await chrome.storage.local.get(pairingStorageKey);
-  const value = result[pairingStorageKey];
+async function handleContextMenuClick(info: chrome.contextMenus.OnClickData, tab?: chrome.tabs.Tab): Promise<void> {
+  if (info.menuItemId !== "clawdbot-explain" && info.menuItemId !== "clawdbot-xray") {
+    return;
+  }
 
-  return typeof value === "string" ? value : null;
+  if (!tab?.id || !isReportableTab(tab)) {
+    await showActionBadge("!", "bad");
+    return;
+  }
+
+  await showActionBadge("...", "busy");
+
+  try {
+    if (info.menuItemId === "clawdbot-explain") {
+      await runContextMenuExplain(tab.id, info.selectionText);
+    } else {
+      await runContextMenuXray(tab.id, info.selectionText);
+    }
+
+    await showActionBadge("OK", "ready");
+    await reportTabById(tab.id);
+  } catch (error) {
+    if (error instanceof PairingStaleError) {
+      await clearPairingToken().catch(() => undefined);
+      await showActionBadge("PAIR", "bad");
+      return;
+    }
+
+    await showActionBadge("!", "bad");
+  }
+}
+
+async function runContextMenuExplain(tabId: number, selectionText: string | undefined): Promise<ExplainPageResult> {
+  const [pairingToken, bot, page] = await readContextMenuInputs(tabId, selectionText);
+  const request = createExplainPageRequest({
+    pairingToken,
+    bot,
+    page
+  });
+
+  return runBrowserSkill<ExplainPageResult, ExplainPageError>({
+    functionId: "page-explainer",
+    input: request,
+    pairingToken,
+    legacyPath: "/explain",
+    isExpectedResult: isExplainPageResult,
+    isLegacyError: isExplainPageError
+  });
+}
+
+async function runContextMenuXray(tabId: number, selectionText: string | undefined): Promise<ArticleXrayResult> {
+  const [pairingToken, bot, page] = await readContextMenuInputs(tabId, selectionText);
+  const request = createArticleXrayRequest({
+    pairingToken,
+    bot,
+    page
+  });
+
+  return runBrowserSkill<ArticleXrayResult, ArticleXrayError>({
+    functionId: "article-xray",
+    input: request,
+    pairingToken,
+    legacyPath: "/skills/article-xray",
+    isExpectedResult: isArticleXrayResult,
+    isLegacyError: isArticleXrayError
+  });
+}
+
+async function readContextMenuInputs(
+  tabId: number,
+  selectionText: string | undefined
+): Promise<[string, BotIdentity, Awaited<ReturnType<typeof capturePageFromTab>>]> {
+  const [pairingToken, bot, page] = await Promise.all([
+    readRequiredPairingToken(),
+    syncBotIdentityFromDaemon(),
+    capturePageFromTab(tabId, selectionText)
+  ]);
+
+  return [pairingToken, bot, page];
+}
+
+async function readRequiredPairingToken(): Promise<string> {
+  const token = await readPairingToken();
+
+  if (!token) {
+    throw new PairingStaleError("Pair SUPERIOR before using browser skills.");
+  }
+
+  return token;
+}
+
+async function showActionBadge(text: string, tone: "busy" | "ready" | "bad"): Promise<void> {
+  const color = tone === "ready" ? "#566d46" : tone === "busy" ? "#9a7331" : "#823f31";
+
+  await chrome.action.setBadgeBackgroundColor({ color });
+  await chrome.action.setBadgeText({ text });
+
+  if (tone !== "busy") {
+    setTimeout(() => {
+      void chrome.action.setBadgeText({ text: "" });
+    }, 2400);
+  }
 }
 
 function isReportableTab(tab: chrome.tabs.Tab): boolean {

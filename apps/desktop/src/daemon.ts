@@ -9,6 +9,7 @@ import {
   RepoWorkspaceRecordsResponse,
   RepoReaderError,
   RepoReaderResult,
+  SuperiorFunctionRunsResponse,
   SuperiorBrowserError,
   SuperiorBrowserEventsResponse,
   SuperiorBrowserInspectResult,
@@ -91,6 +92,16 @@ export async function fetchRecentSkillResults(): Promise<RecentSkillResultsRespo
   }
 
   return (await response.json()) as RecentSkillResultsResponse;
+}
+
+export async function fetchRecentFunctionRuns(): Promise<SuperiorFunctionRunsResponse> {
+  const response = await fetch(`${daemonUrl}/function-runs/recent`);
+
+  if (!response.ok) {
+    throw new Error("Recent function runs check failed.");
+  }
+
+  return (await response.json()) as SuperiorFunctionRunsResponse;
 }
 
 export async function fetchRepoWorkspaceRecords(): Promise<RepoWorkspaceRecordsResponse> {

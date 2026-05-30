@@ -5,18 +5,34 @@ Current source of truth:
 - Full spec: [full-product-spec.md](full-product-spec.md)
 - Release ladder: [release-ladder.md](release-ladder.md)
 - Verification: [alpha-verification.md](alpha-verification.md)
+- Functional core sprint: [functional-core-sprint.md](functional-core-sprint.md)
+- Agent execution model: [agent-execution-model.md](agent-execution-model.md)
+- Agent packets: [agent-packets.md](agent-packets.md)
+- Native platform reset: [native-platform-reset.md](native-platform-reset.md)
+- Mobile platform plan: [mobile-platform-plan.md](mobile-platform-plan.md)
 
 ## Current Release Focus
 
-Finish `0.2.x` before the asset pass:
+Current focus is `0.8 Chrome Extension Store Gate`:
 
-- keep the live exe/daemon/extension loop runnable
-- finish active-page proof from the controlled browser profile
-- show compact browser proof in the Workshop
-- keep repo playpen records local and typed
-- keep all checks green
+- prepare the MV3 extension for a public Chrome Web Store listing
+- make GitHub the main public hub through README, docs, Releases, and artifact links
+- make toolbar icon and popup identity follow the active user-created bot
+- package `.clawdbot/artifacts/extension/SUPERIOR-0.8.0-chrome-mv3.zip`
+- keep permissions tight: active tab capture, context menus, scripting, storage, tabs, and localhost daemon access only
+- keep OpenAI key, pairing authority, browser profiles, and repo workspaces out of extension storage
+- add public privacy/listing docs for Chrome review
+- keep `apps/windows` as the flagship EXE lane
+- keep `apps/desktop` as alpha harness only
+- keep `apps/hub` as a private Vercel proof mirror only
+- keep all robot runtime, model credentials, pairing, browser profiles, and repo workspaces local
+- use GitHub Releases as the artifact shelf when a remote exists
+- keep agent packets as the next-move index for Windows, Extension, Daemon/Contracts, Hub, and Mobile
 
-Then move to `0.3 Clay Asset Pass`.
+Recommended work packet:
+
+- `Extension: Chrome Store Gate`
+- Build the store ZIP, prove dynamic bot icon sync, and prepare public listing/privacy material.
 
 ## Phase 1: Product Frame
 
@@ -41,9 +57,9 @@ Then move to `0.3 Clay Asset Pass`.
 - Create a small fixture-driven demo path.
 - Add contract tests for every cross-process message shape.
 
-## Phase 3: Desktop App
+## Phase 3: Desktop Alpha Harness
 
-- Build the `SUPERIOR` launcher.
+- Build the `SUPERIOR` launcher as a fast integration harness.
 - Add the left-side clay menu: Continue, New Bot, Customize Bot, Skills, Browser Link, Options, Quit.
 - Build the live clay bot preview on a small workbench scene.
 - Replace feature-list thinking with a skill loadout surface: fixed slots, stowed runnable parts, and short effects.
@@ -53,6 +69,16 @@ Then move to `0.3 Clay Asset Pass`.
 - Add recent activity and current status.
 - Add settings for only the required daemon and extension controls.
 - Verify desktop and narrow-window layouts.
+- Do not treat this harness as the final Windows platform.
+
+## Phase 3B: Native Windows App
+
+- Build the official Windows EXE under `apps/windows`.
+- Use native `.NET` Windows UI, not a localhost web surface.
+- Start with health, bot identity, function catalog, browser pairing status, and recent function proof.
+- Rebuild the workbench as native platform rendering.
+- Add tray, installer, service lifecycle, credential storage, and clean uninstall behavior in later slices.
+- Pass the host contract fixture before replacing alpha harness behavior.
 
 ## Phase 4: Browser Extension
 

@@ -1,0 +1,66 @@
+{
+  "version": "0.3",
+  "name": "Clay Asset Overhaul",
+  "runtimeBasePath": "/assets/bots/0.3",
+  "assets": [
+    {
+      "id": "workshop-key-art",
+      "source": "assets/bots/0.3/workshop-key-art.png",
+      "runtime": "/assets/bots/0.3/workshop-key-art.png",
+      "purpose": "Primary Workshop composition, lighting, material, and silhouette target."
+    },
+    {
+      "id": "clay-asset-sheet",
+      "source": "assets/bots/0.3/clay-asset-sheet.png",
+      "runtime": "/assets/bots/0.3/clay-asset-sheet.png",
+      "purpose": "Bot body, skill attachment, pigment, favicon, toolbar, and context icon reference."
+    },
+    {
+      "id": "workshop-scene",
+      "source": "assets/bots/0.3/generated/backgrounds/workshop-scene.png",
+      "runtime": "/assets/bots/0.3/generated/backgrounds/workshop-scene.png",
+      "purpose": "Generated workbench wall, light, shelf, table, and clay grain background."
+    },
+    {
+      "id": "menu-rail-clay",
+      "source": "assets/bots/0.3/generated/backgrounds/menu-rail-clay.png",
+      "runtime": "/assets/bots/0.3/generated/backgrounds/menu-rail-clay.png",
+      "purpose": "Generated left launcher clay rail texture."
+    },
+    {
+      "id": "tray-surface",
+      "source": "assets/bots/0.3/generated/backgrounds/tray-surface.png",
+      "runtime": "/assets/bots/0.3/generated/backgrounds/tray-surface.png",
+      "purpose": "Generated right-side pressed clay tray texture."
+    },
+    {
+      "id": "table-slab",
+      "source": "assets/bots/0.3/generated/backgrounds/table-slab.png",
+      "runtime": "/assets/bots/0.3/generated/backgrounds/table-slab.png",
+      "purpose": "Generated center workbench table slab."
+    },
+    {
+      "id": "menu-slab-states",
+      "source": "assets/bots/0.3/generated/buttons/menu-*.png",
+      "runtime": "/assets/bots/0.3/generated/buttons/menu-*.png",
+      "purpose": "Generated launcher button states: default, hover, pressed, disabled."
+    },
+    {
+      "id": "panel-states",
+      "source": "assets/bots/0.3/generated/panels/panel-*.png",
+      "runtime": "/assets/bots/0.3/generated/panels/panel-*.png",
+      "purpose": "Generated raised and pressed clay panel surfaces."
+    }
+  ],
+  "defaultIdentity": {
+    "body": "gremlin",
+    "color": "mossGreen",
+    "eye": "pixel"
+  },
+  "notes": [
+    "The desktop app mirrors these files into apps/desktop/public/assets/bots/0.3 for Vite runtime loading.",
+    "Generated clay UI assets are created by assets/bots/0.3/scripts/generate-clay-ui-assets.mjs.",
+    "The generated icon path remains deterministic from BotIdentity, with these references defining the clay material target.",
+    "Placeholder CSS bot pieces remain available as fallback when raster assets are unavailable."
+  ]
+}

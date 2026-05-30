@@ -1,15 +1,16 @@
 {
   "manifest_version": 3,
   "name": "SUPERIOR",
-  "version": "0.2.0",
-  "description": "A clay desktop creature that brings local browser skills into your workflow.",
+  "version": "0.8.0",
+  "description": "A clay robot browser hand for local page skills from the SUPERIOR desktop app.",
   "permissions": ["activeTab", "contextMenus", "scripting", "storage", "tabs"],
   "host_permissions": ["http://127.0.0.1:5317/*", "http://localhost:5317/*"],
   "icons": {
     "16": "icons/clawdbot-16.png",
     "32": "icons/clawdbot-32.png",
     "48": "icons/clawdbot-48.png",
-    "128": "icons/clawdbot-128.png"
+    "128": "icons/clawdbot-128.png",
+    "256": "icons/clawdbot-256.png"
   },
   "background": {
     "service_worker": "assets/background.js",
@@ -32,7 +33,8 @@
       "16": "icons/clawdbot-16.png",
       "32": "icons/clawdbot-32.png",
       "48": "icons/clawdbot-48.png",
-      "128": "icons/clawdbot-128.png"
+      "128": "icons/clawdbot-128.png",
+      "256": "icons/clawdbot-256.png"
     }
   }
 }

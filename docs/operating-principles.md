@@ -63,6 +63,7 @@ Avoid:
 Write code that makes the product easier to reason about.
 
 - Keep shared contracts in `packages/shared` when data crosses app boundaries.
+- Rebuild platform shells natively; share contracts and backend behavior, not generic UI clones.
 - Keep daemon routes small: parse, validate, delegate, return typed results.
 - Keep UI components dumb when possible. State ownership should be obvious.
 - Use plain function names that describe the thing being changed.
@@ -140,3 +141,5 @@ Before shipping a SUPERIOR slice, check:
 - Is the copy shorter than the behavior?
 - Did we add an abstraction because the system needed it?
 - Does desktop still feel like a workshop launcher?
+
+For the game-feel lens, use [game-feel-principles.md](game-feel-principles.md). It defines the player fantasy, core loop, feedback budget, and playfield/HUD boundaries.

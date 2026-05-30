@@ -53,6 +53,19 @@ Avoid:
 - Preserve strong rhythm between menu buttons, bot preview, and status output.
 - Desktop should feel like a compact launcher. Narrow layouts should stack menu, bot, then controls without losing the bot identity.
 
+## 0.3 Asset Shelf
+
+The 0.3 clay pass is raster-first. The source shelf lives in `assets/bots/0.3/`:
+
+- `workshop-key-art.png`: visual target for desktop composition, warm light, workbench scale, and tray density.
+- `clay-asset-sheet.png`: body, attachment, pigment, and tiny icon target.
+- `generated/backgrounds/`: generated raster surfaces for the Workshop wall/table, menu rail, and tray.
+- `generated/buttons/`: generated launcher button states.
+- `generated/panels/`: generated raised and pressed clay surfaces.
+- `asset-manifest.json`: source/runtime lookup notes.
+
+The desktop runtime mirrors these PNGs under `apps/desktop/public/assets/bots/0.3/`. Use the images as reference and subtle material guidance, not as a static UI screenshot behind the app.
+
 ## Launcher Menu
 
 ```text
@@ -189,6 +202,8 @@ Source-mapped skills from Synergy/SUP are not user-facing loadout items until th
 - Skill pieces should pop into place like clay magnets.
 
 Detailed interaction and motion rules live in [clean-ui-motion-plan.md](clean-ui-motion-plan.md).
+
+Game-feel rules live in [game-feel-principles.md](game-feel-principles.md). Use those rules when deciding whether a control should be a button, tray part, status light, transient prompt, or session note.
 
 ## Copy Rules
 

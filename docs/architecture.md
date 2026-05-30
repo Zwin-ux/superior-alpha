@@ -8,8 +8,11 @@ clawdbot/
   pnpm-workspace.yaml
   docs/
   apps/
+    windows/
     desktop/
     extension/
+    hub/
+    mobile/
     daemon/
   packages/
     shared/
@@ -19,13 +22,31 @@ clawdbot/
 
 ## App Responsibilities
 
-### Desktop
+Platform release testing and backend portability rules live in [platform-release-testing.md](platform-release-testing.md). That document is the source of truth for how the same SUPERIOR backend contracts move across Windows EXE, extension, web, service, CLI, macOS, and Linux surfaces.
 
-Tauri v2, React, and Vite user interface for `SUPERIOR`: starting work, creating or customizing the bot, viewing status, reviewing output, and changing settings.
+Coding-agent ownership lanes and backend/frontend work packets live in [agent-execution-model.md](agent-execution-model.md). Agents should use that file before starting `0.4` function kernel work.
+
+### Windows EXE
+
+Native `.NET` Windows app for the official SUPERIOR desktop product. This lane owns the final Windows window, tray, installer, local storage, service control, and native workbench rendering.
+
+The first source lane lives in `apps/windows`. It talks to the local daemon contracts over loopback and must not clone the Tauri UI. Port behavior through contracts and rebuild the surface for Windows.
+
+### Desktop Alpha Harness
+
+Tauri v2, React, and Vite harness for fast alpha proof: contract wiring, daemon lifecycle experiments, extension pairing, visual reference, and integration QA. This is not the official product shell.
 
 ### Extension
 
 Chrome/Edge MV3 browser-side surface for page context, user-triggered actions, permission-scoped browser interactions, the extension popup, and the right-click icon. Firefox support should be added later without changing shared message contracts.
+
+### Private Hub
+
+Static Vercel coordination surface for release proof, platform status, artifact links, and agent packets. It is not a hosted robot runtime and must not receive local secrets, pairing tokens, private browser profile state, or user repo workspace data.
+
+### Mobile
+
+Later native companion apps. Mobile should not clone the desktop Workshop; it should show bot identity, recent proof, pairing/device state, and share-sheet style inputs when this lane becomes active.
 
 ### Daemon
 
@@ -72,14 +93,18 @@ All cross-app messages should be typed in `packages/shared`.
 
 The rule is contracts first, surfaces second. If data crosses a process boundary, it should have a shared type and a recoverable error state.
 
+Platform hosts can be rewritten, but these contracts cannot casually drift. The Windows `.NET` app and any future `.NET` host must pass the same contract fixtures as the current Node daemon before replacing packaged behavior.
+
 ## Local Runtime
 
 - Package manager: `pnpm`
-- Desktop UI dev server: Vite on `127.0.0.1:5173`
+- Windows native lane: `apps/windows`, no Vite or WebView requirement for the official shell
+- Desktop alpha harness dev server: Vite on `127.0.0.1:5173`
 - Daemon: loopback HTTP service on `127.0.0.1:5317`
 - OpenAI credentials: `.env.local` only, read by the daemon from the repo during development or the user-local SUPERIOR state folder in packaged runs
 - Extension permissions: active tab capture, scripting, storage, context menu, and local daemon host access
-- Packaged Windows alpha: Tauri resources include bundled Node and the daemon script.
+- Packaged Windows alpha harness: Tauri resources include bundled Node and the daemon script.
+- Official Windows EXE target: native `.NET` app consumes the same daemon contracts without requiring localhost UI.
 - Packaged browser alpha: Tauri resources include the built MV3 extension folder for Chrome/Edge `Load unpacked`.
 
 The extension never receives `OPENAI_API_KEY`. It sends page context and a pairing token to the local daemon.

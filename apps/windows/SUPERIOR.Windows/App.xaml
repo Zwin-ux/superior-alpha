@@ -1,0 +1,11 @@
+<Application x:Class="Superior.Windows.App"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             StartupUri="MainWindow.xaml">
+  <Application.Resources>
+    <SolidColorBrush x:Key="ClayText" Color="#2D211A" />
+    <SolidColorBrush x:Key="ClayMuted" Color="#72533C" />
+    <SolidColorBrush x:Key="ClayPanel" Color="#E8C899" />
+    <SolidColorBrush x:Key="ClayPanelDark" Color="#B47E52" />
+  </Application.Resources>
+</Application>

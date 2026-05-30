@@ -1,0 +1,11 @@
+{
+  "name": "@clawdbot/hub",
+  "version": "0.2.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "build": "node scripts/build.mjs",
+    "typecheck": "node scripts/validate-hub.mjs",
+    "test": "node scripts/validate-hub.mjs"
+  }
+}

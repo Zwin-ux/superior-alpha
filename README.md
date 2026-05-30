@@ -1,91 +1,57 @@
 # SUPERIOR
 
-An alpha desktop creature utility: launch the exe, build a clay bot, pair the browser extension, and run local-first page skills.
+<p align="center">
+  <img src="assets/github/alpha-stamp.svg" alt="ALPHA BUILD stamp" width="360">
+</p>
 
-SUPERIOR is structured as a TypeScript monorepo with a desktop launcher, browser extension, local daemon, and shared contracts.
+SUPERIOR is an alpha native app and browser extension where a small clay robot becomes the working avatar across desktop, browser, and local service. Build the little guy once, then it shows up as the Windows app creature, Chrome toolbar icon, popup favicon, and robot-owned playpen.
 
-The current canonical alpha PRD is [docs/superior-alpha-prd.md](docs/superior-alpha-prd.md).
+![SUPERIOR clay workshop](assets/bots/0.3/workshop-key-art.png)
 
-## Workspace
+## Platforms
 
-```text
-apps/
-  desktop/   Tauri v2 + React + Vite SUPERIOR shell
-  extension/ Chrome/Edge MV3 popup, page capture, and skill actions
-  daemon/    Local Node service with Page Explainer and Article X-Ray
-packages/
-  shared/    Bot identity and message contracts
-```
+| Windows EXE | Chrome Extension | macOS |
+| --- | --- | --- |
+| ![Windows alpha](assets/github/platform-windows.svg) | ![Chrome extension](assets/github/platform-chrome.svg) | ![macOS planned](assets/github/platform-mac.svg) |
+| Alpha MSI built | Store ZIP built | Planned after Windows proof |
+| `.clawdbot/artifacts/windows/SUPERIOR-0.7.0-alpha-win-x64.msi` | `.clawdbot/artifacts/extension/SUPERIOR-0.8.0-chrome-mv3.zip` | Native lane, not a web wrapper |
 
-## Project Taste
+## Showpiece
 
-Read [docs/operating-principles.md](docs/operating-principles.md) before changing product surfaces. SUPERIOR should show behavior through the clay bot, parts tray, status lights, icons, and browser actions instead of explaining itself with generic app copy.
+| Workshop Target | Bot / Parts Sheet |
+| --- | --- |
+| ![Workshop key art](assets/bots/0.3/workshop-key-art.png) | ![Clay bot asset sheet](assets/bots/0.3/clay-asset-sheet.png) |
 
-Read [docs/clean-ui-motion-plan.md](docs/clean-ui-motion-plan.md) before adding app surfaces or animation. The product should combine clay art direction with a clean utility layer: clear status, direct controls, and small physical motion.
+## Proof
 
-For skill surfaces, read [docs/skill-loadout-ui.md](docs/skill-loadout-ui.md). Skills should feel like equipped parts on a JRPG character, not a feature-card grid.
+| Gate | Command / File |
+| --- | --- |
+| Root checks | `corepack pnpm typecheck && corepack pnpm test && corepack pnpm build` |
+| Chrome store packet | `corepack pnpm extension:store-package` |
+| Extension skill fixture | `.clawdbot/verification/extension-skill-fixture-1780164331918.json` |
+| Windows install loop | `corepack pnpm windows:beta-gate` |
+| Verification log | [docs/alpha-verification.md](docs/alpha-verification.md) |
 
-For daemon lifecycle and pairing, read [docs/service-runtime.md](docs/service-runtime.md). The daemon is the real local service boundary.
+## Hub
 
-## Setup
+| Start Here | Purpose |
+| --- | --- |
+| [Release Ladder](docs/release-ladder.md) | Current alpha path to `1.0` beta |
+| [Build Plan](docs/build-plan.md) | What the next agent should build |
+| [Chrome Store Packet](docs/chrome-web-store-listing.md) | Public extension listing prep |
+| [Privacy Policy Source](docs/extension-privacy.md) | GitHub-hosted privacy doc source |
+| [Platform Testing](docs/platform-release-testing.md) | Gates for Windows, extension, service, hub, and mobile |
+| [Operating Principles](docs/operating-principles.md) | Taste and product rules |
 
-```sh
+## Local Commands
+
+```powershell
 corepack pnpm install
-cp .env.example .env.local
-```
-
-Set `OPENAI_API_KEY` in `.env.local` before using live Page Explainer calls.
-
-For the packaged Windows alpha, keep the same file format but place it in:
-
-```text
-%APPDATA%\SUPERIOR\.clawdbot\.env.local
-```
-
-## Scripts
-
-```sh
-corepack pnpm dev          # daemon + desktop dev loop
-corepack pnpm dev:daemon   # daemon only
-corepack pnpm dev:desktop  # desktop only
-corepack pnpm dev:extension
 corepack pnpm typecheck
 corepack pnpm test
 corepack pnpm build
-corepack pnpm service:install:windows
-corepack pnpm service:uninstall:windows
+corepack pnpm extension:store-package
+corepack pnpm windows:beta-gate
 ```
 
-The daemon listens on `127.0.0.1:5317` by default. The extension talks only to the local daemon; the OpenAI key stays on the local machine and never reaches the browser extension.
-For a service install smoke test while the dev daemon is already running, call `apps\daemon\scripts\install-windows-service.ps1 -Build -TaskName "SUPERIOR Daemon Smoke" -NoStart`, then uninstall that smoke task.
-
-Browser pairing is daemon-owned. Start pairing from `Browser Link` in SUPERIOR, paste that token into the extension popup, then browser skills must send the daemon-issued token with each request.
-
-## First Skills
-
-- `Page Explainer` uses the daemon's OpenAI adapter.
-- `Article X-Ray` is local and deterministic: the extension captures readable page blocks, then the daemon cleans and scores them without calling OpenAI.
-
-## Custom Skills
-
-The first custom import path targets JS/TS project folders only. The daemon can scan a folder and return an adapter proposal from package metadata, TypeScript config, source paths, scripts, and test/config signals:
-
-```text
-POST /custom-skills/import-proposal
-```
-
-The scan does not run scripts and does not equip the skill. A custom part should only enter the loadout after adapter review and a local smoke run.
-
-## Bot Ownership
-
-The Workshop saves the current clay bot identity through the local daemon. Body, pigment, eye, equipped skills, extension action icon, and browser-tab favicon all derive from the same `BotIdentity` contract.
-
-## Extension Icons
-
-Chrome extension manifest icons are generated as PNG files in `apps/extension/public/icons/` and copied into `apps/extension/dist/icons/` during extension builds. Run this when changing the default icon art:
-
-```sh
-corepack pnpm --filter @clawdbot/extension icons
-```
-
-The installed default icon uses the Gremlin + Moss Green + Pixel Eye identity. The live toolbar icon is updated from the current `BotIdentity` when the extension starts, when popup state refreshes, and when extension-local bot identity storage changes.
+Local state, keys, pairing tokens, browser profiles, and artifacts stay out of Git.

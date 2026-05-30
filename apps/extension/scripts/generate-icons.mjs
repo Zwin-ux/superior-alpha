@@ -29,9 +29,7 @@ for (const size of sizes) {
   const png = createIconPng(size);
   desktopPngs.push({ size, png });
 
-  if (size !== 256) {
-    writeFileSync(join(iconDir, `clawdbot-${size}.png`), png);
-  }
+  writeFileSync(join(iconDir, `clawdbot-${size}.png`), png);
 }
 
 writeFileSync(join(desktopIconDir, "32x32.png"), desktopPngs.find((entry) => entry.size === 32).png);
@@ -53,6 +51,9 @@ function createIconPng(size) {
   drawLine(buffer, size, 23 * scale, 17 * scale, 15 * scale, 5 * scale, 5 * scale, { ...colors.mossShadow, a: 1 });
   drawLine(buffer, size, 39 * scale, 16 * scale, 48 * scale, 7 * scale, 5 * scale, { ...colors.mossShadow, a: 1 });
   drawEllipse(buffer, size, cx, cy, rx, ry, -0.12, { ...colors.mossGreen, a: 1 });
+  drawEllipse(buffer, size, 29 * scale, 25 * scale, 20 * scale, 9 * scale, -0.32, { ...colors.mossHighlight, a: 0.3 });
+  drawEllipse(buffer, size, 41 * scale, 44 * scale, 15 * scale, 8 * scale, -0.2, { ...colors.mossShadow, a: 0.28 });
+  drawClayDents(buffer, size, scale);
 
   drawCircle(buffer, size, 54 * scale, 34 * scale, 8 * scale, { ...colors.mossShadow, a: 1 });
   drawCircle(buffer, size, 54 * scale, 34 * scale, 3 * scale, { ...colors.chalkShadow, a: 1 });
@@ -72,6 +73,21 @@ function createIconPng(size) {
   drawCircle(buffer, size, 35 * scale, 21 * scale, 1 * scale, { ...colors.mossShadow, a: 0.3 });
 
   return encodePng(buffer, size, size);
+}
+
+function drawClayDents(buffer, size, scale) {
+  const dents = [
+    [20, 24, 1.2, colors.mossShadow, 0.22],
+    [31, 20, 0.9, colors.mossShadow, 0.18],
+    [43, 27, 1.1, colors.mossShadow, 0.2],
+    [28, 41, 0.9, colors.mossShadow, 0.2],
+    [39, 38, 1, colors.mossHighlight, 0.18],
+    [22, 36, 0.8, colors.mossHighlight, 0.16]
+  ];
+
+  for (const [x, y, radius, color, alpha] of dents) {
+    drawCircle(buffer, size, x * scale, y * scale, Math.max(0.55, radius * scale), { ...color, a: alpha });
+  }
 }
 
 function drawCircle(buffer, size, cx, cy, radius, color) {

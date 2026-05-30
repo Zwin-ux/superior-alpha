@@ -15,9 +15,11 @@ import {
   SuperiorBrowserActivePageReport,
   SuperiorBrowserError,
   SuperiorBrowserStartRequest,
-  hasUsablePageText
+  SuperiorFunctionError,
+  SuperiorFunctionErrorCode,
+  SuperiorFunctionRunRequest,
+  createSuperiorFunctionRunRequest
 } from "@clawdbot/shared";
-import { hasArticleContent, runArticleXray } from "./articleXray.js";
 import {
   completeBrowserPairing,
   readBrowserLinkState,
@@ -27,28 +29,20 @@ import {
 } from "./browserLinkStore.js";
 import { readBotIdentity, writeBotIdentity } from "./botIdentityStore.js";
 import { getDaemonConfig } from "./config.js";
-import { CustomSkillImportScanError, proposeCustomSkillImport } from "./customSkillImport.js";
-import { explainPageWithOpenAI, MissingOpenAIConfigError } from "./openaiProvider.js";
-import {
-  readRecentSkillResults,
-  rememberArticleXrayResult,
-  rememberExplainPageResult,
-  rememberRepoReaderResult
-} from "./recentResultsStore.js";
-import { RepoReaderError, runRepoReader } from "./repoReader.js";
-import { readRepoWorkspaceRecords, rememberRepoWorkspaceRecord } from "./repoWorkspaceStore.js";
+import { readRecentSkillResults } from "./recentResultsStore.js";
+import { readRepoWorkspaceRecords } from "./repoWorkspaceStore.js";
 import {
   BrowserRuntimeError,
   attachSuperiorBrowserSession,
   getSuperiorBrowserEvents,
   getSuperiorBrowserState,
   inspectSuperiorBrowser,
-  rememberSuperiorBrowserSkillRun,
   reportSuperiorBrowserActivePage,
-  renderSuperiorBrowserHome,
-  startSuperiorBrowser,
-  stopSuperiorBrowser
+  renderSuperiorBrowserHome
 } from "./browserRuntime.js";
+import { readSuperiorFunctionCatalog } from "./functions/catalog.js";
+import { readFunctionRunEvents, readRecentFunctionRuns } from "./functions/runEventsStore.js";
+import { isSuperiorFunctionError, runSuperiorFunction, SuperiorFunctionRunnerOutput } from "./functions/runner.js";
 
 const config = getDaemonConfig();
 
@@ -87,6 +81,23 @@ const server = createServer(async (request, response) => {
 
   if (request.method === "GET" && url.pathname === "/recent-results") {
     sendJson(response, 200, readRecentSkillResults());
+    return;
+  }
+
+  if (request.method === "GET" && url.pathname === "/functions") {
+    sendJson(response, 200, readSuperiorFunctionCatalog());
+    return;
+  }
+
+  if (request.method === "GET" && url.pathname === "/function-runs/recent") {
+    sendJson(response, 200, readRecentFunctionRuns());
+    return;
+  }
+
+  const functionRunEventsMatch = /^\/function-runs\/([^/]+)\/events$/.exec(url.pathname);
+
+  if (request.method === "GET" && functionRunEventsMatch?.[1]) {
+    sendJson(response, 200, readFunctionRunEvents(decodeURIComponent(functionRunEventsMatch[1])));
     return;
   }
 
@@ -131,6 +142,11 @@ const server = createServer(async (request, response) => {
 
   if (request.method === "POST" && url.pathname === "/explain") {
     await handleExplain(request, response);
+    return;
+  }
+
+  if (request.method === "POST" && url.pathname === "/functions/run") {
+    await handleFunctionRun(request, response);
     return;
   }
 
@@ -224,7 +240,21 @@ async function handleBrowserRuntimeStart(request: IncomingMessage, response: Ser
   }
 
   try {
-    sendJson(response, 200, await startSuperiorBrowser(payload));
+    const output = await runSuperiorFunction(
+      createSuperiorFunctionRunRequest({
+        functionId: "superior-browser-start",
+        input: payload,
+        bot: payload.bot
+      }),
+      createFunctionRunContext(request)
+    );
+
+    if (isSuperiorFunctionError(output)) {
+      sendJson(response, getFunctionStatusCode(output.code), toSuperiorBrowserError(output, payload.requestId));
+      return;
+    }
+
+    sendJson(response, 200, output.result);
   } catch (error) {
     sendBrowserRuntimeError(response, payload.requestId, error);
   }
@@ -240,11 +270,23 @@ async function handleBrowserRuntimeStop(request: IncomingMessage, response: Serv
     return;
   }
 
-  sendJson(response, 200, {
-    type: "superior-browser-stop-result",
-    state: await stopSuperiorBrowser(),
+  const payload = {
+    type: "superior-function-run" as const,
+    requestId: `function_stop_${Date.now()}`,
+    functionId: "superior-browser-stop" as const,
+    input: {
+      type: "superior-browser-stop"
+    },
     createdAt: new Date().toISOString()
-  });
+  };
+  const output = await runSuperiorFunction(payload, createFunctionRunContext(request));
+
+  if (isSuperiorFunctionError(output)) {
+    sendJson(response, getFunctionStatusCode(output.code), toSuperiorBrowserError(output, payload.requestId));
+    return;
+  }
+
+  sendJson(response, 200, output.result);
 }
 
 async function handleBrowserRuntimeInspect(response: ServerResponse): Promise<void> {
@@ -473,18 +515,21 @@ async function handleCustomSkillImport(request: IncomingMessage, response: Serve
   }
 
   try {
-    sendJson(response, 200, await proposeCustomSkillImport(payload));
-  } catch (error) {
-    if (error instanceof CustomSkillImportScanError) {
-      sendJson(response, error.code === "not_found" ? 404 : 400, {
-        type: "custom-skill-import-error",
-        requestId: payload.requestId,
-        code: error.code,
-        message: error.message
-      } satisfies CustomSkillImportError);
+    const output = await runSuperiorFunction(
+      createSuperiorFunctionRunRequest({
+        functionId: "custom-skill-import-proposal",
+        input: payload
+      }),
+      createFunctionRunContext(request)
+    );
+
+    if (isSuperiorFunctionError(output)) {
+      sendJson(response, getFunctionStatusCode(output.code), toCustomSkillImportError(output, payload.requestId));
       return;
     }
 
+    sendJson(response, 200, output.result);
+  } catch (error) {
     sendJson(response, 500, {
       type: "custom-skill-import-error",
       requestId: payload.requestId,
@@ -492,6 +537,35 @@ async function handleCustomSkillImport(request: IncomingMessage, response: Serve
       message: error instanceof Error ? error.message : "Custom skill scan failed."
     } satisfies CustomSkillImportError);
   }
+}
+
+async function handleFunctionRun(request: IncomingMessage, response: ServerResponse): Promise<void> {
+  let payload: SuperiorFunctionRunRequest;
+
+  try {
+    payload = (await readJsonBody(request)) as SuperiorFunctionRunRequest;
+  } catch {
+    sendJson(response, 400, {
+      type: "superior-function-error",
+      code: "bad_request",
+      message: "Expected a valid function run request.",
+      createdAt: new Date().toISOString()
+    } satisfies SuperiorFunctionError);
+    return;
+  }
+
+  if (payload.type !== "superior-function-run" || typeof payload.requestId !== "string") {
+    sendJson(response, 400, {
+      type: "superior-function-error",
+      requestId: payload.requestId,
+      code: "bad_request",
+      message: "Function runs need a request id and function id.",
+      createdAt: new Date().toISOString()
+    } satisfies SuperiorFunctionError);
+    return;
+  }
+
+  sendFunctionOutput(response, await runSuperiorFunction(payload, createFunctionRunContext(request)));
 }
 
 async function handleBotIdentitySave(request: IncomingMessage, response: ServerResponse): Promise<void> {
@@ -527,30 +601,21 @@ async function handleArticleXray(request: IncomingMessage, response: ServerRespo
     return;
   }
 
-  if (!validatePairingRequest(request, payload.pairingToken)) {
-    sendJson(response, 401, {
-      type: "article-xray-error",
-      requestId: payload.requestId,
-      code: "unauthorized",
-      message: "Pair the extension from SUPERIOR before running Article X-Ray."
-    } satisfies ArticleXrayError);
+  const output = await runSuperiorFunction(
+    createSuperiorFunctionRunRequest({
+      functionId: "article-xray",
+      input: payload,
+      bot: payload.bot
+    }),
+    createFunctionRunContext(request)
+  );
+
+  if (isSuperiorFunctionError(output)) {
+    sendJson(response, getFunctionStatusCode(output.code), toArticleXrayError(output, payload.requestId));
     return;
   }
 
-  if (!hasArticleContent(payload)) {
-    sendJson(response, 400, {
-      type: "article-xray-error",
-      requestId: payload.requestId,
-      code: "empty_page",
-      message: "SUPERIOR needs selected text, readable article blocks, or page text to X-Ray."
-    } satisfies ArticleXrayError);
-    return;
-  }
-
-  const result = runArticleXray(payload);
-  rememberArticleXrayResult(result);
-  rememberSuperiorBrowserSkillRun("Article X-Ray", result.source.title, result.source.url);
-  sendJson(response, 200, result);
+  sendJson(response, 200, output.result);
 }
 
 async function handleRepoReader(request: IncomingMessage, response: ServerResponse): Promise<void> {
@@ -587,24 +652,22 @@ async function handleRepoReader(request: IncomingMessage, response: ServerRespon
   }
 
   try {
-    const result = await runRepoReader(payload);
+    const output = await runSuperiorFunction(
+      createSuperiorFunctionRunRequest({
+        functionId: "repo-reader",
+        input: payload,
+        bot: payload.bot
+      }),
+      createFunctionRunContext(request)
+    );
 
-    rememberRepoReaderResult(result);
-    rememberRepoWorkspaceRecord(result);
-    sendJson(response, 200, result);
-  } catch (error) {
-    if (error instanceof RepoReaderError) {
-      const statusCode = error.code === "not_found" ? 404 : error.code === "rate_limited" ? 429 : 400;
-
-      sendJson(response, statusCode, {
-        type: "repo-reader-error",
-        requestId: payload.requestId,
-        code: error.code,
-        message: error.message
-      } satisfies RepoReaderContractError);
+    if (isSuperiorFunctionError(output)) {
+      sendJson(response, getFunctionStatusCode(output.code), toRepoReaderError(output, payload.requestId));
       return;
     }
 
+    sendJson(response, 200, output.result);
+  } catch (error) {
     sendJson(response, 502, {
       type: "repo-reader-error",
       requestId: payload.requestId,
@@ -628,49 +691,21 @@ async function handleExplain(request: IncomingMessage, response: ServerResponse)
     return;
   }
 
-  if (!validatePairingRequest(request, payload.pairingToken)) {
-    sendJson(response, 401, {
-      type: "explain-page-error",
-      requestId: payload.requestId,
-      code: "unauthorized",
-      message: "Pair the extension from SUPERIOR before explaining pages."
-    } satisfies ExplainPageError);
+  const output = await runSuperiorFunction(
+    createSuperiorFunctionRunRequest({
+      functionId: "page-explainer",
+      input: payload,
+      bot: payload.bot
+    }),
+    createFunctionRunContext(request)
+  );
+
+  if (isSuperiorFunctionError(output)) {
+    sendJson(response, getFunctionStatusCode(output.code), toExplainPageError(output, payload.requestId));
     return;
   }
 
-  if (!hasUsablePageText(payload.page)) {
-    sendJson(response, 400, {
-      type: "explain-page-error",
-      requestId: payload.requestId,
-      code: "empty_page",
-      message: "SUPERIOR needs selected text or readable page text to explain."
-    } satisfies ExplainPageError);
-    return;
-  }
-
-  try {
-    const result = await explainPageWithOpenAI(payload, config);
-    rememberExplainPageResult(result);
-    rememberSuperiorBrowserSkillRun("Page Explainer", result.source.title, result.source.url);
-    sendJson(response, 200, result);
-  } catch (error) {
-    if (error instanceof MissingOpenAIConfigError) {
-      sendJson(response, 503, {
-        type: "explain-page-error",
-        requestId: payload.requestId,
-        code: "missing_config",
-        message: "Set OPENAI_API_KEY in a local .env.local to use Page Explainer."
-      } satisfies ExplainPageError);
-      return;
-    }
-
-    sendJson(response, 502, {
-      type: "explain-page-error",
-      requestId: payload.requestId,
-      code: "provider_error",
-      message: error instanceof Error ? error.message : "OpenAI provider failed."
-    } satisfies ExplainPageError);
-  }
+  sendJson(response, 200, output.result);
 }
 
 async function readJsonBody(request: IncomingMessage): Promise<unknown> {
@@ -699,6 +734,147 @@ function sendHtml(response: ServerResponse, statusCode: number, html: string): v
     "Content-Type": "text/html; charset=utf-8"
   });
   response.end(html);
+}
+
+function sendFunctionOutput(response: ServerResponse, output: SuperiorFunctionRunnerOutput): void {
+  if (isSuperiorFunctionError(output)) {
+    sendJson(response, getFunctionStatusCode(output.code), output);
+    return;
+  }
+
+  sendJson(response, 200, output);
+}
+
+function getFunctionStatusCode(code: SuperiorFunctionErrorCode): number {
+  if (code === "unauthorized") {
+    return 401;
+  }
+
+  if (code === "missing_permission") {
+    return 403;
+  }
+
+  if (
+    code === "missing_config" ||
+    code === "missing_browser" ||
+    code === "missing_extension" ||
+    code === "not_running"
+  ) {
+    return 503;
+  }
+
+  if (code === "not_found" || code === "unknown_repo") {
+    return 404;
+  }
+
+  if (code === "rate_limited") {
+    return 429;
+  }
+
+  if (code === "runner_failed" || code === "launch_failed") {
+    return 502;
+  }
+
+  return 400;
+}
+
+function createFunctionRunContext(request: IncomingMessage): Parameters<typeof runSuperiorFunction>[1] {
+  const pairingHeaderToken = readPairingHeader(request);
+
+  return {
+    config,
+    ...(pairingHeaderToken ? { pairingHeaderToken } : {}),
+    trustedLocalOrigin: isTrustedLocalOrigin(request.headers.origin)
+  };
+}
+
+function toArticleXrayError(output: SuperiorFunctionError, requestId: string | undefined): ArticleXrayError {
+  return {
+    type: "article-xray-error",
+    ...(requestId ? { requestId } : {}),
+    code:
+      output.code === "unauthorized"
+        ? "unauthorized"
+        : output.code === "empty_input"
+          ? "empty_page"
+          : "bad_request",
+    message: output.message
+  };
+}
+
+function toExplainPageError(output: SuperiorFunctionError, requestId: string | undefined): ExplainPageError {
+  return {
+    type: "explain-page-error",
+    ...(requestId ? { requestId } : {}),
+    code:
+      output.code === "unauthorized"
+        ? "unauthorized"
+        : output.code === "empty_input"
+          ? "empty_page"
+          : output.code === "missing_config"
+            ? "missing_config"
+            : output.code === "bad_request"
+              ? "bad_request"
+              : "provider_error",
+    message: output.message
+  };
+}
+
+function toRepoReaderError(output: SuperiorFunctionError, requestId: string | undefined): RepoReaderContractError {
+  return {
+    type: "repo-reader-error",
+    ...(requestId ? { requestId } : {}),
+    code:
+      output.code === "not_found"
+        ? "not_found"
+        : output.code === "rate_limited"
+          ? "rate_limited"
+          : output.code === "bad_request" || output.code === "missing_permission"
+            ? "bad_request"
+            : "network_error",
+    message: output.message
+  };
+}
+
+function toCustomSkillImportError(
+  output: SuperiorFunctionError,
+  requestId: string | undefined
+): CustomSkillImportError {
+  return {
+    type: "custom-skill-import-error",
+    ...(requestId ? { requestId } : {}),
+    code:
+      output.code === "not_found"
+        ? "not_found"
+        : output.code === "bad_request" || output.code === "missing_permission"
+          ? "bad_request"
+          : "scan_failed",
+    message: output.message
+  };
+}
+
+function toSuperiorBrowserError(output: SuperiorFunctionError, requestId: string | undefined): SuperiorBrowserError {
+  return {
+    type: "superior-browser-error",
+    ...(requestId ? { requestId } : {}),
+    code: toSuperiorBrowserErrorCode(output.code),
+    message: output.message
+  };
+}
+
+function toSuperiorBrowserErrorCode(code: SuperiorFunctionErrorCode): SuperiorBrowserError["code"] {
+  if (
+    code === "unknown_repo" ||
+    code === "missing_browser" ||
+    code === "missing_extension" ||
+    code === "launch_failed" ||
+    code === "not_running" ||
+    code === "unauthorized"
+  ) {
+    return code;
+  }
+
+  return code === "bad_request" || code === "missing_permission" ? "bad_request" : "launch_failed";
 }
 
 function sendBrowserRuntimeError(response: ServerResponse, requestId: string | undefined, error: unknown): void {
@@ -741,13 +917,6 @@ function readServiceBotIdentity(): BotIdentity {
     ...readBotIdentity(),
     browserLinkState: readBrowserLinkState()
   };
-}
-
-function validatePairingRequest(request: IncomingMessage, payloadPairingToken: string | undefined): boolean {
-  const headerToken = readPairingHeader(request);
-  const token = payloadPairingToken?.trim();
-
-  return Boolean(token && headerToken === token && touchBrowserPairing(token));
 }
 
 function isValidPairingHeader(request: IncomingMessage): boolean {

@@ -7,6 +7,7 @@ import {
   createCustomSkillImportRequest,
   createExplainPageRequest,
   createRepoReaderRequest,
+  createSuperiorFunctionRunRequest,
   createSuperiorBrowserActivePageReport,
   createSuperiorBrowserAttachRequest,
   createSuperiorBrowserStartRequest,
@@ -104,6 +105,29 @@ describe("shared SUPERIOR contracts", () => {
     expect(request.type).toBe("repo-reader");
     expect(request.requestId).toMatch(/^repo_/);
     expect(request.repoUrl).toContain("github.com");
+  });
+
+  it("creates typed function runner requests for robot skills", () => {
+    const articleRequest = createArticleXrayRequest({
+      pairingToken: "pair_test",
+      bot: DEFAULT_BOT_IDENTITY,
+      page: {
+        url: "https://example.com/read",
+        title: "Readable",
+        selectedText: "A focused article paragraph with enough words to run through the deterministic harness.",
+        capturedAt: new Date(0).toISOString()
+      }
+    });
+    const functionRequest = createSuperiorFunctionRunRequest({
+      functionId: "article-xray",
+      input: articleRequest,
+      bot: DEFAULT_BOT_IDENTITY
+    });
+
+    expect(functionRequest.type).toBe("superior-function-run");
+    expect(functionRequest.requestId).toMatch(/^function_/);
+    expect(functionRequest.functionId).toBe("article-xray");
+    expect(functionRequest.bot?.body).toBe("gremlin");
   });
 
   it("creates typed SUPERIOR Browser requests for saved repo playpens", () => {

@@ -1,0 +1,22 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="420" height="260" viewBox="0 0 420 260" role="img" aria-labelledby="title desc">
+  <title id="title">Chrome extension alpha platform icon</title>
+  <desc id="desc">A clay-styled browser extension card for the SUPERIOR alpha.</desc>
+  <defs>
+    <filter id="shadow" x="-20%" y="-20%" width="140%" height="140%">
+      <feDropShadow dx="0" dy="12" stdDeviation="10" flood-color="#2a1b12" flood-opacity="0.32"/>
+    </filter>
+  </defs>
+  <rect width="420" height="260" rx="34" fill="#2d241f"/>
+  <rect x="26" y="24" width="368" height="212" rx="28" fill="#efd1a0" filter="url(#shadow)"/>
+  <g transform="translate(210 119)">
+    <circle r="76" fill="#3a2b22"/>
+    <path d="M0 -76 A76 76 0 0 1 66 38 L20 38 A32 32 0 0 0 0 -32 Z" fill="#b75d47"/>
+    <path d="M66 38 A76 76 0 0 1 -66 38 L-22 0 A32 32 0 0 0 20 38 Z" fill="#7f9b64"/>
+    <path d="M-66 38 A76 76 0 0 1 0 -76 L0 -32 A32 32 0 0 0 -22 0 Z" fill="#d8a849"/>
+    <circle r="34" fill="#7db7d4" stroke="#fff4dc" stroke-width="10"/>
+    <circle r="12" fill="#dff8ff" opacity="0.8"/>
+  </g>
+  <path d="M288 72 h43 a18 18 0 0 1 18 18 v43 h-32 v-29 h-29 z" fill="#3a2b22"/>
+  <rect x="106" y="202" width="208" height="22" rx="11" fill="#7e3329" opacity="0.95"/>
+  <text x="210" y="218" text-anchor="middle" font-family="Arial, sans-serif" font-size="15" font-weight="900" letter-spacing="3" fill="#ffe6c0">CHROME EXTENSION</text>
+</svg>

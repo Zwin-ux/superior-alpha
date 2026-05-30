@@ -1,8 +1,8 @@
 # SUPERIOR Full Product Spec
 
-Status: living product spec  
-Updated: 2026-05-30  
-Current build line: `0.2.x` alpha  
+Status: living product spec
+Updated: 2026-05-30
+Current build line: `0.8` Chrome extension store gate
 Beta target: `1.0`
 
 ## Product Promise
@@ -78,6 +78,7 @@ It owns:
 - active page heartbeat inside a playpen
 
 The popup should feel like a tiny version of the Workshop, not a separate product.
+After setup, the toolbar icon should be the user's bot, not a static product logo. Static manifest/store icons stay as the default Gremlin; runtime toolbar and popup identity follow `BotIdentity`.
 
 ### SUPERIOR Browser
 
@@ -173,7 +174,17 @@ The first import pass reads:
 
 It does not run commands. It does not equip the skill. It does not send full source contents to a model in the first pass.
 
-### 4. Identity Loop
+### 4. Function Kernel Loop
+
+```text
+equip part -> run function -> daemon records proof -> result returns to Workshop
+```
+
+`0.4` turns skills into a portable function kernel. Existing routes may remain for compatibility, but Page Explainer, Article X-Ray, Repo Reader, browser playpen start/stop, and custom skill import proposal should all delegate to one function runner.
+
+The function kernel is the backend bridge from the current Node daemon to the future Windows `.NET` host.
+
+### 5. Identity Loop
 
 ```text
 body + pigment + eye + skills -> same robot appears everywhere
@@ -248,31 +259,77 @@ Must ship:
 - button and skill attachment motion polish
 - no placeholder mascot feel
 
-### 0.4 Skill Loadout Alpha
+### 0.4 Function Kernel Alpha
 
-Goal: make skills feel like equipment.
-
-Must ship:
-
-- fixed slot loadout polish
-- stowed parts case
-- equipped attachments rendered consistently
-- custom JS/TS proposal review
-- first local smoke-run adapter gate
-- source-mapped skills hidden until runnable
-
-### 0.5 Beta Candidate
-
-Goal: remove hidden setup knowledge.
+Goal: make functions feel like equipment and make backend behavior portable.
 
 Must ship:
 
-- first-run key setup recovery
-- install/uninstall smoke
-- clean-machine missing-config path
+- daemon-owned function catalog
+- shared function run/result/error contracts
+- one internal runner for Page Explainer, Article X-Ray, Repo Reader, browser playpen start/stop, and custom skill import proposal
+- compact proof events and recent function results
+- host-agnostic contract fixture suite
+- fixed slot loadout remains visible as the user-facing model
+
+### 0.5 Windows Native App Alpha
+
+Goal: make the official Windows `.NET` shell real without cloning the Tauri harness.
+
+Must ship:
+
+- `.NET` WPF app lane under `apps/windows`
+- native health, bot identity, function catalog, recent proof, service controls, and playpen state
+- same contract fixture suite keeps running against the active local host
+- Windows-local path and credential storage plan
+- Tauri/Node alpha path remains intact until proof passes
+
+### 0.6 Native Repo Loop Alpha
+
+Goal: prove the official Windows app can run the core robot loop without the Tauri harness.
+
+Must ship:
+
+- native GitHub repo URL input and `Read Repo` action
+- native Repo Reader result state: repo name, surface, robot role, setup mode, next move
+- saved workspace -> `Start Playpen` -> controlled profile pairing
+- Article X-Ray proof from the paired playpen
+- playpen notes and stop/recovery visible in the native app
+- fixture proof through `corepack pnpm windows:native-loop-smoke`
+
+### 0.7 Windows Beta Gate
+
+Goal: prove the native Windows app as an installed product, not a source/dev harness.
+
+Must ship:
+
+- native Windows MSI
+- packaged Node, daemon bundle, and MV3 extension resources
+- native OpenAI key input saved to `%APPDATA%\SUPERIOR\.clawdbot\.env.local`
+- installed-loop smoke with Repo Reader, controlled playpen, Article X-Ray proof, and uninstall
+
+### 0.8 Chrome Extension Store Gate
+
+Goal: make the browser hand ready for a public Chrome Web Store listing.
+
+Must ship:
+
+- MV3 store ZIP at `.clawdbot/artifacts/extension/SUPERIOR-0.8.0-chrome-mv3.zip`
+- background identity sync from the local daemon to the runtime toolbar icon
+- popup favicon and visible bot matching the toolbar icon
+- exact permission and local host-permission validation
+- public privacy policy doc and listing packet for Chrome review
+
+### 0.9 Beta Candidate
+
+Goal: remove hidden setup knowledge for one outside Windows tester.
+
+Must ship:
+
+- second-machine install smoke
 - extension load instructions or installer handoff
-- packaged playpen smoke
-- clear reset controls
+- clearer reset controls
+- clean missing-key and stale-token recovery
 
 ### 1.0 Official Beta
 

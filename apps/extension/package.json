@@ -1,12 +1,13 @@
 {
   "name": "@clawdbot/extension",
-  "version": "0.2.0",
+  "version": "0.8.0",
   "private": true,
   "type": "module",
   "scripts": {
     "dev": "vite build --watch --mode development",
     "icons": "node ./scripts/generate-icons.mjs",
     "build": "node ./scripts/generate-icons.mjs && tsc -p tsconfig.json --noEmit && vite build",
+    "store-package": "powershell -ExecutionPolicy Bypass -File ./scripts/package-store.ps1",
     "typecheck": "tsc -p tsconfig.json --noEmit",
     "test": "vitest run --passWithNoTests"
   },

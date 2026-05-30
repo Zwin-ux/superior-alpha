@@ -11,6 +11,19 @@ Bot assets should read as handmade clay pieces, not generic mascot vectors.
 
 Generated text in these images is reference only. Final labels must come from Figma/code.
 
+## 0.3 Runtime Shelf
+
+- `0.3/workshop-key-art.png`: canonical desktop composition target.
+- `0.3/clay-asset-sheet.png`: canonical body, part, pigment, and icon target.
+- `0.3/asset-manifest.json`: runtime lookup notes for app surfaces.
+- `0.3/generated/backgrounds/`: generated workshop, menu rail, tray, and table textures.
+- `0.3/generated/buttons/`: generated menu slab states.
+- `0.3/generated/panels/`: generated raised and pressed clay surfaces.
+
+The desktop Vite app mirrors the 0.3 PNG references and generated surfaces into `apps/desktop/public/assets/bots/0.3/` so CSS can load them without changing the monorepo asset source of truth.
+
+Run `node assets/bots/0.3/scripts/generate-clay-ui-assets.mjs` after changing generated background, button, or panel assets. The script writes both the source shelf and the desktop runtime mirror.
+
 ## Bodies
 
 - `Core`: round clay head, friendly dot eyes, slow bounce.

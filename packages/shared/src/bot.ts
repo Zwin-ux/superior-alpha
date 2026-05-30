@@ -187,6 +187,108 @@ export interface IconVariant {
   eye: BotEye;
 }
 
+export type ClayAssetId =
+  | "workshop-key-art"
+  | "clay-asset-sheet"
+  | "workshop-scene"
+  | "menu-rail-clay"
+  | "tray-surface"
+  | "table-slab"
+  | "menu-slab-default"
+  | "menu-slab-hover"
+  | "menu-slab-pressed"
+  | "menu-slab-disabled"
+  | "panel-raised"
+  | "panel-pressed";
+
+export interface ClayAssetReference {
+  id: ClayAssetId;
+  sourcePath: string;
+  runtimePath: string;
+  purpose: string;
+}
+
+export const clayAssetVersion = "0.3";
+
+export const clayAssetReferences: Record<ClayAssetId, ClayAssetReference> = {
+  "workshop-key-art": {
+    id: "workshop-key-art",
+    sourcePath: "assets/bots/0.3/workshop-key-art.png",
+    runtimePath: "/assets/bots/0.3/workshop-key-art.png",
+    purpose: "Workshop composition, lighting, material, and silhouette target"
+  },
+  "clay-asset-sheet": {
+    id: "clay-asset-sheet",
+    sourcePath: "assets/bots/0.3/clay-asset-sheet.png",
+    runtimePath: "/assets/bots/0.3/clay-asset-sheet.png",
+    purpose: "Bot bodies, skill attachments, pigments, and icon targets"
+  },
+  "workshop-scene": {
+    id: "workshop-scene",
+    sourcePath: "assets/bots/0.3/generated/backgrounds/workshop-scene.png",
+    runtimePath: "/assets/bots/0.3/generated/backgrounds/workshop-scene.png",
+    purpose: "Raster clay workshop wall, light, workbench, and table target"
+  },
+  "menu-rail-clay": {
+    id: "menu-rail-clay",
+    sourcePath: "assets/bots/0.3/generated/backgrounds/menu-rail-clay.png",
+    runtimePath: "/assets/bots/0.3/generated/backgrounds/menu-rail-clay.png",
+    purpose: "Left launcher clay surface texture"
+  },
+  "tray-surface": {
+    id: "tray-surface",
+    sourcePath: "assets/bots/0.3/generated/backgrounds/tray-surface.png",
+    runtimePath: "/assets/bots/0.3/generated/backgrounds/tray-surface.png",
+    purpose: "Right parts tray clay surface texture"
+  },
+  "table-slab": {
+    id: "table-slab",
+    sourcePath: "assets/bots/0.3/generated/backgrounds/table-slab.png",
+    runtimePath: "/assets/bots/0.3/generated/backgrounds/table-slab.png",
+    purpose: "Center workbench clay table slab"
+  },
+  "menu-slab-default": {
+    id: "menu-slab-default",
+    sourcePath: "assets/bots/0.3/generated/buttons/menu-default.png",
+    runtimePath: "/assets/bots/0.3/generated/buttons/menu-default.png",
+    purpose: "Default left launcher clay button"
+  },
+  "menu-slab-hover": {
+    id: "menu-slab-hover",
+    sourcePath: "assets/bots/0.3/generated/buttons/menu-hover.png",
+    runtimePath: "/assets/bots/0.3/generated/buttons/menu-hover.png",
+    purpose: "Hover left launcher clay button"
+  },
+  "menu-slab-pressed": {
+    id: "menu-slab-pressed",
+    sourcePath: "assets/bots/0.3/generated/buttons/menu-pressed.png",
+    runtimePath: "/assets/bots/0.3/generated/buttons/menu-pressed.png",
+    purpose: "Pressed left launcher clay button"
+  },
+  "menu-slab-disabled": {
+    id: "menu-slab-disabled",
+    sourcePath: "assets/bots/0.3/generated/buttons/menu-disabled.png",
+    runtimePath: "/assets/bots/0.3/generated/buttons/menu-disabled.png",
+    purpose: "Disabled left launcher clay button"
+  },
+  "panel-raised": {
+    id: "panel-raised",
+    sourcePath: "assets/bots/0.3/generated/panels/panel-raised.png",
+    runtimePath: "/assets/bots/0.3/generated/panels/panel-raised.png",
+    purpose: "Raised clay card and identity plate surface"
+  },
+  "panel-pressed": {
+    id: "panel-pressed",
+    sourcePath: "assets/bots/0.3/generated/panels/panel-pressed.png",
+    runtimePath: "/assets/bots/0.3/generated/panels/panel-pressed.png",
+    purpose: "Pressed tray, status, and equipment surface"
+  }
+};
+
+export function getClayAssetRuntimePath(assetId: ClayAssetId): string {
+  return clayAssetReferences[assetId].runtimePath;
+}
+
 export interface BotIdentity {
   id: string;
   name: string;
@@ -543,6 +645,14 @@ export function createBotIconSvg(bot: BotIdentity, size = 64): string {
       : bot.body === "sentinel"
         ? `<rect x="39" y="22" width="9" height="15" rx="4" fill="#fff4dc" opacity=".28"/>`
         : "";
+  const clayTexture = [
+    `<ellipse cx="27" cy="23" rx="14" ry="5" fill="${pigment.highlight}" opacity=".3" transform="rotate(-20 27 23)"/>`,
+    `<ellipse cx="40" cy="42" rx="11" ry="5" fill="${pigment.shadow}" opacity=".22" transform="rotate(-12 40 42)"/>`,
+    `<circle cx="20" cy="25" r="1.4" fill="${pigment.shadow}" opacity=".2"/>`,
+    `<circle cx="33" cy="19" r="1" fill="${pigment.shadow}" opacity=".16"/>`,
+    `<circle cx="43" cy="28" r="1.2" fill="${pigment.shadow}" opacity=".18"/>`,
+    `<circle cx="27" cy="42" r="1" fill="${pigment.highlight}" opacity=".18"/>`
+  ].join("");
   const eyes =
     bot.eye === "lens" || bot.body === "scanner"
       ? `<circle cx="${center}" cy="29" r="11" fill="#7cc8d8"/><circle cx="29" cy="25" r="3" fill="#f7ffff"/>`
@@ -576,6 +686,7 @@ export function createBotIconSvg(bot: BotIdentity, size = 64): string {
     `<ellipse cx="${center}" cy="43" rx="24" ry="10" fill="${pigment.shadow}" opacity=".45"/>`,
     antennae,
     head,
+    clayTexture,
     inner,
     skillPieces,
     eyes,
