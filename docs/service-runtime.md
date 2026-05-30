@@ -30,6 +30,7 @@ POST /browser-link/complete
 POST /browser-link/reset
 GET  /browser-runtime
 GET  /browser-runtime/events
+GET  /browser-runtime/inspect
 POST /browser-runtime/start
 POST /browser-runtime/stop
 GET  /browser-session/:sessionId/home
@@ -76,10 +77,13 @@ started
 home_loaded
 extension_paired
 repo_opened
+page_inspected
 skill_ran
 stopped
 failed
 ```
+
+`/browser-runtime/inspect` samples the active robot-owned browser through its remote debugging port. It returns current URL/title, browser kind, extension paired state, console error count, and simple network failure count. When no playpen is running it returns a typed `not_running` error.
 
 `/browser-runtime/start` accepts a saved repo workspace id plus the active bot identity. It launches Chrome first when that install can load the staged extension, Edge as fallback, using a per-repo profile under:
 

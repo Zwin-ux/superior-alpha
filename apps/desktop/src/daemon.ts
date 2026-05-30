@@ -11,6 +11,7 @@ import {
   RepoReaderResult,
   SuperiorBrowserError,
   SuperiorBrowserEventsResponse,
+  SuperiorBrowserInspectResult,
   SuperiorBrowserStartResult,
   SuperiorBrowserState,
   SuperiorBrowserStopResult,
@@ -120,6 +121,16 @@ export async function fetchSuperiorBrowserEvents(): Promise<SuperiorBrowserEvent
   }
 
   return (await response.json()) as SuperiorBrowserEventsResponse;
+}
+
+export async function inspectSuperiorBrowser(): Promise<SuperiorBrowserInspectResult> {
+  const response = await fetch(`${daemonUrl}/browser-runtime/inspect`);
+
+  if (!response.ok) {
+    throw new Error(await readDaemonError(response, "SUPERIOR Browser inspection failed."));
+  }
+
+  return (await response.json()) as SuperiorBrowserInspectResult;
 }
 
 export async function saveDaemonBotIdentity(bot: BotIdentity): Promise<BotIdentity> {

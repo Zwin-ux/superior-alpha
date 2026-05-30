@@ -1,5 +1,5 @@
 // src/server.ts
-import { createServer } from "node:http";
+import { createServer as createServer2 } from "node:http";
 
 // ../../packages/shared/src/bot.ts
 var skillIds = [
@@ -19,6 +19,50 @@ var skillIds = [
   "citation-checker",
   "deal-scout"
 ];
+var clayPigments = {
+  skyBlue: {
+    label: "Sky Blue",
+    hex: "#7db7d4",
+    shadow: "#4e8098",
+    highlight: "#b9dceb"
+  },
+  mossGreen: {
+    label: "Moss Green",
+    hex: "#7f9b64",
+    shadow: "#566d46",
+    highlight: "#b8c9a6"
+  },
+  brickRed: {
+    label: "Brick Red",
+    hex: "#b75d47",
+    shadow: "#823f31",
+    highlight: "#d98d78"
+  },
+  sunGold: {
+    label: "Sun Gold",
+    hex: "#d8a849",
+    shadow: "#9a7331",
+    highlight: "#f0cd7a"
+  },
+  lavender: {
+    label: "Lavender",
+    hex: "#aa8ac2",
+    shadow: "#715b82",
+    highlight: "#d2b8e1"
+  },
+  chalkWhite: {
+    label: "Chalk White",
+    hex: "#e7dfd2",
+    shadow: "#b9ad9b",
+    highlight: "#fff8ec"
+  },
+  charcoal: {
+    label: "Charcoal",
+    hex: "#403d3a",
+    shadow: "#242220",
+    highlight: "#6c6660"
+  }
+};
 var skillCatalog = {
   "page-explainer": {
     id: "page-explainer",
@@ -295,6 +339,49 @@ function normalizeBotName(name) {
     return "Superior";
   }
   return trimmedName;
+}
+function getEquippedSkillSlots(bot) {
+  const seenSlots = /* @__PURE__ */ new Set();
+  return bot.skills.reduce((slots, skillId) => {
+    const skill = skillCatalog[skillId];
+    if (!skill || seenSlots.has(skill.slot)) {
+      return slots;
+    }
+    seenSlots.add(skill.slot);
+    slots.push(skill.slot);
+    return slots;
+  }, []);
+}
+function createBotIconSvg(bot, size = 64) {
+  const pigment = clayPigments[bot.color];
+  const center = 32;
+  const radius = bot.body === "orb" ? 23 : 21;
+  const eyeColor = bot.eye === "glow" || bot.eye === "lens" ? "#dff8ff" : "#15120f";
+  const skillSlots = getEquippedSkillSlots(bot);
+  const head = bot.body === "sentinel" ? `<path d="M${center} 7 L54 19 L50 48 L${center} 58 L14 48 L10 19 Z" fill="${pigment.hex}"/>` : `<ellipse cx="${center}" cy="${center}" rx="${bot.body === "gremlin" ? radius + 2 : radius}" ry="${bot.body === "orb" ? radius : radius - 3}" fill="${pigment.hex}"/>`;
+  const antennae = bot.body === "gremlin" ? `<path d="M24 15 L16 4 M39 15 L48 6" stroke="${pigment.shadow}" stroke-width="6" stroke-linecap="round"/>` : "";
+  const inner = bot.body === "orb" ? `<circle cx="${center}" cy="${center}" r="13" fill="#dff8ff" opacity=".32"/>` : bot.body === "sentinel" ? `<rect x="39" y="22" width="9" height="15" rx="4" fill="#fff4dc" opacity=".28"/>` : "";
+  const eyes = bot.eye === "lens" || bot.body === "scanner" ? `<circle cx="${center}" cy="29" r="11" fill="#7cc8d8"/><circle cx="29" cy="25" r="3" fill="#f7ffff"/>` : `<circle cx="25" cy="31" r="${bot.eye === "dot" ? 3 : 4}" fill="${eyeColor}"/><circle cx="39" cy="31" r="${bot.eye === "dot" ? 3 : 4}" fill="${eyeColor}"/>`;
+  const gear = bot.body === "gremlin" ? `<circle cx="54" cy="32" r="7" fill="${pigment.shadow}"/><circle cx="54" cy="32" r="3" fill="#d9c0a0"/>` : "";
+  const skillPieces = [
+    skillSlots.includes("crown") ? `<rect x="23" y="7" width="18" height="9" rx="4" fill="#d8a849"/><path d="M26 8 L30 3 L34 8 L39 3 L38 15 L25 15 Z" fill="#f0cd7a" opacity=".72"/>` : "",
+    skillSlots.includes("eye") ? `<circle cx="15" cy="31" r="9" fill="#e8d6b8"/><circle cx="15" cy="31" r="5" fill="${pigment.hex}"/><circle cx="15" cy="31" r="3" fill="#7cc8d8" opacity=".7"/>` : "",
+    skillSlots.includes("side") ? `<circle cx="50" cy="43" r="6" fill="#d8a849"/><circle cx="50" cy="43" r="2.5" fill="${pigment.shadow}" opacity=".55"/>` : "",
+    skillSlots.includes("badge") ? `<rect x="47" y="24" width="11" height="17" rx="4" fill="#fff4dc"/><path d="M50 29 H55 M50 33 H54" stroke="#b9ad9b" stroke-width="1.4" stroke-linecap="round"/>` : "",
+    skillSlots.includes("charm") ? `<path d="M31 46 C29 50 29 53 32 55 C35 53 35 50 33 46 Z" fill="#d8a849"/><path d="M32 46 V41" stroke="#9a7331" stroke-width="2" stroke-linecap="round"/>` : ""
+  ].join("");
+  return [
+    `<svg xmlns="http://www.w3.org/2000/svg" width="${size}" height="${size}" viewBox="0 0 64 64">`,
+    `<ellipse cx="${center}" cy="43" rx="24" ry="10" fill="${pigment.shadow}" opacity=".45"/>`,
+    antennae,
+    head,
+    inner,
+    skillPieces,
+    eyes,
+    gear,
+    `<ellipse cx="24" cy="22" rx="8" ry="3" fill="${pigment.highlight}" opacity=".48" transform="rotate(-24 24 22)"/>`,
+    "</svg>"
+  ].join("");
 }
 function createLocalId(prefix) {
   const bytes = new Uint8Array(8);
@@ -734,7 +821,7 @@ function getDaemonConfig() {
     keyFilePath,
     keyFilePresent: existsSync4(keyFilePath),
     openaiConfigSource: openaiApiKey ? loadedOpenAIKeyPath || !hadProcessOpenAIKey ? "env-file" : "environment" : "missing",
-    version: process.env.npm_package_version ?? "0.1.0"
+    version: process.env.npm_package_version ?? "0.2.0"
   };
 }
 function getEnvLocalCandidates(startDirectory) {
@@ -1282,7 +1369,7 @@ var safeJSON = (text) => {
 };
 
 // ../../node_modules/.pnpm/openai@6.39.0/node_modules/openai/internal/utils/sleep.mjs
-var sleep = (ms) => new Promise((resolve4) => setTimeout(resolve4, ms));
+var sleep = (ms) => new Promise((resolve5) => setTimeout(resolve5, ms));
 
 // ../../node_modules/.pnpm/openai@6.39.0/node_modules/openai/version.mjs
 var VERSION = "6.39.0";
@@ -2361,8 +2448,8 @@ function addRequestID(value, response) {
 var _APIPromise_client;
 var APIPromise = class _APIPromise extends Promise {
   constructor(client, responsePromise, parseResponse2 = defaultParseResponse) {
-    super((resolve4) => {
-      resolve4(null);
+    super((resolve5) => {
+      resolve5(null);
     });
     this.responsePromise = responsePromise;
     this.parseResponse = parseResponse2;
@@ -3043,12 +3130,12 @@ var EventStream = class {
     _EventStream_errored.set(this, false);
     _EventStream_aborted.set(this, false);
     _EventStream_catchingPromiseCreated.set(this, false);
-    __classPrivateFieldSet(this, _EventStream_connectedPromise, new Promise((resolve4, reject) => {
-      __classPrivateFieldSet(this, _EventStream_resolveConnectedPromise, resolve4, "f");
+    __classPrivateFieldSet(this, _EventStream_connectedPromise, new Promise((resolve5, reject) => {
+      __classPrivateFieldSet(this, _EventStream_resolveConnectedPromise, resolve5, "f");
       __classPrivateFieldSet(this, _EventStream_rejectConnectedPromise, reject, "f");
     }), "f");
-    __classPrivateFieldSet(this, _EventStream_endPromise, new Promise((resolve4, reject) => {
-      __classPrivateFieldSet(this, _EventStream_resolveEndPromise, resolve4, "f");
+    __classPrivateFieldSet(this, _EventStream_endPromise, new Promise((resolve5, reject) => {
+      __classPrivateFieldSet(this, _EventStream_resolveEndPromise, resolve5, "f");
       __classPrivateFieldSet(this, _EventStream_rejectEndPromise, reject, "f");
     }), "f");
     __classPrivateFieldGet(this, _EventStream_connectedPromise, "f").catch(() => {
@@ -3132,11 +3219,11 @@ var EventStream = class {
    *   const message = await stream.emitted('message') // rejects if the stream errors
    */
   emitted(event) {
-    return new Promise((resolve4, reject) => {
+    return new Promise((resolve5, reject) => {
       __classPrivateFieldSet(this, _EventStream_catchingPromiseCreated, true, "f");
       if (event !== "error")
         this.once("error", reject);
-      this.once(event, resolve4);
+      this.once(event, resolve5);
     });
   }
   async done() {
@@ -4075,7 +4162,7 @@ var ChatCompletionStream = class _ChatCompletionStream extends AbstractChatCompl
           if (done) {
             return { value: void 0, done: true };
           }
-          return new Promise((resolve4, reject) => readQueue.push({ resolve: resolve4, reject })).then((chunk2) => chunk2 ? { value: chunk2, done: false } : { value: void 0, done: true });
+          return new Promise((resolve5, reject) => readQueue.push({ resolve: resolve5, reject })).then((chunk2) => chunk2 ? { value: chunk2, done: false } : { value: void 0, done: true });
         }
         const chunk = pushQueue.shift();
         return { value: chunk, done: false };
@@ -7174,7 +7261,7 @@ var AssistantStream = class extends EventStream {
           if (done) {
             return { value: void 0, done: true };
           }
-          return new Promise((resolve4, reject) => readQueue.push({ resolve: resolve4, reject })).then((chunk2) => chunk2 ? { value: chunk2, done: false } : { value: void 0, done: true });
+          return new Promise((resolve5, reject) => readQueue.push({ resolve: resolve5, reject })).then((chunk2) => chunk2 ? { value: chunk2, done: false } : { value: void 0, done: true });
         }
         const chunk = pushQueue.shift();
         return { value: chunk, done: false };
@@ -9243,7 +9330,7 @@ var ResponseStream = class _ResponseStream extends EventStream {
           if (done) {
             return { value: void 0, done: true };
           }
-          return new Promise((resolve4, reject) => readQueue.push({ resolve: resolve4, reject })).then((event2) => event2 ? { value: event2, done: false } : { value: void 0, done: true });
+          return new Promise((resolve5, reject) => readQueue.push({ resolve: resolve5, reject })).then((event2) => event2 ? { value: event2, done: false } : { value: void 0, done: true });
         }
         const event = pushQueue.shift();
         return { value: event, done: false };
@@ -10906,7 +10993,7 @@ function rememberRepoReaderResult(result) {
     skillLabel: skillLabels["repo-reader"],
     source: result.source,
     summary: result.summary,
-    detail: `${result.presentation.primary} / ${result.environment.mode}`,
+    detail: `${result.playground.label} / ${result.environment.mode}`,
     status: result.risks.some((risk) => risk !== "No obvious first-pass risk.") ? "warning" : "ready",
     createdAt: result.createdAt
   });
@@ -11001,14 +11088,17 @@ async function runRepoReader(request, fetcher = fetch) {
     fetcher
   );
   const rootItems = Array.isArray(rootContents) ? rootContents : [];
+  const directoryScans = await scanProjectDirectories(repoRef, defaultBranch, rootItems, fetcher);
+  const allItems = dedupeContentItems([...rootItems, ...directoryScans.flatMap((scan) => scan.items)]);
   const readmeText = await fetchOptionalReadme(repoRef, defaultBranch, fetcher);
-  const packageJson = await fetchOptionalPackageJson(repoRef, defaultBranch, rootItems, fetcher);
-  const stack = detectStack(repository, rootItems, packageJson);
-  const structure = describeStructure(rootItems);
-  const entrypoints = describeEntrypoints(rootItems, packageJson, readmeText);
-  const risks = describeRisks(repository, rootItems, packageJson, readmeText);
-  const presentation = detectPresentation(rootItems, packageJson, readmeText);
-  const environment = recommendEnvironment(presentation.primary, rootItems, packageJson);
+  const packageJsons = await fetchScannedPackageJsons(repoRef, defaultBranch, allItems, fetcher);
+  const stack = detectStack(repository, allItems, packageJsons);
+  const structure = describeStructure(allItems);
+  const entrypoints = describeEntrypoints(rootItems, allItems, packageJsons, readmeText);
+  const risks = describeRisks(repository, rootItems, allItems, packageJsons, readmeText);
+  const presentation = detectPresentation(rootItems, allItems, packageJsons, readmeText);
+  const environment = recommendEnvironment(presentation.primary, rootItems, allItems, packageJsons, presentation.surfaceMap);
+  const playground = recommendPlayground(presentation.primary, presentation.surfaces, environment.steps, packageJsons, presentation.surfaceMap);
   const title = repository.full_name || `${repoRef.owner}/${repoRef.repo}`;
   return {
     type: "repo-reader-result",
@@ -11030,18 +11120,14 @@ async function runRepoReader(request, fetcher = fetch) {
     },
     presentation,
     environment,
-    summary: buildSummary(title, repository, stack, risks, presentation.primary),
+    playground,
+    summary: buildSummary(title, repository, stack, risks, presentation.primary, playground.label),
     stack,
     entrypoints,
     structure,
     risks,
-    nextMoves: buildNextMoves(rootItems, packageJson),
-    playLoop: [
-      "Map the repo",
-      "Check entrypoints",
-      "Mark risk",
-      "Pick first move"
-    ],
+    nextMoves: buildNextMoves(rootItems, allItems, packageJsons, playground),
+    playLoop: playground.primaryLoop,
     createdAt: (/* @__PURE__ */ new Date()).toISOString()
   };
 }
@@ -11057,10 +11143,7 @@ async function fetchGithubJson(url, fetcher) {
   let response;
   try {
     response = await fetcher(url, {
-      headers: {
-        Accept: "application/vnd.github+json",
-        "User-Agent": "SUPERIOR-Alpha"
-      }
+      headers: createGithubHeaders()
     });
   } catch {
     throw new RepoReaderError("network_error", "SUPERIOR could not reach GitHub.");
@@ -11069,12 +11152,20 @@ async function fetchGithubJson(url, fetcher) {
     throw new RepoReaderError("not_found", "GitHub repo was not found.");
   }
   if (response.status === 403 || response.status === 429) {
-    throw new RepoReaderError("rate_limited", "GitHub rate-limited this repo read. Try again later.");
+    throw new RepoReaderError("rate_limited", "GitHub rate-limited this repo read. Add GITHUB_TOKEN locally or try later.");
   }
   if (!response.ok) {
     throw new RepoReaderError("network_error", `GitHub returned ${response.status}.`);
   }
   return await response.json();
+}
+function createGithubHeaders() {
+  const token = process.env.GITHUB_TOKEN || process.env.GH_TOKEN;
+  return {
+    Accept: "application/vnd.github+json",
+    "User-Agent": "SUPERIOR-Alpha",
+    ...token ? { Authorization: `Bearer ${token}` } : {}
+  };
 }
 async function fetchOptionalReadme(repoRef, defaultBranch, fetcher) {
   try {
@@ -11087,20 +11178,85 @@ async function fetchOptionalReadme(repoRef, defaultBranch, fetcher) {
     return "";
   }
 }
-async function fetchOptionalPackageJson(repoRef, defaultBranch, rootItems, fetcher) {
-  if (!rootItems.some((item) => item.name === "package.json" && item.type === "file")) {
-    return null;
-  }
+async function scanProjectDirectories(repoRef, defaultBranch, rootItems, fetcher) {
+  const firstPassPaths = selectFirstPassPaths(rootItems);
+  const firstPassScans = await Promise.all(
+    firstPassPaths.map((path2) => fetchOptionalDirectory(repoRef, defaultBranch, path2, fetcher))
+  );
+  const secondPassPaths = selectSecondPassPaths(firstPassScans);
+  const secondPassScans = await Promise.all(
+    secondPassPaths.map((path2) => fetchOptionalDirectory(repoRef, defaultBranch, path2, fetcher))
+  );
+  return [...firstPassScans, ...secondPassScans].filter((scan) => scan.items.length > 0);
+}
+function selectFirstPassPaths(rootItems) {
+  const usefulNames = /* @__PURE__ */ new Set([
+    ".github",
+    "api",
+    "app",
+    "apps",
+    "cli",
+    "daemon",
+    "desktop",
+    "docs",
+    "examples",
+    "extension",
+    "extensions",
+    "packages",
+    "server",
+    "src",
+    "web"
+  ]);
+  return rootItems.filter((item) => item.type === "dir" && item.name && usefulNames.has(item.name.toLowerCase()) && item.path).map((item) => item.path).slice(0, 10);
+}
+function selectSecondPassPaths(scans) {
+  const expandableParents = /* @__PURE__ */ new Set(["apps", "packages", "examples", "extensions"]);
+  return scans.filter((scan) => expandableParents.has(scan.path.toLowerCase())).flatMap((scan) => scan.items).filter((item) => item.type === "dir" && item.path).map((item) => item.path).slice(0, 14);
+}
+async function fetchOptionalDirectory(repoRef, defaultBranch, path2, fetcher) {
   try {
-    const packageContent = await fetchGithubJson(
-      `https://api.github.com/repos/${repoRef.owner}/${repoRef.repo}/contents/package.json?ref=${encodeURIComponent(defaultBranch)}`,
+    const items = await fetchGithubJson(
+      `https://api.github.com/repos/${repoRef.owner}/${repoRef.repo}/contents/${encodeGithubPath(path2)}?ref=${encodeURIComponent(defaultBranch)}`,
       fetcher
     );
-    const packageText = decodeGithubContent(packageContent);
-    return JSON.parse(packageText);
+    return {
+      path: path2,
+      items: Array.isArray(items) ? items : []
+    };
   } catch {
-    return null;
+    return {
+      path: path2,
+      items: []
+    };
   }
+}
+async function fetchScannedPackageJsons(repoRef, defaultBranch, allItems, fetcher) {
+  const packagePaths = allItems.filter((item) => item.type === "file" && item.name === "package.json" && item.path).map((item) => item.path).slice(0, 16);
+  const scans = await Promise.all(
+    packagePaths.map(async (packagePath) => {
+      try {
+        const packageContent = await fetchGithubJson(
+          `https://api.github.com/repos/${repoRef.owner}/${repoRef.repo}/contents/${encodeGithubPath(packagePath)}?ref=${encodeURIComponent(defaultBranch)}`,
+          fetcher
+        );
+        const packageText = decodeGithubContent(packageContent);
+        return {
+          path: getPackageDirectory(packagePath),
+          packageJson: JSON.parse(packageText)
+        };
+      } catch {
+        return null;
+      }
+    })
+  );
+  return scans.filter((scan) => Boolean(scan));
+}
+function encodeGithubPath(path2) {
+  return path2.split("/").map(encodeURIComponent).join("/");
+}
+function getPackageDirectory(packagePath) {
+  const slashIndex = packagePath.lastIndexOf("/");
+  return slashIndex === -1 ? "." : packagePath.slice(0, slashIndex);
 }
 function decodeGithubContent(content) {
   if (content.encoding !== "base64" || !content.content) {
@@ -11108,47 +11264,63 @@ function decodeGithubContent(content) {
   }
   return Buffer.from(content.content.replace(/\s+/g, ""), "base64").toString("utf8");
 }
-function detectStack(repository, rootItems, packageJson) {
+function dedupeContentItems(items) {
+  const seen = /* @__PURE__ */ new Set();
+  const deduped = [];
+  for (const item of items) {
+    const key = item.path || item.name;
+    if (!key || seen.has(key)) {
+      continue;
+    }
+    seen.add(key);
+    deduped.push(item);
+  }
+  return deduped;
+}
+function detectStack(repository, allItems, packageJsons) {
   const signals = /* @__PURE__ */ new Set();
-  const rootNames = new Set(rootItems.map((item) => item.name ?? ""));
-  const dependencyNames = /* @__PURE__ */ new Set([
-    ...Object.keys(packageJson?.dependencies ?? {}),
-    ...Object.keys(packageJson?.devDependencies ?? {})
-  ]);
+  const itemNames = new Set(allItems.map((item) => item.name ?? ""));
+  const dependencyNames = getAllDependencyNames(packageJsons);
   if (repository.language) {
     signals.add(repository.language);
   }
-  if (packageJson || rootNames.has("package.json")) {
+  if (packageJsons.length > 0 || itemNames.has("package.json")) {
     signals.add("Node");
   }
-  if (rootNames.has("tsconfig.json") || dependencyNames.has("typescript")) {
+  if (itemNames.has("tsconfig.json") || dependencyNames.has("typescript")) {
     signals.add("TypeScript");
   }
   if (dependencyNames.has("react") || dependencyNames.has("react-dom")) {
     signals.add("React");
   }
-  if (dependencyNames.has("vite") || rootNames.has("vite.config.ts") || rootNames.has("vite.config.js")) {
+  if (dependencyNames.has("vite") || hasItemPath(allItems, "vite.config.ts") || hasItemPath(allItems, "vite.config.js")) {
     signals.add("Vite");
   }
-  if (dependencyNames.has("@tauri-apps/api") || rootNames.has("src-tauri")) {
+  if (dependencyNames.has("next")) {
+    signals.add("Next.js");
+  }
+  if (dependencyNames.has("electron")) {
+    signals.add("Electron");
+  }
+  if (dependencyNames.has("@tauri-apps/api") || hasPathSegment(allItems, "src-tauri")) {
     signals.add("Tauri");
   }
-  if (rootNames.has("pyproject.toml") || rootNames.has("requirements.txt")) {
+  if (itemNames.has("pyproject.toml") || itemNames.has("requirements.txt")) {
     signals.add("Python");
   }
-  if (rootNames.has("Cargo.toml")) {
+  if (itemNames.has("Cargo.toml")) {
     signals.add("Rust");
   }
-  if (rootNames.has("go.mod")) {
+  if (itemNames.has("go.mod")) {
     signals.add("Go");
   }
-  if (rootNames.has("Dockerfile") || rootNames.has("docker-compose.yml")) {
+  if (itemNames.has("Dockerfile") || itemNames.has("docker-compose.yml") || itemNames.has("compose.yml")) {
     signals.add("Docker");
   }
-  return [...signals].slice(0, 8);
+  return [...signals].slice(0, 10);
 }
-function describeStructure(rootItems) {
-  return rootItems.filter((item) => item.name && item.path && (item.type === "file" || item.type === "dir")).slice(0, 16).map((item) => ({
+function describeStructure(allItems) {
+  return allItems.filter((item) => item.name && item.path && (item.type === "file" || item.type === "dir")).sort((left, right) => pathDepth(left.path ?? "") - pathDepth(right.path ?? "")).slice(0, 24).map((item) => ({
     path: item.path,
     kind: item.type === "dir" ? "directory" : "file",
     signal: describeRootSignal(item)
@@ -11156,59 +11328,72 @@ function describeStructure(rootItems) {
 }
 function describeRootSignal(item) {
   const name = item.name?.toLowerCase() ?? "";
-  if (["apps", "packages", "src", "lib", "server", "client"].includes(name)) {
+  const path2 = item.path?.toLowerCase() ?? "";
+  if (["apps", "packages", "src", "lib", "server", "client", "api", "daemon", "extension"].includes(name)) {
     return "core code";
   }
   if (["docs", "examples", "test", "tests", "__tests__"].includes(name)) {
     return "supporting path";
   }
-  if (["package.json", "pnpm-workspace.yaml", "turbo.json", "vite.config.ts", "tsconfig.json"].includes(name)) {
+  if (["package.json", "pnpm-workspace.yaml", "turbo.json", "vite.config.ts", "tsconfig.json", "manifest.json"].includes(name)) {
     return "project wiring";
+  }
+  if (path2.includes("src-tauri") || name === "cargo.toml") {
+    return "desktop runtime";
   }
   if (name.startsWith("readme") || name === "license") {
     return "repo guide";
   }
   return item.type === "dir" ? "folder" : "file";
 }
-function describeEntrypoints(rootItems, packageJson, readmeText) {
+function describeEntrypoints(rootItems, allItems, packageJsons, readmeText) {
   const entrypoints = /* @__PURE__ */ new Set();
   const rootNames = new Set(rootItems.map((item) => item.name ?? ""));
-  if (packageJson?.main) {
-    entrypoints.add(`main: ${packageJson.main}`);
-  }
-  if (packageJson?.bin) {
-    entrypoints.add("bin command");
-  }
-  for (const scriptName of ["dev", "start", "build", "test", "typecheck"]) {
-    const command = packageJson?.scripts?.[scriptName];
-    if (command) {
-      entrypoints.add(`${scriptName}: ${command}`);
+  for (const scannedPackage of packageJsons.slice(0, 6)) {
+    const prefix = scannedPackage.path === "." ? "" : `${scannedPackage.path} `;
+    if (scannedPackage.packageJson.main) {
+      entrypoints.add(`${prefix}main: ${scannedPackage.packageJson.main}`);
+    }
+    if (scannedPackage.packageJson.bin) {
+      entrypoints.add(`${prefix}bin command`);
+    }
+    for (const scriptName of ["dev", "start", "build", "test", "typecheck"]) {
+      const command = scannedPackage.packageJson.scripts?.[scriptName];
+      if (command) {
+        entrypoints.add(`${prefix}${scriptName}: ${command}`);
+      }
     }
   }
-  for (const name of ["apps", "packages", "src", "docs", "examples"]) {
+  for (const name of ["apps", "packages", "src", "docs", "examples", "extension", "server", "cli"]) {
     if (rootNames.has(name)) {
       entrypoints.add(name);
+    }
+  }
+  for (const item of allItems) {
+    if (["manifest.json", "Cargo.toml", "Dockerfile"].includes(item.name ?? "") && item.path) {
+      entrypoints.add(item.path);
     }
   }
   const headings = readmeText.split(/\r?\n/).filter((line) => /^#{1,3}\s+\S/.test(line)).map((line) => line.replace(/^#{1,3}\s+/, "").trim()).slice(0, 3);
   for (const heading of headings) {
     entrypoints.add(`README: ${heading}`);
   }
-  return [...entrypoints].slice(0, 10);
+  return [...entrypoints].slice(0, 12);
 }
-function describeRisks(repository, rootItems, packageJson, readmeText) {
+function describeRisks(repository, rootItems, allItems, packageJsons, readmeText) {
   const risks = [];
   const rootNames = new Set(rootItems.map((item) => item.name ?? ""));
+  const hasAnyTestScript = packageJsons.some((scannedPackage) => Boolean(scannedPackage.packageJson.scripts?.test));
   if (!readmeText.trim()) {
     risks.push("No README content found from GitHub.");
   }
   if (!repository.license) {
     risks.push("License is unclear.");
   }
-  if (packageJson && !packageJson.scripts?.test) {
-    risks.push("No package test script.");
+  if (packageJsons.length > 0 && !hasAnyTestScript) {
+    risks.push("No package test script found.");
   }
-  if (!rootNames.has("docs") && !rootNames.has("examples")) {
+  if (!rootNames.has("docs") && !rootNames.has("examples") && !hasPathSegment(allItems, "examples")) {
     risks.push("No top-level docs or examples folder.");
   }
   if (repository.updated_at) {
@@ -11220,89 +11405,75 @@ function describeRisks(repository, rootItems, packageJson, readmeText) {
   }
   return risks.length > 0 ? risks.slice(0, 5) : ["No obvious first-pass risk."];
 }
-function buildSummary(title, repository, stack, risks, primarySurface) {
-  const stackText = stack.length > 0 ? stack.slice(0, 3).join(", ") : repository.language || "unknown stack";
-  const riskText = risks[0] && risks[0] !== "No obvious first-pass risk." ? ` First risk: ${risks[0]}` : "";
-  return `${title} presents as ${surfaceLabel(primarySurface)} on a ${stackText} stack.${riskText}`;
-}
-function buildNextMoves(rootItems, packageJson) {
-  const rootNames = new Set(rootItems.map((item) => item.name ?? ""));
-  const moves = [];
-  if (rootNames.has("README.md")) {
-    moves.push("Read README setup path.");
-  }
-  if (packageJson?.scripts?.test) {
-    moves.push("Run the test script before changing files.");
-  }
-  if (packageJson?.scripts?.dev) {
-    moves.push("Start the dev script and inspect the first screen.");
-  }
-  if (rootNames.has("apps")) {
-    moves.push("Open apps folder to pick the active surface.");
-  }
-  if (rootNames.has("packages")) {
-    moves.push("Check shared packages before editing app code.");
-  }
-  return moves.length > 0 ? moves.slice(0, 5) : ["Open root files and identify the main entrypoint."];
-}
-function detectPresentation(rootItems, packageJson, readmeText) {
-  const rootNames = new Set(rootItems.map((item) => item.name ?? ""));
-  const dependencyNames = /* @__PURE__ */ new Set([
-    ...Object.keys(packageJson?.dependencies ?? {}),
-    ...Object.keys(packageJson?.devDependencies ?? {})
-  ]);
-  const scriptNames = new Set(Object.keys(packageJson?.scripts ?? {}));
+function detectPresentation(rootItems, allItems, packageJsons, readmeText) {
   const readme = readmeText.toLowerCase();
-  const surfaces = /* @__PURE__ */ new Set();
-  const signals = [];
-  if (rootNames.has("src-tauri") || dependencyNames.has("@tauri-apps/api") || readme.includes(".exe")) {
-    surfaces.add("desktop-exe");
-    signals.push("desktop packaging signal");
+  const dependencyNames = getAllDependencyNames(packageJsons);
+  const scriptNames = getAllScriptNames(packageJsons);
+  const rootNames = new Set(rootItems.map((item) => item.name ?? ""));
+  const surfaceMap = [];
+  const addSurface = (surface, path2, confidence, reason) => {
+    if (surfaceMap.some((signal) => signal.surface === surface && signal.path === path2 && signal.reason === reason)) {
+      return;
+    }
+    surfaceMap.push({
+      surface,
+      path: path2,
+      confidence,
+      reason
+    });
+  };
+  if (hasPathSegment(allItems, "src-tauri") || dependencyNames.has("@tauri-apps/api")) {
+    addSurface("desktop-exe", findFirstPath(allItems, "src-tauri") ?? ".", "high", "Tauri desktop shell");
   }
-  if (rootNames.has("manifest.json") || readme.includes("chrome extension") || readme.includes("mv3")) {
-    surfaces.add("browser-extension");
-    signals.push("browser extension signal");
+  if (dependencyNames.has("electron") || readme.includes("electron")) {
+    addSurface("desktop-exe", findPackagePath(packageJsons, "electron") ?? ".", "high", "Electron desktop shell");
   }
-  if (dependencyNames.has("vite") || dependencyNames.has("next") || dependencyNames.has("@remix-run/react") || rootNames.has("index.html") || scriptNames.has("dev")) {
-    surfaces.add("web-app");
-    signals.push("web runtime signal");
+  if (readme.includes(".exe") || readme.includes("installer")) {
+    addSurface("desktop-exe", "README", "medium", "desktop packaging language");
   }
-  if (dependencyNames.has("express") || dependencyNames.has("fastify") || dependencyNames.has("hono") || rootNames.has("Dockerfile") || rootNames.has("docker-compose.yml") || scriptNames.has("start")) {
-    surfaces.add("local-service");
-    signals.push("service runtime signal");
+  if (allItems.some((item) => item.name === "manifest.json")) {
+    addSurface("browser-extension", findFirstPath(allItems, "manifest.json") ?? ".", "medium", "extension manifest");
   }
-  if (packageJson?.bin || rootNames.has("bin") || readme.includes("cli")) {
-    surfaces.add("cli");
-    signals.push("command-line signal");
+  if (readme.includes("chrome extension") || readme.includes("browser extension") || readme.includes("mv3")) {
+    addSurface("browser-extension", "README", "high", "browser extension language");
   }
-  if (rootNames.has("packages") || rootNames.has("pnpm-workspace.yaml") || rootNames.has("turbo.json")) {
-    surfaces.add("monorepo");
-    signals.push("workspace signal");
+  if (dependencyNames.has("vite") || dependencyNames.has("next") || dependencyNames.has("@remix-run/react") || dependencyNames.has("react") || dependencyNames.has("svelte") || dependencyNames.has("vue") || allItems.some((item) => item.name === "index.html") || scriptNames.has("dev")) {
+    addSurface("web-app", findPackageWithScript(packageJsons, "dev")?.path ?? ".", "high", "interactive app runtime");
   }
-  if (packageJson && !scriptNames.has("dev") && !scriptNames.has("start") && !packageJson.bin) {
-    surfaces.add("library");
-    signals.push("package/library signal");
+  if (dependencyNames.has("express") || dependencyNames.has("fastify") || dependencyNames.has("hono") || dependencyNames.has("@nestjs/core") || allItems.some((item) => item.name === "Dockerfile" || item.name === "docker-compose.yml" || item.name === "compose.yml") || hasPathSegment(allItems, "server") || hasPathSegment(allItems, "api") || scriptNames.has("start")) {
+    addSurface("local-service", findPackageWithScript(packageJsons, "start")?.path ?? "server", "high", "local service runtime");
+  }
+  if (packageJsons.some((scannedPackage) => scannedPackage.packageJson.bin) || hasPathSegment(allItems, "bin") || hasPathSegment(allItems, "cli") || readme.includes("cli")) {
+    addSurface("cli", findPackageWithBin(packageJsons)?.path ?? "cli", "high", "command surface");
+  }
+  if (rootNames.has("apps") || rootNames.has("packages") || rootNames.has("pnpm-workspace.yaml") || rootNames.has("turbo.json") || rootNames.has("nx.json")) {
+    addSurface("monorepo", ".", "high", "workspace layout");
+  }
+  if (packageJsons.some((scannedPackage) => isLibraryPackage(scannedPackage.packageJson))) {
+    addSurface("library", findLibraryPackage(packageJsons)?.path ?? ".", "medium", "package export surface");
   }
   if (rootNames.has("docs") || readmeText.trim()) {
-    surfaces.add("docs");
-    signals.push("documentation signal");
+    addSurface("docs", rootNames.has("docs") ? "docs" : "README", readmeText.trim() ? "high" : "medium", "documentation surface");
   }
-  if (surfaces.size === 0) {
-    surfaces.add("unknown");
-    signals.push("not enough root signals");
+  if (surfaceMap.length === 0) {
+    addSurface("unknown", ".", "low", "not enough root signals");
   }
-  const orderedSurfaces = [...surfaces].sort((left, right) => surfacePriority(left) - surfacePriority(right));
+  const surfaces = [...new Set(surfaceMap.map((signal) => signal.surface))].sort(
+    (left, right) => surfacePriority(left) - surfacePriority(right)
+  );
   return {
-    primary: orderedSurfaces[0] ?? "unknown",
-    surfaces: orderedSurfaces,
-    signals: signals.slice(0, 6)
+    primary: surfaces[0] ?? "unknown",
+    surfaces,
+    signals: surfaceMap.map((signal) => signal.reason).slice(0, 8),
+    surfaceMap: surfaceMap.sort((left, right) => surfacePriority(left.surface) - surfacePriority(right.surface)).slice(0, 10)
   };
 }
-function recommendEnvironment(primarySurface, rootItems, packageJson) {
+function recommendEnvironment(primarySurface, rootItems, allItems, packageJsons, surfaceMap) {
   const steps = [];
   const rootNames = new Set(rootItems.map((item) => item.name ?? ""));
-  const scripts = packageJson?.scripts ?? {};
-  if (rootNames.has("README.md")) {
+  const targetPackage = pickTargetPackage(primarySurface, packageJsons, surfaceMap);
+  const scripts = targetPackage?.packageJson.scripts ?? {};
+  if (rootNames.has("README.md") || rootNames.has("readme.md")) {
     steps.push({
       label: "Learn",
       note: "Read README before touching runtime commands."
@@ -11326,7 +11497,7 @@ function recommendEnvironment(primarySurface, rootItems, packageJson) {
       command: "corepack yarn install",
       note: "Repo advertises Yarn lockfile."
     });
-  } else if (packageJson) {
+  } else if (packageJsons.length > 0) {
     steps.push({
       label: "Install",
       command: "npm install",
@@ -11336,62 +11507,269 @@ function recommendEnvironment(primarySurface, rootItems, packageJson) {
   if (scripts.typecheck) {
     steps.push({
       label: "Check",
-      command: npmLikeCommand(rootNames, "typecheck"),
+      command: packageScriptCommand(rootNames, targetPackage?.path ?? ".", "typecheck"),
       note: "Typecheck before edits."
     });
   }
   if (scripts.test) {
     steps.push({
       label: "Test",
-      command: npmLikeCommand(rootNames, "test"),
+      command: packageScriptCommand(rootNames, targetPackage?.path ?? ".", "test"),
       note: "Use tests as the first robot confidence gate."
     });
   }
   if (primarySurface === "browser-extension") {
     steps.push({
       label: "Run",
-      ...scripts.build ? { command: npmLikeCommand(rootNames, "build") } : {},
-      note: "Build the extension, then load the output folder unpacked in Chrome."
+      ...scripts.build ? { command: packageScriptCommand(rootNames, targetPackage?.path ?? ".", "build") } : {},
+      note: "Build the extension, then load the output folder into SUPERIOR Browser."
     });
   } else if (primarySurface === "desktop-exe") {
     steps.push({
       label: "Run",
-      ...scripts["tauri:build"] ? { command: npmLikeCommand(rootNames, "tauri:build") } : scripts.dev ? { command: npmLikeCommand(rootNames, "dev") } : {},
-      note: "Treat as a desktop app; check packaged resources and local service startup."
+      ...scripts["tauri:dev"] ? { command: packageScriptCommand(rootNames, targetPackage?.path ?? ".", "tauri:dev") } : scripts.dev ? { command: packageScriptCommand(rootNames, targetPackage?.path ?? ".", "dev") } : scripts["tauri:build"] ? { command: packageScriptCommand(rootNames, targetPackage?.path ?? ".", "tauri:build") } : {},
+      note: "Treat as a desktop app; check packaged resources and local process startup."
     });
   } else if (primarySurface === "local-service") {
     steps.push({
       label: "Run",
-      ...scripts.dev ? { command: npmLikeCommand(rootNames, "dev") } : scripts.start ? { command: npmLikeCommand(rootNames, "start") } : {},
-      note: "Start the service on loopback and inspect health routes."
+      ...scripts.dev ? { command: packageScriptCommand(rootNames, targetPackage?.path ?? ".", "dev") } : scripts.start ? { command: packageScriptCommand(rootNames, targetPackage?.path ?? ".", "start") } : allItems.some((item) => item.name === "docker-compose.yml" || item.name === "compose.yml") ? { command: "docker compose up" } : {},
+      note: "Start the service on loopback and inspect health, routes, and logs."
     });
   } else if (primarySurface === "web-app") {
     steps.push({
       label: "Run",
-      ...scripts.dev ? { command: npmLikeCommand(rootNames, "dev") } : {},
-      note: "Start the dev server and open the first screen."
+      ...scripts.dev ? { command: packageScriptCommand(rootNames, targetPackage?.path ?? ".", "dev") } : {},
+      note: "Start the dev server and open it in SUPERIOR Browser."
     });
   } else if (primarySurface === "cli") {
     steps.push({
       label: "Run",
-      ...scripts.build ? { command: npmLikeCommand(rootNames, "build") } : {},
-      note: "Build first, then inspect bin commands."
+      ...scripts.build ? { command: packageScriptCommand(rootNames, targetPackage?.path ?? ".", "build") } : {},
+      note: "Build first, then inspect help/version commands in a terminal cage."
     });
   }
   return {
     mode: ["web-app", "local-service", "desktop-exe", "browser-extension", "cli"].includes(primarySurface) ? "both" : "learn",
     summary: environmentSummary(primarySurface),
-    steps: steps.slice(0, 7)
+    steps: steps.slice(0, 8)
   };
 }
-function npmLikeCommand(rootNames, scriptName) {
+function recommendPlayground(primarySurface, surfaces, environmentSteps, packageJsons, surfaceMap) {
+  const launchTargets = buildLaunchTargets(primarySurface, packageJsons, surfaceMap);
+  const checks = environmentSteps.filter((step) => ["Install", "Check", "Test"].includes(step.label)).slice(0, 4);
+  const commonNotes = surfaces.includes("monorepo") ? ["Monorepo detected. Pick one runnable app before broad changes."] : [];
+  switch (primarySurface) {
+    case "web-app":
+      return makePlayground({
+        kind: "superior-browser",
+        label: "SUPERIOR Browser",
+        robotRole: "Open the app in a controlled browser profile, watch console/network, and use page skills on the running screen.",
+        permissions: ["read-repo", "local-files", "terminal", "service-control", "browser-control"],
+        primaryLoop: ["Map repo", "Install deps", "Start dev server", "Open own browser", "Inspect first screen"],
+        launchTargets,
+        checks,
+        notes: ["Best fit when the project has a visible app surface.", ...commonNotes]
+      });
+    case "browser-extension":
+      return makePlayground({
+        kind: "extension-lab",
+        label: "Extension Lab",
+        robotRole: "Build the extension, load it into a controlled browser profile, then test popup, background, and page actions.",
+        permissions: ["read-repo", "local-files", "terminal", "browser-control", "extension-control"],
+        primaryLoop: ["Map manifest", "Build extension", "Load unpacked", "Open test page", "Try extension action"],
+        launchTargets,
+        checks,
+        notes: ["The extension should run in its own browser profile before touching the user's everyday browser.", ...commonNotes]
+      });
+    case "local-service":
+      return makePlayground({
+        kind: "service-loop",
+        label: "Loopback Bench",
+        robotRole: "Start the service locally, inspect health/routes/logs, then feed results back into the Workshop.",
+        permissions: ["read-repo", "local-files", "terminal", "service-control"],
+        primaryLoop: ["Map service", "Install deps", "Start loopback", "Check health", "Read logs"],
+        launchTargets,
+        checks,
+        notes: ["Use loopback first. External credentials stay explicit and local.", ...commonNotes]
+      });
+    case "desktop-exe":
+      return makePlayground({
+        kind: "desktop-bench",
+        label: "Desktop Bench",
+        robotRole: "Run the desktop shell, watch bundled resources and helper processes, then verify the packaged app path.",
+        permissions: ["read-repo", "local-files", "terminal", "service-control"],
+        primaryLoop: ["Map desktop shell", "Install deps", "Run app", "Watch helper process", "Check package path"],
+        launchTargets,
+        checks,
+        notes: ["Desktop apps often hide a webview, service, or extension inside the package.", ...commonNotes]
+      });
+    case "cli":
+      return makePlayground({
+        kind: "terminal-cage",
+        label: "Terminal Cage",
+        robotRole: "Build or link the command, run help/version checks, and keep command output attached to the repo notes.",
+        permissions: ["read-repo", "local-files", "terminal"],
+        primaryLoop: ["Map command", "Install deps", "Build", "Run help", "Save command notes"],
+        launchTargets,
+        checks,
+        notes: ["Start with help/version and dry checks before repo-specific commands.", ...commonNotes]
+      });
+    case "library":
+      return makePlayground({
+        kind: "package-shelf",
+        label: "Package Shelf",
+        robotRole: "Read exports, examples, and tests so the robot can learn the package before making an adapter.",
+        permissions: ["read-repo", "local-files", "terminal"],
+        primaryLoop: ["Map exports", "Read examples", "Run tests", "Sketch adapter", "Stow notes"],
+        launchTargets,
+        checks,
+        notes: ["Libraries become useful when SUPERIOR learns their public entrypoints.", ...commonNotes]
+      });
+    case "docs":
+      return makePlayground({
+        kind: "docs-table",
+        label: "Docs Table",
+        robotRole: "Read the docs as the playable surface and turn them into concrete commands or adapter notes.",
+        permissions: ["read-repo", "local-files", "browser-control"],
+        primaryLoop: ["Open docs", "Map sections", "Extract commands", "Mark gaps", "Save notes"],
+        launchTargets,
+        checks,
+        notes: ["Docs-only repos should become study notes before runtime work.", ...commonNotes]
+      });
+    case "monorepo":
+    case "unknown":
+    default:
+      return makePlayground({
+        kind: "repo-map",
+        label: "Repo Map",
+        robotRole: "Map the folders, choose the first runnable surface, then switch to the matching playpen.",
+        permissions: ["read-repo", "local-files"],
+        primaryLoop: ["Map repo", "Find apps", "Pick surface", "Check risk", "Choose playpen"],
+        launchTargets,
+        checks,
+        notes: ["No single runtime is clear yet.", ...commonNotes]
+      });
+  }
+}
+function makePlayground(input) {
+  return input;
+}
+function buildSummary(title, repository, stack, risks, primarySurface, playgroundLabel) {
+  const stackText = stack.length > 0 ? stack.slice(0, 3).join(", ") : repository.language || "unknown stack";
+  const riskText = risks[0] && risks[0] !== "No obvious first-pass risk." ? ` First risk: ${risks[0]}` : "";
+  return `${title} presents as ${surfaceLabel(primarySurface)} on a ${stackText} stack. Use ${playgroundLabel}.${riskText}`;
+}
+function buildNextMoves(rootItems, allItems, packageJsons, playground) {
+  const rootNames = new Set(rootItems.map((item) => item.name ?? ""));
+  const moves = [];
+  if (rootNames.has("README.md") || rootNames.has("readme.md")) {
+    moves.push("Read README setup path.");
+  }
+  if (packageJsons.some((scannedPackage) => scannedPackage.packageJson.scripts?.test)) {
+    moves.push("Run the test script before changing files.");
+  }
+  if (packageJsons.some((scannedPackage) => scannedPackage.packageJson.scripts?.dev)) {
+    moves.push("Start the dev script and inspect the first screen.");
+  }
+  if (hasPathSegment(allItems, "apps")) {
+    moves.push("Open apps folder to pick the active surface.");
+  }
+  if (hasPathSegment(allItems, "packages")) {
+    moves.push("Check shared packages before editing app code.");
+  }
+  moves.push(`Use ${playground.label} as the first playpen.`);
+  return moves.slice(0, 6);
+}
+function pickTargetPackage(primarySurface, packageJsons, surfaceMap) {
+  const mappedPath = surfaceMap.find((signal) => signal.surface === primarySurface)?.path;
+  const exactPackage = mappedPath ? packageJsons.find((scannedPackage) => scannedPackage.path === mappedPath || mappedPath.startsWith(scannedPackage.path)) : null;
+  if (exactPackage) {
+    return exactPackage;
+  }
+  if (primarySurface === "cli") {
+    return findPackageWithBin(packageJsons) ?? packageJsons[0] ?? null;
+  }
+  if (primarySurface === "web-app" || primarySurface === "desktop-exe" || primarySurface === "local-service") {
+    return findPackageWithScript(packageJsons, "dev") ?? findPackageWithScript(packageJsons, "start") ?? packageJsons[0] ?? null;
+  }
+  if (primarySurface === "browser-extension") {
+    return findPackageWithScript(packageJsons, "build") ?? packageJsons[0] ?? null;
+  }
+  return packageJsons[0] ?? null;
+}
+function buildLaunchTargets(primarySurface, packageJsons, surfaceMap) {
+  const targets = /* @__PURE__ */ new Set();
+  for (const signal of surfaceMap) {
+    if (signal.surface === primarySurface && signal.path) {
+      targets.add(signal.path);
+    }
+  }
+  for (const scannedPackage of packageJsons) {
+    const scripts = scannedPackage.packageJson.scripts ?? {};
+    if (scripts.dev || scripts.start || scripts.build || scannedPackage.packageJson.bin) {
+      targets.add(scannedPackage.path);
+    }
+  }
+  return [...targets].filter(Boolean).slice(0, 5);
+}
+function packageScriptCommand(rootNames, packagePath, scriptName) {
   if (rootNames.has("pnpm-lock.yaml")) {
-    return `corepack pnpm ${scriptName}`;
+    return packagePath === "." ? `corepack pnpm ${scriptName}` : `corepack pnpm --dir ${packagePath} ${scriptName}`;
   }
   if (rootNames.has("yarn.lock")) {
-    return `corepack yarn ${scriptName}`;
+    return packagePath === "." ? `corepack yarn ${scriptName}` : `corepack yarn --cwd ${packagePath} ${scriptName}`;
   }
-  return `npm run ${scriptName}`;
+  return packagePath === "." ? `npm run ${scriptName}` : `npm --prefix ${packagePath} run ${scriptName}`;
+}
+function getAllDependencyNames(packageJsons) {
+  return new Set(
+    packageJsons.flatMap((scannedPackage) => [
+      ...Object.keys(scannedPackage.packageJson.dependencies ?? {}),
+      ...Object.keys(scannedPackage.packageJson.devDependencies ?? {})
+    ])
+  );
+}
+function getAllScriptNames(packageJsons) {
+  return new Set(packageJsons.flatMap((scannedPackage) => Object.keys(scannedPackage.packageJson.scripts ?? {})));
+}
+function findPackageWithScript(packageJsons, scriptName) {
+  return packageJsons.find((scannedPackage) => Boolean(scannedPackage.packageJson.scripts?.[scriptName])) ?? null;
+}
+function findPackageWithBin(packageJsons) {
+  return packageJsons.find((scannedPackage) => Boolean(scannedPackage.packageJson.bin)) ?? null;
+}
+function findLibraryPackage(packageJsons) {
+  return packageJsons.find((scannedPackage) => isLibraryPackage(scannedPackage.packageJson)) ?? null;
+}
+function findPackagePath(packageJsons, dependencyName) {
+  return packageJsons.find(
+    (scannedPackage) => Boolean(scannedPackage.packageJson.dependencies?.[dependencyName] || scannedPackage.packageJson.devDependencies?.[dependencyName])
+  )?.path ?? null;
+}
+function isLibraryPackage(packageJson) {
+  const scripts = packageJson.scripts ?? {};
+  return Boolean(packageJson.main || packageJson.module || packageJson.types || packageJson.exports) && !scripts.dev && !scripts.start;
+}
+function hasItemPath(items, fileName) {
+  return items.some((item) => item.name === fileName || item.path === fileName || item.path?.endsWith(`/${fileName}`));
+}
+function hasPathSegment(items, segment) {
+  const normalizedSegment = segment.toLowerCase();
+  return items.some(
+    (item) => (item.path ?? "").toLowerCase().split("/").includes(normalizedSegment)
+  );
+}
+function findFirstPath(items, nameOrSegment) {
+  const normalized = nameOrSegment.toLowerCase();
+  const item = items.find((candidate) => {
+    const path2 = candidate.path?.toLowerCase() ?? "";
+    return candidate.name?.toLowerCase() === normalized || path2.split("/").includes(normalized);
+  });
+  return item?.path ?? null;
+}
+function pathDepth(path2) {
+  return path2.split("/").length;
 }
 function surfacePriority(surface) {
   const priority = {
@@ -11426,13 +11804,13 @@ function environmentSummary(surface) {
     return "Spin it up like a packaged app, then let SUPERIOR watch the local runtime and resources.";
   }
   if (surface === "browser-extension") {
-    return "Build the extension and let SUPERIOR pair with the browser surface.";
+    return "Build the extension and let SUPERIOR pair it with a controlled browser profile.";
   }
   if (surface === "local-service") {
     return "Start the service locally and let SUPERIOR inspect health, routes, and logs.";
   }
   if (surface === "web-app") {
-    return "Run the dev server and let SUPERIOR inspect the first screen.";
+    return "Run the dev server and let SUPERIOR inspect it in its own browser.";
   }
   if (surface === "cli") {
     return "Build or link the command, then let SUPERIOR run small dry checks.";
@@ -11440,9 +11818,912 @@ function environmentSummary(surface) {
   return "Use learn mode first: read docs, map entrypoints, then decide whether it can run.";
 }
 
+// src/repoWorkspaceStore.ts
+import { existsSync as existsSync6, mkdirSync as mkdirSync4, readFileSync as readFileSync5, writeFileSync as writeFileSync4 } from "node:fs";
+import { dirname as dirname5, join as join7 } from "node:path";
+var repoWorkspaceFileName = "repo-workspaces.json";
+var maxRepoWorkspaceRecords = 32;
+function readRepoWorkspaceRecords() {
+  return {
+    type: "repo-workspace-records",
+    items: readStoredRepoWorkspaceRecords().items,
+    createdAt: (/* @__PURE__ */ new Date()).toISOString()
+  };
+}
+function readRepoWorkspaceRecord(repoWorkspaceId) {
+  const normalizedId = repoWorkspaceId.trim().toLowerCase();
+  if (!normalizedId) {
+    return null;
+  }
+  return readStoredRepoWorkspaceRecords().items.find((item) => item.id === normalizedId) ?? null;
+}
+function rememberRepoWorkspaceRecord(result) {
+  const stored = readStoredRepoWorkspaceRecords();
+  const id = createRepoWorkspaceId(result);
+  const existingRecord = stored.items.find((item) => item.id === id);
+  const now = result.createdAt;
+  const record = {
+    type: "repo-workspace-record",
+    id,
+    source: result.source,
+    repository: result.repository,
+    presentation: result.presentation,
+    environment: result.environment,
+    playground: result.playground,
+    stack: result.stack,
+    risks: result.risks,
+    nextMoves: result.nextMoves,
+    ...existingRecord?.localPath ? { localPath: existingRecord.localPath } : {},
+    ...existingRecord?.profilePath ? { profilePath: existingRecord.profilePath } : {},
+    ...existingRecord?.lastBrowserSessionId ? { lastBrowserSessionId: existingRecord.lastBrowserSessionId } : {},
+    ...existingRecord?.lastBrowserEventSummary ? { lastBrowserEventSummary: existingRecord.lastBrowserEventSummary } : {},
+    ...existingRecord?.lastBrowserInspection ? { lastBrowserInspection: existingRecord.lastBrowserInspection } : {},
+    nextMove: result.nextMoves[0] ?? result.playground.primaryLoop[0] ?? "Start Playpen",
+    notes: existingRecord?.notes ?? [],
+    createdAt: existingRecord?.createdAt ?? now,
+    updatedAt: now
+  };
+  const items = [record, ...stored.items.filter((item) => item.id !== id)].slice(0, maxRepoWorkspaceRecords);
+  writeStoredRepoWorkspaceRecords({
+    items
+  });
+  return record;
+}
+function rememberRepoWorkspaceBrowserSession(repoWorkspaceId, details) {
+  const stored = readStoredRepoWorkspaceRecords();
+  const normalizedId = repoWorkspaceId.trim().toLowerCase();
+  const existingRecord = stored.items.find((item) => item.id === normalizedId);
+  if (!existingRecord) {
+    return null;
+  }
+  const record = {
+    ...existingRecord,
+    profilePath: details.profilePath,
+    lastBrowserSessionId: details.sessionId,
+    lastBrowserEventSummary: details.lastBrowserEventSummary,
+    ...details.lastBrowserInspection ? { lastBrowserInspection: details.lastBrowserInspection } : existingRecord.lastBrowserInspection ? { lastBrowserInspection: existingRecord.lastBrowserInspection } : {},
+    nextMove: details.lastBrowserEventSummary,
+    updatedAt: (/* @__PURE__ */ new Date()).toISOString()
+  };
+  const items = [record, ...stored.items.filter((item) => item.id !== normalizedId)].slice(0, maxRepoWorkspaceRecords);
+  writeStoredRepoWorkspaceRecords({
+    items
+  });
+  return record;
+}
+function readStoredRepoWorkspaceRecords() {
+  const filePath = getRepoWorkspaceFilePath();
+  try {
+    if (!existsSync6(filePath)) {
+      return {
+        items: []
+      };
+    }
+    const parsed = JSON.parse(readFileSync5(filePath, "utf8"));
+    return {
+      items: Array.isArray(parsed.items) ? parsed.items.filter(isRepoWorkspaceRecord).slice(0, maxRepoWorkspaceRecords) : []
+    };
+  } catch {
+    return {
+      items: []
+    };
+  }
+}
+function writeStoredRepoWorkspaceRecords(records) {
+  const filePath = getRepoWorkspaceFilePath();
+  mkdirSync4(dirname5(filePath), {
+    recursive: true
+  });
+  writeFileSync4(filePath, JSON.stringify(records, null, 2), "utf8");
+}
+function getRepoWorkspaceFilePath() {
+  return join7(getSuperiorStateDirectory(), "repos", repoWorkspaceFileName);
+}
+function createRepoWorkspaceId(result) {
+  return `${result.repository.owner}/${result.repository.name}`.toLowerCase();
+}
+function isRepoWorkspaceRecord(item) {
+  const candidate = item;
+  return candidate.type === "repo-workspace-record" && typeof candidate.id === "string" && typeof candidate.source?.url === "string" && typeof candidate.source?.title === "string" && typeof candidate.repository?.owner === "string" && typeof candidate.repository?.name === "string" && typeof candidate.presentation?.primary === "string" && typeof candidate.environment?.mode === "string" && typeof candidate.playground?.label === "string" && Array.isArray(candidate.stack) && Array.isArray(candidate.risks) && Array.isArray(candidate.nextMoves) && Array.isArray(candidate.notes) && typeof candidate.createdAt === "string" && typeof candidate.updatedAt === "string";
+}
+
+// src/browserRuntime.ts
+import { spawn } from "node:child_process";
+import { existsSync as existsSync7, mkdirSync as mkdirSync5, readdirSync } from "node:fs";
+import { createServer } from "node:net";
+import { dirname as dirname6, join as join8, parse as parse2, resolve as resolve4 } from "node:path";
+var sessionTokenTtlMs = 5 * 60 * 1e3;
+var maxBrowserEvents = 60;
+var activeRuntime = null;
+var lastSessionId;
+var browserEvents = [];
+var BrowserRuntimeError = class extends Error {
+  constructor(code, message) {
+    super(message);
+    this.code = code;
+  }
+  code;
+};
+function getSuperiorBrowserState() {
+  const status = activeRuntime ? activeRuntime.session.status : findBrowserExecutable() ? "closed" : "missing-browser";
+  return {
+    type: "superior-browser-state",
+    status,
+    ...activeRuntime ? { activeSession: toPublicSession(activeRuntime.session) } : {},
+    createdAt: (/* @__PURE__ */ new Date()).toISOString()
+  };
+}
+function getSuperiorBrowserEvents() {
+  const sessionId = activeRuntime?.session.sessionId ?? lastSessionId;
+  const items = sessionId ? browserEvents.filter((event) => event.sessionId === sessionId) : browserEvents;
+  return {
+    type: "superior-browser-events",
+    ...sessionId ? { sessionId } : {},
+    items,
+    createdAt: (/* @__PURE__ */ new Date()).toISOString()
+  };
+}
+async function inspectSuperiorBrowser() {
+  const session = activeRuntime?.session;
+  if (!session) {
+    throw new BrowserRuntimeError("not_running", "Start a playpen before inspecting SUPERIOR Browser.");
+  }
+  const inspection = await readSuperiorBrowserInspection(session);
+  session.inspection = inspection;
+  maybeRecordInspectionEvent(session, inspection);
+  return {
+    type: "superior-browser-inspect-result",
+    state: getSuperiorBrowserState(),
+    inspection,
+    createdAt: (/* @__PURE__ */ new Date()).toISOString()
+  };
+}
+async function startSuperiorBrowser(request) {
+  const repoWorkspace = readRepoWorkspaceRecord(request.repoWorkspaceId);
+  if (!repoWorkspace) {
+    throw new BrowserRuntimeError("unknown_repo", "Read this repo before starting a playpen.");
+  }
+  const browser = findBrowserExecutable();
+  if (!browser) {
+    activeRuntime = null;
+    throw new BrowserRuntimeError("missing_browser", "Install Chrome or Edge, or set SUPERIOR_BROWSER_PATH.");
+  }
+  const extensionPath = findExtensionFolder();
+  if (!extensionPath) {
+    throw new BrowserRuntimeError("missing_extension", "Build the SUPERIOR extension before starting a playpen.");
+  }
+  await stopSuperiorBrowser();
+  const profilePath = getProfilePath(repoWorkspace.id);
+  const debugPort = await allocateLocalPort();
+  const sessionId = createLocalId("browser_session");
+  const sessionToken = createLocalId("browser_token");
+  const pairing = startBrowserPairing();
+  const startedAt = (/* @__PURE__ */ new Date()).toISOString();
+  const mode = getSessionMode(repoWorkspace);
+  const homeUrl = `http://127.0.0.1:${getDaemonPort()}/browser-session/${encodeURIComponent(sessionId)}/home`;
+  const session = {
+    sessionId,
+    repoWorkspaceId: repoWorkspace.id,
+    repoTitle: repoWorkspace.source.title,
+    mode,
+    status: "starting",
+    browserKind: browser.kind,
+    browserPath: browser.path,
+    profilePath,
+    debugPort,
+    homeUrl,
+    repoUrl: repoWorkspace.source.url,
+    playpenLabel: repoWorkspace.playground.label,
+    startedAt,
+    bot: request.bot,
+    sessionToken,
+    sessionTokenExpiresAt: Date.now() + sessionTokenTtlMs,
+    pairingToken: pairing.pairingToken,
+    attached: false
+  };
+  mkdirSync5(profilePath, {
+    recursive: true
+  });
+  const args = [
+    `--user-data-dir=${profilePath}`,
+    `--remote-debugging-port=${debugPort}`,
+    `--disable-extensions-except=${extensionPath}`,
+    `--load-extension=${extensionPath}`,
+    "--no-first-run",
+    "--disable-default-apps",
+    homeUrl,
+    repoWorkspace.source.url
+  ];
+  const child = spawn(browser.path, args, {
+    stdio: "ignore",
+    detached: false,
+    windowsHide: false
+  });
+  if (child.pid) {
+    session.processId = child.pid;
+  }
+  activeRuntime = {
+    session,
+    child
+  };
+  recordBrowserEvent(session, "started", "Started", `${browser.kind} profile opened`);
+  recordBrowserEvent(session, "repo_opened", "Repo opened", repoWorkspace.source.url);
+  child.once("spawn", () => {
+    if (activeRuntime?.session.sessionId === sessionId) {
+      activeRuntime.session.status = "ready";
+    }
+  });
+  child.once("error", (error) => {
+    if (activeRuntime?.session.sessionId === sessionId) {
+      activeRuntime.session.status = "failed";
+      activeRuntime.session.error = error.message;
+      recordBrowserEvent(activeRuntime.session, "failed", "Failed", error.message);
+    }
+  });
+  child.once("exit", () => {
+    if (activeRuntime?.session.sessionId === sessionId) {
+      recordBrowserEvent(activeRuntime.session, "stopped", "Stopped", "Browser process closed");
+      lastSessionId = sessionId;
+      activeRuntime = null;
+    }
+  });
+  child.unref();
+  await waitForSpawnTick();
+  if (session.status === "failed") {
+    await stopSuperiorBrowser();
+    throw new BrowserRuntimeError("launch_failed", session.error ?? "SUPERIOR Browser could not start.");
+  }
+  if (session.status === "starting") {
+    session.status = "ready";
+  }
+  scheduleSuperiorBrowserInspection(sessionId);
+  return {
+    type: "superior-browser-start-result",
+    requestId: request.requestId,
+    state: getSuperiorBrowserState(),
+    createdAt: (/* @__PURE__ */ new Date()).toISOString()
+  };
+}
+async function stopSuperiorBrowser() {
+  if (!activeRuntime) {
+    return getSuperiorBrowserState();
+  }
+  const runtime = activeRuntime;
+  const shouldResetPairing = !runtime.session.attached;
+  recordBrowserEvent(runtime.session, "stopped", "Stopped", "Browser process stopped");
+  lastSessionId = runtime.session.sessionId;
+  activeRuntime = null;
+  if (!runtime.child.killed) {
+    runtime.child.kill();
+  }
+  if (shouldResetPairing) {
+    resetBrowserPairing();
+  }
+  return getSuperiorBrowserState();
+}
+function renderSuperiorBrowserHome(sessionId) {
+  const session = activeRuntime?.session;
+  if (!session || session.sessionId !== sessionId) {
+    return null;
+  }
+  const iconSvg = createBotIconSvg(session.bot, 128);
+  recordBrowserEvent(session, "home_loaded", "Home loaded", "Robot room opened");
+  const data = {
+    sessionId: session.sessionId,
+    sessionToken: session.sessionToken,
+    sessionTokenExpiresAt: new Date(session.sessionTokenExpiresAt).toISOString(),
+    repoWorkspaceId: session.repoWorkspaceId,
+    repoTitle: session.repoTitle,
+    playpenLabel: session.playpenLabel,
+    mode: session.mode
+  };
+  const safeDataJson = JSON.stringify(data).replace(/</g, "\\u003c");
+  const favicon = `data:image/svg+xml,${encodeURIComponent(iconSvg)}`;
+  return `<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>SUPERIOR Browser</title>
+  <link rel="icon" href="${favicon}" />
+  <style>
+    :root {
+      color-scheme: light;
+      font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      background: #d9b88f;
+      color: #2d211a;
+    }
+
+    body {
+      min-height: 100vh;
+      margin: 0;
+      display: grid;
+      place-items: center;
+      background:
+        radial-gradient(circle at 48% 22%, rgba(255, 246, 224, 0.44), transparent 28%),
+        linear-gradient(180deg, #ecd2aa 0%, #c99a6c 100%);
+    }
+
+    main {
+      width: min(720px, calc(100vw - 40px));
+      display: grid;
+      grid-template-columns: 150px minmax(0, 1fr);
+      gap: 22px;
+      align-items: center;
+      padding: 28px;
+      border-radius: 22px 20px 24px 19px;
+      background: rgba(255, 243, 219, 0.66);
+      box-shadow:
+        inset 0 2px 0 rgba(255, 248, 229, 0.8),
+        inset 0 -7px 0 rgba(96, 62, 37, 0.12),
+        0 22px 48px rgba(74, 49, 32, 0.26);
+    }
+
+    .bot {
+      display: grid;
+      place-items: center;
+      aspect-ratio: 1;
+      border-radius: 26px 24px 28px 22px;
+      background: rgba(111, 78, 53, 0.14);
+      box-shadow: inset 0 0 0 1px rgba(91, 57, 36, 0.16);
+    }
+
+    .bot svg {
+      width: 112px;
+      height: 112px;
+      filter: drop-shadow(0 12px 10px rgba(75, 45, 24, 0.22));
+    }
+
+    .plate {
+      display: grid;
+      gap: 12px;
+    }
+
+    h1 {
+      margin: 0;
+      font-size: clamp(32px, 6vw, 56px);
+      line-height: .92;
+      letter-spacing: 0;
+    }
+
+    p {
+      margin: 0;
+      color: #594331;
+      font-size: 15px;
+      line-height: 1.45;
+    }
+
+    dl {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 8px;
+      margin: 8px 0 0;
+    }
+
+    div.stat {
+      min-width: 0;
+      padding: 10px;
+      border-radius: 12px 13px 11px 14px;
+      background: rgba(255, 248, 229, 0.56);
+      box-shadow: inset 0 0 0 1px rgba(111, 70, 34, 0.12);
+    }
+
+    dt {
+      color: #724f38;
+      font-size: 11px;
+      font-weight: 900;
+      text-transform: uppercase;
+    }
+
+    dd {
+      margin: 4px 0 0;
+      overflow-wrap: anywhere;
+      font-size: 13px;
+      font-weight: 900;
+    }
+
+    @media (max-width: 620px) {
+      main {
+        grid-template-columns: 1fr;
+      }
+
+      .bot {
+        max-width: 180px;
+      }
+
+      dl {
+        grid-template-columns: 1fr;
+      }
+    }
+  </style>
+</head>
+<body>
+  <main>
+    <div class="bot" aria-hidden="true">${iconSvg}</div>
+    <section class="plate" aria-label="SUPERIOR Browser session">
+      <h1>${escapeHtml(session.bot.name)}</h1>
+      <p>SUPERIOR Browser is attached to this repo playpen.</p>
+      <dl>
+        <div class="stat"><dt>Repo</dt><dd>${escapeHtml(session.repoTitle)}</dd></div>
+        <div class="stat"><dt>Playpen</dt><dd>${escapeHtml(session.playpenLabel)}</dd></div>
+        <div class="stat"><dt>Status</dt><dd id="superior-attach-status">attaching</dd></div>
+      </dl>
+    </section>
+  </main>
+  <script id="superior-session-data" type="application/json">${safeDataJson}</script>
+</body>
+</html>`;
+}
+function attachSuperiorBrowserSession(sessionId, request) {
+  const session = activeRuntime?.session;
+  const now = (/* @__PURE__ */ new Date()).toISOString();
+  if (!session || session.sessionId !== sessionId) {
+    throw new BrowserRuntimeError("not_running", "SUPERIOR Browser session is not running.");
+  }
+  if (session.attached || Date.now() > session.sessionTokenExpiresAt || request.sessionToken !== session.sessionToken) {
+    throw new BrowserRuntimeError("unauthorized", "SUPERIOR Browser session token expired.");
+  }
+  const browserLinkState = completeBrowserPairing(session.pairingToken, request.extensionId);
+  if (!browserLinkState || browserLinkState.status !== "paired" || !browserLinkState.lastSeenAt) {
+    throw new BrowserRuntimeError("unauthorized", "SUPERIOR Browser could not pair this extension.");
+  }
+  session.attached = true;
+  session.status = "paired";
+  session.pairedAt = now;
+  recordBrowserEvent(session, "extension_paired", "Extension paired", request.extensionId ?? "controlled profile");
+  scheduleSuperiorBrowserInspection(session.sessionId, 500);
+  return {
+    type: "superior-browser-attach-result",
+    requestId: request.requestId,
+    pairingToken: session.pairingToken,
+    bot: session.bot,
+    browserLinkState: {
+      status: "paired",
+      ...browserLinkState.extensionId ? { extensionId: browserLinkState.extensionId } : {},
+      lastSeenAt: browserLinkState.lastSeenAt
+    },
+    createdAt: now
+  };
+}
+function rememberSuperiorBrowserSkillRun(skillLabel, pageTitle, pageUrl) {
+  const session = activeRuntime?.session;
+  if (!session || session.status !== "paired") {
+    return;
+  }
+  recordBrowserEvent(session, "skill_ran", skillLabel, pageTitle || pageUrl);
+}
+function findBrowserExecutable() {
+  const envPath = process.env.SUPERIOR_BROWSER_PATH?.trim();
+  if (envPath && existsSync7(envPath)) {
+    return {
+      kind: getBrowserKindFromPath(envPath),
+      path: envPath
+    };
+  }
+  for (const candidate of getBrowserCandidates()) {
+    if (existsSync7(candidate.path) && isBrowserCandidateUsable(candidate)) {
+      return candidate;
+    }
+  }
+  return null;
+}
+function getProfilePath(repoWorkspaceId) {
+  const safeId = repoWorkspaceId.toLowerCase().replace(/[^a-z0-9._-]+/g, "-").replace(/^-+|-+$/g, "");
+  return join8(getSuperiorStateDirectory(), "browser-profiles", safeId || "repo");
+}
+function findExtensionFolder(startDirectory = process.cwd()) {
+  const envPath = process.env.SUPERIOR_EXTENSION_PATH?.trim();
+  if (envPath && hasManifest(envPath)) {
+    return resolve4(envPath);
+  }
+  const workspaceRoot = findUpDirectory("pnpm-workspace.yaml", startDirectory);
+  if (workspaceRoot) {
+    const extensionDist = join8(workspaceRoot, "apps", "extension", "dist");
+    if (hasManifest(extensionDist)) {
+      return extensionDist;
+    }
+  }
+  for (const resourceRoot of getResourceRoots(startDirectory)) {
+    const extensionFolder = join8(resourceRoot, "extension");
+    if (hasManifest(extensionFolder)) {
+      return extensionFolder;
+    }
+  }
+  return null;
+}
+function toPublicSession(session) {
+  return {
+    sessionId: session.sessionId,
+    repoWorkspaceId: session.repoWorkspaceId,
+    repoTitle: session.repoTitle,
+    mode: session.mode,
+    status: session.status,
+    ...session.browserKind ? { browserKind: session.browserKind } : {},
+    ...session.browserPath ? { browserPath: session.browserPath } : {},
+    profilePath: session.profilePath,
+    ...session.debugPort ? { debugPort: session.debugPort } : {},
+    ...session.processId ? { processId: session.processId } : {},
+    homeUrl: session.homeUrl,
+    repoUrl: session.repoUrl,
+    playpenLabel: session.playpenLabel,
+    startedAt: session.startedAt,
+    ...session.pairedAt ? { pairedAt: session.pairedAt } : {},
+    ...session.inspection ? { inspection: session.inspection } : {},
+    ...session.error ? { error: session.error } : {}
+  };
+}
+function getSessionMode(repoWorkspace) {
+  if (repoWorkspace.playground.kind === "extension-lab") {
+    return "extension-lab";
+  }
+  if (repoWorkspace.playground.kind === "repo-map") {
+    return "repo-map";
+  }
+  return "superior-browser";
+}
+function getBrowserCandidates() {
+  const candidates = [];
+  if (process.platform === "win32") {
+    const programFiles = process.env.ProgramFiles;
+    const programFilesX86 = process.env["ProgramFiles(x86)"];
+    const localAppData = process.env.LOCALAPPDATA;
+    pushCandidate(candidates, "chrome", programFiles, "Google", "Chrome", "Application", "chrome.exe");
+    pushCandidate(candidates, "chrome", programFilesX86, "Google", "Chrome", "Application", "chrome.exe");
+    pushCandidate(candidates, "chrome", localAppData, "Google", "Chrome", "Application", "chrome.exe");
+    pushCandidate(candidates, "edge", programFiles, "Microsoft", "Edge", "Application", "msedge.exe");
+    pushCandidate(candidates, "edge", programFilesX86, "Microsoft", "Edge", "Application", "msedge.exe");
+    pushCandidate(candidates, "edge", localAppData, "Microsoft", "Edge", "Application", "msedge.exe");
+    return candidates;
+  }
+  if (process.platform === "darwin") {
+    candidates.push(
+      {
+        kind: "chrome",
+        path: "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome"
+      },
+      {
+        kind: "edge",
+        path: "/Applications/Microsoft Edge.app/Contents/MacOS/Microsoft Edge"
+      }
+    );
+    return candidates;
+  }
+  candidates.push(
+    {
+      kind: "chrome",
+      path: "/usr/bin/google-chrome"
+    },
+    {
+      kind: "chrome",
+      path: "/usr/bin/chromium"
+    },
+    {
+      kind: "edge",
+      path: "/usr/bin/microsoft-edge"
+    }
+  );
+  return candidates;
+}
+function pushCandidate(candidates, kind, root, ...parts) {
+  if (root) {
+    candidates.push({
+      kind,
+      path: join8(root, ...parts)
+    });
+  }
+}
+function getBrowserKindFromPath(path2) {
+  return path2.toLowerCase().includes("edge") || path2.toLowerCase().includes("msedge") ? "edge" : "chrome";
+}
+function isBrowserCandidateUsable(browser) {
+  if (browser.kind !== "chrome") {
+    return true;
+  }
+  const majorVersion = getInstalledBrowserMajorVersion(browser.path);
+  if (!majorVersion) {
+    return true;
+  }
+  return majorVersion < 137;
+}
+function getInstalledBrowserMajorVersion(browserPath) {
+  const applicationFolder = dirname6(browserPath);
+  try {
+    const majorVersions = readdirSync(applicationFolder, {
+      withFileTypes: true
+    }).filter((entry) => entry.isDirectory()).map((entry) => /^(\d+)\./.exec(entry.name)?.[1]).filter((majorVersion) => Boolean(majorVersion)).map((majorVersion) => Number.parseInt(majorVersion, 10)).filter(Number.isFinite);
+    return majorVersions.length > 0 ? Math.max(...majorVersions) : null;
+  } catch {
+    return null;
+  }
+}
+function getResourceRoots(startDirectory) {
+  const roots = /* @__PURE__ */ new Set();
+  const resolvedStart = resolve4(startDirectory);
+  roots.add(resolvedStart);
+  roots.add(join8(resolvedStart, "resources"));
+  roots.add(dirname6(resolvedStart));
+  const parsed = parse2(resolvedStart);
+  if (parsed.dir) {
+    roots.add(parsed.dir);
+  }
+  return [...roots];
+}
+function hasManifest(folder) {
+  return existsSync7(join8(folder, "manifest.json"));
+}
+function recordBrowserEvent(session, kind, label, detail) {
+  const event = {
+    type: "superior-browser-event",
+    id: createLocalId("browser_event"),
+    sessionId: session.sessionId,
+    repoWorkspaceId: session.repoWorkspaceId,
+    kind,
+    label,
+    ...detail ? { detail } : {},
+    createdAt: (/* @__PURE__ */ new Date()).toISOString()
+  };
+  browserEvents = [...browserEvents, event].slice(-maxBrowserEvents);
+  lastSessionId = session.sessionId;
+  rememberRepoWorkspaceBrowserSession(session.repoWorkspaceId, {
+    sessionId: session.sessionId,
+    profilePath: session.profilePath,
+    lastBrowserEventSummary: label,
+    ...session.inspection ? { lastBrowserInspection: session.inspection } : {}
+  });
+}
+function scheduleSuperiorBrowserInspection(sessionId, delayMs = 1200) {
+  const timeout = setTimeout(() => {
+    if (activeRuntime?.session.sessionId === sessionId) {
+      void inspectSuperiorBrowser().catch(() => void 0);
+    }
+  }, delayMs);
+  timeout.unref?.();
+}
+async function readSuperiorBrowserInspection(session) {
+  const base = {
+    type: "superior-browser-inspection",
+    inspectedAt: (/* @__PURE__ */ new Date()).toISOString(),
+    extensionPaired: session.attached,
+    ...session.browserKind ? { browserKind: session.browserKind } : {},
+    consoleErrorCount: 0,
+    networkFailureCount: 0
+  };
+  if (!session.debugPort) {
+    return {
+      ...base,
+      status: "unavailable",
+      note: "No debug port."
+    };
+  }
+  try {
+    const targets = await fetchDebugTargets(session.debugPort);
+    const target = pickSuperiorBrowserDebugTarget(targets, session);
+    if (!target) {
+      return {
+        ...base,
+        status: "unavailable",
+        note: "No page target."
+      };
+    }
+    const counts = target.webSocketDebuggerUrl ? await collectDebugProtocolCounts(target.webSocketDebuggerUrl).catch(() => ({
+      consoleErrorCount: 0,
+      networkFailureCount: 0
+    })) : {
+      consoleErrorCount: 0,
+      networkFailureCount: 0
+    };
+    return {
+      ...base,
+      status: "ready",
+      ...target.url ? { currentUrl: target.url } : {},
+      ...target.title ? { pageTitle: target.title } : {},
+      ...target.id ? { tabId: target.id } : {},
+      consoleErrorCount: counts.consoleErrorCount,
+      networkFailureCount: counts.networkFailureCount
+    };
+  } catch (error) {
+    return {
+      ...base,
+      status: "failed",
+      note: error instanceof Error ? error.message : "DevTools inspection failed."
+    };
+  }
+}
+function pickSuperiorBrowserDebugTarget(targets, session) {
+  const pageTargets = targets.filter((target) => isInspectablePageTarget(target));
+  const repoTarget = pageTargets.find((target) => isRepoTarget(target, session.repoUrl));
+  const nonHomeTarget = pageTargets.find((target) => !isRobotHomeTarget(target, session.sessionId));
+  return repoTarget ?? nonHomeTarget ?? pageTargets[0] ?? null;
+}
+function maybeRecordInspectionEvent(session, inspection) {
+  const signature = [
+    inspection.status,
+    inspection.currentUrl ?? "",
+    inspection.pageTitle ?? "",
+    inspection.consoleErrorCount,
+    inspection.networkFailureCount,
+    inspection.extensionPaired ? "paired" : "unpaired"
+  ].join("|");
+  if (session.lastInspectionEventSignature === signature) {
+    return;
+  }
+  session.lastInspectionEventSignature = signature;
+  const label = inspection.status === "ready" ? "Page inspected" : "Inspect blocked";
+  const detail = inspection.status === "ready" ? [
+    inspection.pageTitle ?? inspection.currentUrl ?? "page",
+    `${inspection.consoleErrorCount} console`,
+    `${inspection.networkFailureCount} network`
+  ].join(" / ") : inspection.note;
+  recordBrowserEvent(session, "page_inspected", label, detail);
+}
+async function fetchDebugTargets(port) {
+  const response = await fetchWithTimeout(`http://127.0.0.1:${port}/json/list`, 900);
+  if (!response.ok) {
+    throw new Error(`DevTools target list returned ${response.status}.`);
+  }
+  const payload = await response.json();
+  return Array.isArray(payload) ? payload.filter(isDebugTarget) : [];
+}
+async function fetchWithTimeout(url, timeoutMs) {
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), timeoutMs);
+  timeout.unref?.();
+  try {
+    return await fetch(url, {
+      signal: controller.signal
+    });
+  } finally {
+    clearTimeout(timeout);
+  }
+}
+async function collectDebugProtocolCounts(webSocketDebuggerUrl) {
+  if (typeof WebSocket === "undefined") {
+    return {
+      consoleErrorCount: 0,
+      networkFailureCount: 0
+    };
+  }
+  return new Promise((resolveCounts) => {
+    const counts = {
+      consoleErrorCount: 0,
+      networkFailureCount: 0
+    };
+    let commandId = 1;
+    let finished = false;
+    let inspectTimeout;
+    let hardTimeout;
+    let socket = null;
+    function finish() {
+      if (finished) {
+        return;
+      }
+      finished = true;
+      if (inspectTimeout) {
+        clearTimeout(inspectTimeout);
+      }
+      if (hardTimeout) {
+        clearTimeout(hardTimeout);
+      }
+      try {
+        socket?.close();
+      } catch {
+      }
+      resolveCounts(counts);
+    }
+    function send(method) {
+      if (socket?.readyState === 1) {
+        socket.send(
+          JSON.stringify({
+            id: commandId++,
+            method
+          })
+        );
+      }
+    }
+    try {
+      socket = new WebSocket(webSocketDebuggerUrl);
+    } catch {
+      resolveCounts(counts);
+      return;
+    }
+    hardTimeout = setTimeout(finish, 1300);
+    hardTimeout.unref?.();
+    socket.addEventListener("open", () => {
+      send("Runtime.enable");
+      send("Log.enable");
+      send("Network.enable");
+      inspectTimeout = setTimeout(finish, 750);
+      inspectTimeout.unref?.();
+    });
+    socket.addEventListener("message", (event) => {
+      countDebugProtocolMessage(event.data, counts);
+    });
+    socket.addEventListener("error", finish);
+    socket.addEventListener("close", finish);
+  });
+}
+function countDebugProtocolMessage(data, counts) {
+  const text = typeof data === "string" ? data : "";
+  if (!text) {
+    return;
+  }
+  try {
+    const message = JSON.parse(text);
+    if (message.method === "Runtime.exceptionThrown") {
+      counts.consoleErrorCount += 1;
+      return;
+    }
+    if (message.method === "Runtime.consoleAPICalled" && message.params?.type === "error") {
+      counts.consoleErrorCount += 1;
+      return;
+    }
+    if (message.method === "Log.entryAdded") {
+      const entry = message.params?.entry;
+      if (entry?.level === "error") {
+        counts.consoleErrorCount += 1;
+      }
+      return;
+    }
+    if (message.method === "Network.loadingFailed") {
+      counts.networkFailureCount += 1;
+    }
+  } catch {
+    return;
+  }
+}
+function isDebugTarget(value) {
+  const target = value;
+  return typeof target === "object" && target !== null && (target.id === void 0 || typeof target.id === "string") && (target.type === void 0 || typeof target.type === "string") && (target.url === void 0 || typeof target.url === "string") && (target.title === void 0 || typeof target.title === "string") && (target.webSocketDebuggerUrl === void 0 || typeof target.webSocketDebuggerUrl === "string");
+}
+function isInspectablePageTarget(target) {
+  if (target.type !== "page" || !target.url) {
+    return false;
+  }
+  return !["devtools://", "chrome://", "edge://", "chrome-extension://"].some((prefix) => target.url?.startsWith(prefix));
+}
+function isRepoTarget(target, repoUrl) {
+  if (!target.url) {
+    return false;
+  }
+  const normalizedTargetUrl = normalizeUrlForComparison(target.url);
+  const normalizedRepoUrl = normalizeUrlForComparison(repoUrl);
+  return normalizedTargetUrl === normalizedRepoUrl || normalizedTargetUrl.startsWith(`${normalizedRepoUrl}/`);
+}
+function isRobotHomeTarget(target, sessionId) {
+  return Boolean(target.url?.includes(`/browser-session/${encodeURIComponent(sessionId)}/home`));
+}
+function normalizeUrlForComparison(value) {
+  return value.replace(/\/+$/, "").toLowerCase();
+}
+function getDaemonPort() {
+  const port = Number.parseInt(process.env.CLAWDBOT_DAEMON_PORT ?? "5317", 10);
+  return Number.isFinite(port) ? port : 5317;
+}
+async function allocateLocalPort() {
+  return new Promise((resolvePort, rejectPort) => {
+    const server2 = createServer();
+    server2.once("error", rejectPort);
+    server2.listen(0, "127.0.0.1", () => {
+      const address = server2.address();
+      const port = typeof address === "object" && address ? address.port : 0;
+      server2.close(() => {
+        resolvePort(port);
+      });
+    });
+  });
+}
+function waitForSpawnTick() {
+  return new Promise((resolveTick) => {
+    setTimeout(resolveTick, 80);
+  });
+}
+function escapeHtml(value) {
+  return value.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#39;");
+}
+
 // src/server.ts
 var config = getDaemonConfig();
-var server = createServer(async (request, response) => {
+var server = createServer2(async (request, response) => {
   setCorsHeaders(response);
   if (request.method === "OPTIONS") {
     response.writeHead(204);
@@ -11474,6 +12755,32 @@ var server = createServer(async (request, response) => {
     sendJson(response, 200, readRecentSkillResults());
     return;
   }
+  if (request.method === "GET" && url.pathname === "/repo-workspaces") {
+    sendJson(response, 200, readRepoWorkspaceRecords());
+    return;
+  }
+  if (request.method === "GET" && url.pathname === "/browser-runtime") {
+    sendJson(response, 200, getSuperiorBrowserState());
+    return;
+  }
+  if (request.method === "GET" && url.pathname === "/browser-runtime/events") {
+    sendJson(response, 200, getSuperiorBrowserEvents());
+    return;
+  }
+  if (request.method === "GET" && url.pathname === "/browser-runtime/inspect") {
+    await handleBrowserRuntimeInspect(response);
+    return;
+  }
+  const browserSessionHomeMatch = /^\/browser-session\/([^/]+)\/home$/.exec(url.pathname);
+  if (request.method === "GET" && browserSessionHomeMatch?.[1]) {
+    handleBrowserSessionHome(browserSessionHomeMatch[1], response);
+    return;
+  }
+  const browserSessionAttachMatch = /^\/browser-session\/([^/]+)\/attach$/.exec(url.pathname);
+  if (request.method === "POST" && browserSessionAttachMatch?.[1]) {
+    await handleBrowserSessionAttach(browserSessionAttachMatch[1], request, response);
+    return;
+  }
   if ((request.method === "POST" || request.method === "PUT") && url.pathname === "/bot-identity") {
     await handleBotIdentitySave(request, response);
     return;
@@ -11502,6 +12809,14 @@ var server = createServer(async (request, response) => {
     await handleBrowserPairingReset(request, response);
     return;
   }
+  if (request.method === "POST" && url.pathname === "/browser-runtime/start") {
+    await handleBrowserRuntimeStart(request, response);
+    return;
+  }
+  if (request.method === "POST" && url.pathname === "/browser-runtime/stop") {
+    await handleBrowserRuntimeStop(request, response);
+    return;
+  }
   if (request.method === "POST" && url.pathname === "/custom-skills/import-proposal") {
     await handleCustomSkillImport(request, response);
     return;
@@ -11515,6 +12830,98 @@ var server = createServer(async (request, response) => {
 server.listen(config.port, config.host, () => {
   console.log(`SUPERIOR daemon listening on http://${config.host}:${config.port}`);
 });
+async function handleBrowserRuntimeStart(request, response) {
+  if (!isTrustedLocalOrigin(request.headers.origin)) {
+    sendJson(response, 403, {
+      type: "superior-browser-error",
+      code: "unauthorized",
+      message: "SUPERIOR Browser can only be started from the local Workshop."
+    });
+    return;
+  }
+  let payload;
+  try {
+    payload = await readJsonBody(request);
+  } catch {
+    sendJson(response, 400, {
+      type: "superior-browser-error",
+      code: "bad_request",
+      message: "Expected a valid SUPERIOR Browser start request."
+    });
+    return;
+  }
+  if (payload.type !== "superior-browser-start" || typeof payload.repoWorkspaceId !== "string") {
+    sendJson(response, 400, {
+      type: "superior-browser-error",
+      requestId: payload.requestId,
+      code: "bad_request",
+      message: "Choose a saved repo playpen before starting SUPERIOR Browser."
+    });
+    return;
+  }
+  try {
+    sendJson(response, 200, await startSuperiorBrowser(payload));
+  } catch (error) {
+    sendBrowserRuntimeError(response, payload.requestId, error);
+  }
+}
+async function handleBrowserRuntimeStop(request, response) {
+  if (!isTrustedLocalOrigin(request.headers.origin)) {
+    sendJson(response, 403, {
+      type: "superior-browser-error",
+      code: "unauthorized",
+      message: "SUPERIOR Browser can only be stopped from the local Workshop."
+    });
+    return;
+  }
+  sendJson(response, 200, {
+    type: "superior-browser-stop-result",
+    state: await stopSuperiorBrowser(),
+    createdAt: (/* @__PURE__ */ new Date()).toISOString()
+  });
+}
+async function handleBrowserRuntimeInspect(response) {
+  try {
+    sendJson(response, 200, await inspectSuperiorBrowser());
+  } catch (error) {
+    sendBrowserRuntimeError(response, void 0, error);
+  }
+}
+function handleBrowserSessionHome(sessionId, response) {
+  const html = renderSuperiorBrowserHome(decodeURIComponent(sessionId));
+  if (!html) {
+    sendHtml(response, 404, "<!doctype html><title>SUPERIOR Browser</title><p>Session closed.</p>");
+    return;
+  }
+  sendHtml(response, 200, html);
+}
+async function handleBrowserSessionAttach(sessionId, request, response) {
+  let payload;
+  try {
+    payload = await readJsonBody(request);
+  } catch {
+    sendJson(response, 400, {
+      type: "superior-browser-error",
+      code: "bad_request",
+      message: "Expected a valid SUPERIOR Browser attach request."
+    });
+    return;
+  }
+  if (payload.type !== "superior-browser-attach" || typeof payload.sessionToken !== "string") {
+    sendJson(response, 400, {
+      type: "superior-browser-error",
+      requestId: payload.requestId,
+      code: "bad_request",
+      message: "SUPERIOR Browser needs a session token."
+    });
+    return;
+  }
+  try {
+    sendJson(response, 200, attachSuperiorBrowserSession(decodeURIComponent(sessionId), payload));
+  } catch (error) {
+    sendBrowserRuntimeError(response, payload.requestId, error);
+  }
+}
 async function handleBrowserPairingStart(request, response) {
   if (!isTrustedLocalOrigin(request.headers.origin)) {
     sendJson(response, 403, {
@@ -11694,6 +13101,7 @@ async function handleArticleXray(request, response) {
   }
   const result = runArticleXray(payload);
   rememberArticleXrayResult(result);
+  rememberSuperiorBrowserSkillRun("Article X-Ray", result.source.title, result.source.url);
   sendJson(response, 200, result);
 }
 async function handleRepoReader(request, response) {
@@ -11728,6 +13136,7 @@ async function handleRepoReader(request, response) {
   try {
     const result = await runRepoReader(payload);
     rememberRepoReaderResult(result);
+    rememberRepoWorkspaceRecord(result);
     sendJson(response, 200, result);
   } catch (error) {
     if (error instanceof RepoReaderError) {
@@ -11781,6 +13190,7 @@ async function handleExplain(request, response) {
   try {
     const result = await explainPageWithOpenAI(payload, config);
     rememberExplainPageResult(result);
+    rememberSuperiorBrowserSkillRun("Page Explainer", result.source.title, result.source.url);
     sendJson(response, 200, result);
   } catch (error) {
     if (error instanceof MissingOpenAIConfigError) {
@@ -11815,6 +13225,30 @@ function sendJson(response, statusCode, payload) {
     "Content-Type": "application/json; charset=utf-8"
   });
   response.end(JSON.stringify(payload, null, 2));
+}
+function sendHtml(response, statusCode, html) {
+  response.writeHead(statusCode, {
+    "Content-Type": "text/html; charset=utf-8"
+  });
+  response.end(html);
+}
+function sendBrowserRuntimeError(response, requestId, error) {
+  if (error instanceof BrowserRuntimeError) {
+    const statusCode = error.code === "unknown_repo" || error.code === "not_running" ? 404 : error.code === "missing_browser" || error.code === "missing_extension" ? 503 : error.code === "unauthorized" ? 401 : 400;
+    sendJson(response, statusCode, {
+      type: "superior-browser-error",
+      ...requestId ? { requestId } : {},
+      code: error.code,
+      message: error.message
+    });
+    return;
+  }
+  sendJson(response, 500, {
+    type: "superior-browser-error",
+    ...requestId ? { requestId } : {},
+    code: "launch_failed",
+    message: error instanceof Error ? error.message : "SUPERIOR Browser failed."
+  });
 }
 function setCorsHeaders(response) {
   response.setHeader("Access-Control-Allow-Origin", "*");

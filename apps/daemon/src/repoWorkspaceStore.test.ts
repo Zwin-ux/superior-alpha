@@ -45,15 +45,26 @@ describe("repo workspace store", () => {
     rememberRepoWorkspaceBrowserSession("acme/widget", {
       sessionId: "browser_session_test",
       profilePath: "C:\\state\\browser-profiles\\acme-widget",
-      lastBrowserEventSummary: "Extension paired"
+      lastBrowserEventSummary: "Page inspected",
+      lastBrowserInspection: {
+        type: "superior-browser-inspection",
+        status: "ready",
+        inspectedAt: "2026-05-30T00:00:02.000Z",
+        extensionPaired: true,
+        currentUrl: "https://github.com/acme/widget",
+        pageTitle: "acme/widget",
+        consoleErrorCount: 0,
+        networkFailureCount: 0
+      }
     });
 
     const [record] = readRepoWorkspaceRecords().items;
 
     expect(record?.profilePath).toContain("acme-widget");
     expect(record?.lastBrowserSessionId).toBe("browser_session_test");
-    expect(record?.lastBrowserEventSummary).toBe("Extension paired");
-    expect(record?.nextMove).toBe("Extension paired");
+    expect(record?.lastBrowserEventSummary).toBe("Page inspected");
+    expect(record?.lastBrowserInspection?.currentUrl).toBe("https://github.com/acme/widget");
+    expect(record?.nextMove).toBe("Page inspected");
   });
 });
 

@@ -208,6 +208,7 @@ export interface RepoWorkspaceRecord {
   profilePath?: string;
   lastBrowserSessionId?: string;
   lastBrowserEventSummary?: string;
+  lastBrowserInspection?: SuperiorBrowserInspection;
   nextMove?: string;
   notes: string[];
   createdAt: string;
@@ -223,6 +224,21 @@ export interface RepoWorkspaceRecordsResponse {
 export type SuperiorBrowserSessionMode = "superior-browser" | "extension-lab" | "repo-map";
 export type SuperiorBrowserKind = "chrome" | "edge";
 export type SuperiorBrowserStatus = "closed" | "starting" | "ready" | "paired" | "missing-browser" | "failed";
+export type SuperiorBrowserInspectionStatus = "ready" | "unavailable" | "failed";
+
+export interface SuperiorBrowserInspection {
+  type: "superior-browser-inspection";
+  status: SuperiorBrowserInspectionStatus;
+  inspectedAt: string;
+  extensionPaired: boolean;
+  browserKind?: SuperiorBrowserKind;
+  currentUrl?: string;
+  pageTitle?: string;
+  tabId?: string;
+  consoleErrorCount: number;
+  networkFailureCount: number;
+  note?: string;
+}
 
 export interface SuperiorBrowserSession {
   sessionId: string;
@@ -240,6 +256,7 @@ export interface SuperiorBrowserSession {
   playpenLabel: string;
   startedAt: string;
   pairedAt?: string;
+  inspection?: SuperiorBrowserInspection;
   error?: string;
 }
 
@@ -255,6 +272,7 @@ export type SuperiorBrowserEventKind =
   | "home_loaded"
   | "extension_paired"
   | "repo_opened"
+  | "page_inspected"
   | "skill_ran"
   | "stopped"
   | "failed";
@@ -295,6 +313,13 @@ export interface SuperiorBrowserStartResult {
 export interface SuperiorBrowserStopResult {
   type: "superior-browser-stop-result";
   state: SuperiorBrowserState;
+  createdAt: string;
+}
+
+export interface SuperiorBrowserInspectResult {
+  type: "superior-browser-inspect-result";
+  state: SuperiorBrowserState;
+  inspection: SuperiorBrowserInspection;
   createdAt: string;
 }
 

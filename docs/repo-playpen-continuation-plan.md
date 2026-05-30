@@ -204,8 +204,10 @@ Shipped now:
 - controlled browser home pages carry short-lived attach tokens for extension auto-pairing
 - extension content script auto-attaches on daemon-served browser session pages, stores the pairing token, saves the active bot identity, and updates the toolbar icon
 - daemon exposes compact playpen notes at `GET /browser-runtime/events`
-- playpen notes record `started`, `home_loaded`, `extension_paired`, `repo_opened`, `skill_ran`, `stopped`, and `failed`
+- playpen notes record `started`, `home_loaded`, `extension_paired`, `repo_opened`, `page_inspected`, `skill_ran`, `stopped`, and `failed`
 - daemon records active browser skill runs into the playpen notes stream
+- daemon inspects the active browser debug target and stores compact current page proof
+- browser session state carries current URL, page title, browser kind, paired state, console error count, and network failure count
 - automatic browser detection skips Chrome builds that block command-line staged extensions and falls through to Edge
 - Workshop Repo Reader results show `Start Playpen` once a repo workspace record exists
 - Browser Link tray shows compact `SUPERIOR Browser` state, active repo, profile folder, stop control, and playpen notes
@@ -220,12 +222,11 @@ Shipped now:
 
 SUPERIOR Browser now launches an isolated Chrome/Edge profile, opens the robot room plus the GitHub repo page, auto-pairs the extension, and records compact playpen notes.
 
-Next, add DevTools Protocol inspection:
+Next, tighten DevTools Protocol inspection:
 
-- current URL after tab switches
-- console errors
-- page title
-- simple network failure count
+- stronger active-tab detection after user tab switches
+- compact console/network counts
+- no chat-style transcript
 
 Keep this local and short. It is a session trail, not a chat log.
 
@@ -296,8 +297,8 @@ What shipped:
 
 What is weak:
 
-- no DevTools Protocol page inspection yet
-- no packaged-path smoke for extension loading yet
+- DevTools Protocol inspection is short-window proof, not a full historical browser trace
+- packaged-path smoke still needs a clean-machine active playpen run after installer install
 
 What broke or blocked:
 

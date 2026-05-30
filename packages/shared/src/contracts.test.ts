@@ -129,13 +129,30 @@ describe("shared SUPERIOR contracts", () => {
       id: "browser_event_test",
       sessionId: "browser_session_test",
       repoWorkspaceId: "owner/project",
-      kind: "extension_paired",
-      label: "Extension paired",
+      kind: "page_inspected",
+      label: "Page inspected",
       createdAt: new Date(0).toISOString()
     } as const;
 
     expect(event.type).toBe("superior-browser-event");
-    expect(event.kind).toBe("extension_paired");
+    expect(event.kind).toBe("page_inspected");
+  });
+
+  it("defines compact SUPERIOR Browser inspection notes", () => {
+    const inspection = {
+      type: "superior-browser-inspection",
+      status: "ready",
+      inspectedAt: new Date(0).toISOString(),
+      extensionPaired: true,
+      currentUrl: "https://github.com/owner/project",
+      pageTitle: "owner/project",
+      consoleErrorCount: 0,
+      networkFailureCount: 1
+    } as const;
+
+    expect(inspection.type).toBe("superior-browser-inspection");
+    expect(inspection.extensionPaired).toBe(true);
+    expect(inspection.networkFailureCount).toBe(1);
   });
 
   it("creates typed browser pairing completion requests", () => {

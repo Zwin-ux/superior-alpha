@@ -38,6 +38,7 @@ import {
   fetchRecentSkillResults,
   fetchSuperiorBrowserEvents,
   fetchSuperiorBrowserState,
+  inspectSuperiorBrowser,
   openExtensionFolder,
   openLocalFolder,
   requestCustomSkillImportProposal,
@@ -109,25 +110,22 @@ export function App(): React.ReactElement {
 
     async function refresh(): Promise<void> {
       try {
-        const [
-          nextHealth,
-          nextRecentResults,
-          nextRepoWorkspaces,
-          nextSuperiorBrowserState,
-          nextSuperiorBrowserEvents
-        ] = await Promise.all([
+        const [nextHealth, nextRecentResults, nextRepoWorkspaces, superiorBrowserState] = await Promise.all([
           fetchDaemonHealth(),
           fetchRecentSkillResults(),
           fetchRepoWorkspaceRecords(),
-          fetchSuperiorBrowserState(),
-          fetchSuperiorBrowserEvents()
+          fetchSuperiorBrowserState()
         ]);
+        const inspectedBrowserState = superiorBrowserState.activeSession
+          ? ((await inspectSuperiorBrowser().catch(() => null))?.state ?? superiorBrowserState)
+          : superiorBrowserState;
+        const nextSuperiorBrowserEvents = await fetchSuperiorBrowserEvents();
 
         if (!disposed) {
           setHealth(nextHealth);
           setRecentResults(nextRecentResults.items);
           setRepoWorkspaces(nextRepoWorkspaces.items);
-          setSuperiorBrowserState(nextSuperiorBrowserState);
+          setSuperiorBrowserState(inspectedBrowserState);
           setSuperiorBrowserEvents(nextSuperiorBrowserEvents.items);
           setHealthError(null);
         }
@@ -1034,10 +1032,13 @@ function BrowserLinkPanel(props: {
           <strong>{superiorStatus}</strong>
         </div>
         {activeSession ? (
-          <div className="browser-session-strip">
-            <code title={activeSession.profilePath}>{activeSession.repoTitle}</code>
-            <span>{activeSession.browserKind ?? "browser"}</span>
-          </div>
+          <>
+            <div className="browser-session-strip">
+              <code title={activeSession.profilePath}>{activeSession.repoTitle}</code>
+              <span>{activeSession.browserKind ?? "browser"}</span>
+            </div>
+            <BrowserInspectionStrip inspection={activeSession.inspection} />
+          </>
         ) : null}
         <div className="browser-link-actions">
           <button
@@ -1096,6 +1097,30 @@ function BrowserLinkPanel(props: {
   );
 }
 
+function BrowserInspectionStrip(props: {
+  inspection: NonNullable<SuperiorBrowserState["activeSession"]>["inspection"];
+}): React.ReactElement {
+  if (!props.inspection) {
+    return (
+      <div className="browser-inspection-strip" data-status="unavailable">
+        <span>Inspect</span>
+        <strong>waiting</strong>
+      </div>
+    );
+  }
+
+  const target = props.inspection.pageTitle ?? props.inspection.currentUrl ?? props.inspection.note ?? "page";
+
+  return (
+    <div className="browser-inspection-strip" data-status={props.inspection.status}>
+      <span>Inspect</span>
+      <strong title={props.inspection.currentUrl ?? target}>{target}</strong>
+      <em>{props.inspection.consoleErrorCount} console</em>
+      <em>{props.inspection.networkFailureCount} network</em>
+    </div>
+  );
+}
+
 function getExtensionFolderStatusText(status: "idle" | "opened" | "missing" | "failed" | "desktop-only"): string {
   if (status === "opened") {
     return "Folder opened.";
@@ -1145,6 +1170,7 @@ function formatBrowserEventKind(kind: SuperiorBrowserEvent["kind"]): string {
     home_loaded: "Home",
     extension_paired: "Pair",
     repo_opened: "Repo",
+    page_inspected: "Page",
     skill_ran: "Skill",
     stopped: "Stop",
     failed: "Fail"

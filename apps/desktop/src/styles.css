@@ -1172,6 +1172,7 @@ button {
 }
 
 .browser-event-row[data-kind="extension_paired"],
+.browser-event-row[data-kind="page_inspected"],
 .browser-event-row[data-kind="skill_ran"] {
   background:
     linear-gradient(180deg, rgba(255, 243, 219, 0.32), transparent 60%),
@@ -1196,6 +1197,59 @@ button {
   padding: 6px 8px;
   color: #3a2a20;
   background: rgba(216, 168, 73, 0.32);
+}
+
+.browser-inspection-strip {
+  display: grid;
+  grid-template-columns: 46px minmax(0, 1fr) auto auto;
+  gap: 7px;
+  align-items: center;
+  min-height: 30px;
+  padding: 6px 8px;
+  border-radius: 12px 10px 13px 11px;
+  background:
+    linear-gradient(180deg, rgba(255, 243, 219, 0.3), transparent 60%),
+    rgba(111, 78, 53, 0.12);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 248, 229, 0.3),
+    inset 0 -2px 0 rgba(96, 62, 37, 0.09);
+}
+
+.browser-inspection-strip[data-status="ready"] {
+  background:
+    linear-gradient(180deg, rgba(255, 243, 219, 0.34), transparent 60%),
+    rgba(127, 155, 100, 0.18);
+}
+
+.browser-inspection-strip[data-status="failed"] {
+  background:
+    linear-gradient(180deg, rgba(255, 243, 219, 0.3), transparent 60%),
+    rgba(183, 93, 71, 0.16);
+}
+
+.browser-inspection-strip span,
+.browser-inspection-strip strong,
+.browser-inspection-strip em {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.browser-inspection-strip strong {
+  color: #2d211a;
+  font-size: 12px;
+  font-weight: 900;
+}
+
+.browser-inspection-strip em {
+  padding: 3px 6px;
+  border-radius: 999px;
+  color: #4f3829;
+  background: rgba(255, 248, 229, 0.42);
+  font-size: 10px;
+  font-style: normal;
+  font-weight: 900;
 }
 
 .browser-link-panel .extension-folder-head {
@@ -1727,6 +1781,10 @@ button {
 
   .proposal-grid {
     grid-template-columns: 1fr;
+  }
+
+  .browser-inspection-strip {
+    grid-template-columns: 46px minmax(0, 1fr);
   }
 
   .workbench {

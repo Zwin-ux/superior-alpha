@@ -9,6 +9,7 @@ import {
   findExtensionFolder,
   getProfilePath,
   getSuperiorBrowserEvents,
+  pickSuperiorBrowserDebugTarget,
   startSuperiorBrowser
 } from "./browserRuntime.js";
 
@@ -133,6 +134,31 @@ describe("SUPERIOR browser runtime", () => {
 
     expect(events.type).toBe("superior-browser-events");
     expect(events.items).toEqual([]);
+  });
+
+  it("picks the repo tab before the robot home page during inspection", () => {
+    const target = pickSuperiorBrowserDebugTarget(
+      [
+        {
+          id: "home",
+          type: "page",
+          url: "http://127.0.0.1:5317/browser-session/browser_session_test/home",
+          title: "SUPERIOR Browser"
+        },
+        {
+          id: "repo",
+          type: "page",
+          url: "https://github.com/acme/widget",
+          title: "acme/widget"
+        }
+      ],
+      {
+        sessionId: "browser_session_test",
+        repoUrl: "https://github.com/acme/widget"
+      }
+    );
+
+    expect(target?.id).toBe("repo");
   });
 });
 

@@ -1,6 +1,6 @@
 [package]
 name = "clawdbot-desktop"
-version = "0.1.0"
+version = "0.2.0"
 description = "SUPERIOR desktop shell"
 edition = "2021"
 

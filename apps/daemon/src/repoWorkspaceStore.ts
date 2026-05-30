@@ -50,6 +50,7 @@ export function rememberRepoWorkspaceRecord(result: RepoReaderResult): RepoWorks
     ...(existingRecord?.lastBrowserEventSummary
       ? { lastBrowserEventSummary: existingRecord.lastBrowserEventSummary }
       : {}),
+    ...(existingRecord?.lastBrowserInspection ? { lastBrowserInspection: existingRecord.lastBrowserInspection } : {}),
     nextMove: result.nextMoves[0] ?? result.playground.primaryLoop[0] ?? "Start Playpen",
     notes: existingRecord?.notes ?? [],
     createdAt: existingRecord?.createdAt ?? now,
@@ -70,6 +71,7 @@ export function rememberRepoWorkspaceBrowserSession(
     sessionId: string;
     profilePath: string;
     lastBrowserEventSummary: string;
+    lastBrowserInspection?: RepoWorkspaceRecord["lastBrowserInspection"];
   }
 ): RepoWorkspaceRecord | null {
   const stored = readStoredRepoWorkspaceRecords();
@@ -85,6 +87,11 @@ export function rememberRepoWorkspaceBrowserSession(
     profilePath: details.profilePath,
     lastBrowserSessionId: details.sessionId,
     lastBrowserEventSummary: details.lastBrowserEventSummary,
+    ...(details.lastBrowserInspection
+      ? { lastBrowserInspection: details.lastBrowserInspection }
+      : existingRecord.lastBrowserInspection
+        ? { lastBrowserInspection: existingRecord.lastBrowserInspection }
+        : {}),
     nextMove: details.lastBrowserEventSummary,
     updatedAt: new Date().toISOString()
   };

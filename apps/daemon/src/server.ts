@@ -41,6 +41,7 @@ import {
   attachSuperiorBrowserSession,
   getSuperiorBrowserEvents,
   getSuperiorBrowserState,
+  inspectSuperiorBrowser,
   rememberSuperiorBrowserSkillRun,
   renderSuperiorBrowserHome,
   startSuperiorBrowser,
@@ -99,6 +100,11 @@ const server = createServer(async (request, response) => {
 
   if (request.method === "GET" && url.pathname === "/browser-runtime/events") {
     sendJson(response, 200, getSuperiorBrowserEvents());
+    return;
+  }
+
+  if (request.method === "GET" && url.pathname === "/browser-runtime/inspect") {
+    await handleBrowserRuntimeInspect(response);
     return;
   }
 
@@ -232,6 +238,14 @@ async function handleBrowserRuntimeStop(request: IncomingMessage, response: Serv
     state: await stopSuperiorBrowser(),
     createdAt: new Date().toISOString()
   });
+}
+
+async function handleBrowserRuntimeInspect(response: ServerResponse): Promise<void> {
+  try {
+    sendJson(response, 200, await inspectSuperiorBrowser());
+  } catch (error) {
+    sendBrowserRuntimeError(response, undefined, error);
+  }
 }
 
 function handleBrowserSessionHome(sessionId: string, response: ServerResponse): void {

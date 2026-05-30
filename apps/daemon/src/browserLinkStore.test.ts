@@ -50,4 +50,12 @@ describe("browser link store", () => {
     expect(completeBrowserPairing("pair_wrong")).toBeNull();
     expect(touchBrowserPairing("pair_wrong")).toBeNull();
   });
+
+  it("rejects a paired token after reset", () => {
+    const started = startBrowserPairing();
+
+    expect(completeBrowserPairing(started.pairingToken)?.status).toBe("paired");
+    expect(resetBrowserPairing().status).toBe("unpaired");
+    expect(touchBrowserPairing(started.pairingToken)).toBeNull();
+  });
 });

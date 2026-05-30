@@ -11,6 +11,8 @@ import {
   SuperiorBrowserEvent,
   SuperiorBrowserEventsResponse,
   SuperiorBrowserEventKind,
+  SuperiorBrowserInspectResult,
+  SuperiorBrowserInspection,
   SuperiorBrowserKind,
   SuperiorBrowserSession,
   SuperiorBrowserSessionMode,
@@ -36,11 +38,25 @@ interface InternalBrowserSession extends SuperiorBrowserSession {
   sessionTokenExpiresAt: number;
   pairingToken: string;
   attached: boolean;
+  lastInspectionEventSignature?: string;
 }
 
 interface ActiveBrowserRuntime {
   session: InternalBrowserSession;
   child: ChildProcess;
+}
+
+export interface SuperiorBrowserDebugTarget {
+  id?: string;
+  type?: string;
+  url?: string;
+  title?: string;
+  webSocketDebuggerUrl?: string;
+}
+
+interface DebugProtocolCounts {
+  consoleErrorCount: number;
+  networkFailureCount: number;
 }
 
 const sessionTokenTtlMs = 5 * 60 * 1000;
@@ -81,6 +97,26 @@ export function getSuperiorBrowserEvents(): SuperiorBrowserEventsResponse {
     type: "superior-browser-events",
     ...(sessionId ? { sessionId } : {}),
     items,
+    createdAt: new Date().toISOString()
+  };
+}
+
+export async function inspectSuperiorBrowser(): Promise<SuperiorBrowserInspectResult> {
+  const session = activeRuntime?.session;
+
+  if (!session) {
+    throw new BrowserRuntimeError("not_running", "Start a playpen before inspecting SUPERIOR Browser.");
+  }
+
+  const inspection = await readSuperiorBrowserInspection(session);
+
+  session.inspection = inspection;
+  maybeRecordInspectionEvent(session, inspection);
+
+  return {
+    type: "superior-browser-inspect-result",
+    state: getSuperiorBrowserState(),
+    inspection,
     createdAt: new Date().toISOString()
   };
 }
@@ -197,6 +233,8 @@ export async function startSuperiorBrowser(request: SuperiorBrowserStartRequest)
   if (session.status === "starting") {
     session.status = "ready";
   }
+
+  scheduleSuperiorBrowserInspection(sessionId);
 
   return {
     type: "superior-browser-start-result",
@@ -411,6 +449,7 @@ export function attachSuperiorBrowserSession(
   session.status = "paired";
   session.pairedAt = now;
   recordBrowserEvent(session, "extension_paired", "Extension paired", request.extensionId ?? "controlled profile");
+  scheduleSuperiorBrowserInspection(session.sessionId, 500);
 
   return {
     type: "superior-browser-attach-result",
@@ -506,6 +545,7 @@ function toPublicSession(session: InternalBrowserSession): SuperiorBrowserSessio
     playpenLabel: session.playpenLabel,
     startedAt: session.startedAt,
     ...(session.pairedAt ? { pairedAt: session.pairedAt } : {}),
+    ...(session.inspection ? { inspection: session.inspection } : {}),
     ...(session.error ? { error: session.error } : {})
   };
 }
@@ -665,8 +705,300 @@ function recordBrowserEvent(
   rememberRepoWorkspaceBrowserSession(session.repoWorkspaceId, {
     sessionId: session.sessionId,
     profilePath: session.profilePath,
-    lastBrowserEventSummary: label
+    lastBrowserEventSummary: label,
+    ...(session.inspection ? { lastBrowserInspection: session.inspection } : {})
   });
+}
+
+function scheduleSuperiorBrowserInspection(sessionId: string, delayMs = 1200): void {
+  const timeout = setTimeout(() => {
+    if (activeRuntime?.session.sessionId === sessionId) {
+      void inspectSuperiorBrowser().catch(() => undefined);
+    }
+  }, delayMs);
+
+  timeout.unref?.();
+}
+
+async function readSuperiorBrowserInspection(session: InternalBrowserSession): Promise<SuperiorBrowserInspection> {
+  const base = {
+    type: "superior-browser-inspection" as const,
+    inspectedAt: new Date().toISOString(),
+    extensionPaired: session.attached,
+    ...(session.browserKind ? { browserKind: session.browserKind } : {}),
+    consoleErrorCount: 0,
+    networkFailureCount: 0
+  };
+
+  if (!session.debugPort) {
+    return {
+      ...base,
+      status: "unavailable",
+      note: "No debug port."
+    };
+  }
+
+  try {
+    const targets = await fetchDebugTargets(session.debugPort);
+    const target = pickSuperiorBrowserDebugTarget(targets, session);
+
+    if (!target) {
+      return {
+        ...base,
+        status: "unavailable",
+        note: "No page target."
+      };
+    }
+
+    const counts = target.webSocketDebuggerUrl
+      ? await collectDebugProtocolCounts(target.webSocketDebuggerUrl).catch(() => ({
+          consoleErrorCount: 0,
+          networkFailureCount: 0
+        }))
+      : {
+          consoleErrorCount: 0,
+          networkFailureCount: 0
+        };
+
+    return {
+      ...base,
+      status: "ready",
+      ...(target.url ? { currentUrl: target.url } : {}),
+      ...(target.title ? { pageTitle: target.title } : {}),
+      ...(target.id ? { tabId: target.id } : {}),
+      consoleErrorCount: counts.consoleErrorCount,
+      networkFailureCount: counts.networkFailureCount
+    };
+  } catch (error) {
+    return {
+      ...base,
+      status: "failed",
+      note: error instanceof Error ? error.message : "DevTools inspection failed."
+    };
+  }
+}
+
+export function pickSuperiorBrowserDebugTarget(
+  targets: readonly SuperiorBrowserDebugTarget[],
+  session: Pick<SuperiorBrowserSession, "sessionId" | "repoUrl">
+): SuperiorBrowserDebugTarget | null {
+  const pageTargets = targets.filter((target) => isInspectablePageTarget(target));
+  const repoTarget = pageTargets.find((target) => isRepoTarget(target, session.repoUrl));
+  const nonHomeTarget = pageTargets.find((target) => !isRobotHomeTarget(target, session.sessionId));
+
+  return repoTarget ?? nonHomeTarget ?? pageTargets[0] ?? null;
+}
+
+function maybeRecordInspectionEvent(session: InternalBrowserSession, inspection: SuperiorBrowserInspection): void {
+  const signature = [
+    inspection.status,
+    inspection.currentUrl ?? "",
+    inspection.pageTitle ?? "",
+    inspection.consoleErrorCount,
+    inspection.networkFailureCount,
+    inspection.extensionPaired ? "paired" : "unpaired"
+  ].join("|");
+
+  if (session.lastInspectionEventSignature === signature) {
+    return;
+  }
+
+  session.lastInspectionEventSignature = signature;
+
+  const label = inspection.status === "ready" ? "Page inspected" : "Inspect blocked";
+  const detail =
+    inspection.status === "ready"
+      ? [
+          inspection.pageTitle ?? inspection.currentUrl ?? "page",
+          `${inspection.consoleErrorCount} console`,
+          `${inspection.networkFailureCount} network`
+        ].join(" / ")
+      : inspection.note;
+
+  recordBrowserEvent(session, "page_inspected", label, detail);
+}
+
+async function fetchDebugTargets(port: number): Promise<SuperiorBrowserDebugTarget[]> {
+  const response = await fetchWithTimeout(`http://127.0.0.1:${port}/json/list`, 900);
+
+  if (!response.ok) {
+    throw new Error(`DevTools target list returned ${response.status}.`);
+  }
+
+  const payload: unknown = await response.json();
+
+  return Array.isArray(payload) ? payload.filter(isDebugTarget) : [];
+}
+
+async function fetchWithTimeout(url: string, timeoutMs: number): Promise<Response> {
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), timeoutMs);
+
+  timeout.unref?.();
+
+  try {
+    return await fetch(url, {
+      signal: controller.signal
+    });
+  } finally {
+    clearTimeout(timeout);
+  }
+}
+
+async function collectDebugProtocolCounts(webSocketDebuggerUrl: string): Promise<DebugProtocolCounts> {
+  if (typeof WebSocket === "undefined") {
+    return {
+      consoleErrorCount: 0,
+      networkFailureCount: 0
+    };
+  }
+
+  return new Promise((resolveCounts) => {
+    const counts: DebugProtocolCounts = {
+      consoleErrorCount: 0,
+      networkFailureCount: 0
+    };
+    let commandId = 1;
+    let finished = false;
+    let inspectTimeout: NodeJS.Timeout | undefined;
+    let hardTimeout: NodeJS.Timeout | undefined;
+    let socket: WebSocket | null = null;
+
+    function finish(): void {
+      if (finished) {
+        return;
+      }
+
+      finished = true;
+      if (inspectTimeout) {
+        clearTimeout(inspectTimeout);
+      }
+      if (hardTimeout) {
+        clearTimeout(hardTimeout);
+      }
+      try {
+        socket?.close();
+      } catch {
+        // The browser may close the DevTools socket before our short capture window ends.
+      }
+      resolveCounts(counts);
+    }
+
+    function send(method: string): void {
+      if (socket?.readyState === 1) {
+        socket.send(
+          JSON.stringify({
+            id: commandId++,
+            method
+          })
+        );
+      }
+    }
+
+    try {
+      socket = new WebSocket(webSocketDebuggerUrl);
+    } catch {
+      resolveCounts(counts);
+      return;
+    }
+
+    hardTimeout = setTimeout(finish, 1300);
+    hardTimeout.unref?.();
+
+    socket.addEventListener("open", () => {
+      send("Runtime.enable");
+      send("Log.enable");
+      send("Network.enable");
+      inspectTimeout = setTimeout(finish, 750);
+      inspectTimeout.unref?.();
+    });
+    socket.addEventListener("message", (event) => {
+      countDebugProtocolMessage(event.data, counts);
+    });
+    socket.addEventListener("error", finish);
+    socket.addEventListener("close", finish);
+  });
+}
+
+function countDebugProtocolMessage(data: unknown, counts: DebugProtocolCounts): void {
+  const text = typeof data === "string" ? data : "";
+
+  if (!text) {
+    return;
+  }
+
+  try {
+    const message = JSON.parse(text) as {
+      method?: string;
+      params?: Record<string, unknown>;
+    };
+
+    if (message.method === "Runtime.exceptionThrown") {
+      counts.consoleErrorCount += 1;
+      return;
+    }
+
+    if (message.method === "Runtime.consoleAPICalled" && message.params?.type === "error") {
+      counts.consoleErrorCount += 1;
+      return;
+    }
+
+    if (message.method === "Log.entryAdded") {
+      const entry = message.params?.entry as Record<string, unknown> | undefined;
+
+      if (entry?.level === "error") {
+        counts.consoleErrorCount += 1;
+      }
+      return;
+    }
+
+    if (message.method === "Network.loadingFailed") {
+      counts.networkFailureCount += 1;
+    }
+  } catch {
+    return;
+  }
+}
+
+function isDebugTarget(value: unknown): value is SuperiorBrowserDebugTarget {
+  const target = value as Partial<SuperiorBrowserDebugTarget>;
+
+  return (
+    typeof target === "object" &&
+    target !== null &&
+    (target.id === undefined || typeof target.id === "string") &&
+    (target.type === undefined || typeof target.type === "string") &&
+    (target.url === undefined || typeof target.url === "string") &&
+    (target.title === undefined || typeof target.title === "string") &&
+    (target.webSocketDebuggerUrl === undefined || typeof target.webSocketDebuggerUrl === "string")
+  );
+}
+
+function isInspectablePageTarget(target: SuperiorBrowserDebugTarget): boolean {
+  if (target.type !== "page" || !target.url) {
+    return false;
+  }
+
+  return !["devtools://", "chrome://", "edge://", "chrome-extension://"].some((prefix) => target.url?.startsWith(prefix));
+}
+
+function isRepoTarget(target: SuperiorBrowserDebugTarget, repoUrl: string): boolean {
+  if (!target.url) {
+    return false;
+  }
+
+  const normalizedTargetUrl = normalizeUrlForComparison(target.url);
+  const normalizedRepoUrl = normalizeUrlForComparison(repoUrl);
+
+  return normalizedTargetUrl === normalizedRepoUrl || normalizedTargetUrl.startsWith(`${normalizedRepoUrl}/`);
+}
+
+function isRobotHomeTarget(target: SuperiorBrowserDebugTarget, sessionId: string): boolean {
+  return Boolean(target.url?.includes(`/browser-session/${encodeURIComponent(sessionId)}/home`));
+}
+
+function normalizeUrlForComparison(value: string): string {
+  return value.replace(/\/+$/, "").toLowerCase();
 }
 
 function getDaemonPort(): number {
