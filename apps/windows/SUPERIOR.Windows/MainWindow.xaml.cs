@@ -16,6 +16,7 @@ public partial class MainWindow : Window
     private SuperiorBrowserState? currentBrowserState;
     private RepoReaderResult? currentRepoReaderResult;
     private IReadOnlyList<BotStarterPreset> starterPresets = Array.Empty<BotStarterPreset>();
+    private BotCreationOptionsResponse? creationOptions;
     private BotIdentity? setupDraftBot;
 
     public MainWindow()
@@ -38,10 +39,10 @@ public partial class MainWindow : Window
     {
         try
         {
-            SetupStepText.Text = "Power / Key / Browser / Pick";
-            SetupDetailText.Text = "wake machine";
-            await EnsureStarterPresetsAsync();
-            StartSetupFromPreset("clawd");
+            SetupStepText.Text = "Power / Key / Browser / Shape";
+            SetupDetailText.Text = "empty bench";
+            await EnsureCreationOptionsAsync();
+            StartSetupFromShape("orb");
         }
         catch (Exception error)
         {
@@ -50,17 +51,17 @@ public partial class MainWindow : Window
         }
     }
 
-    private async void OnPresetClicked(object sender, RoutedEventArgs e)
+    private async void OnShapeClicked(object sender, RoutedEventArgs e)
     {
-        if (sender is not Button button || button.Tag is not string presetId)
+        if (sender is not Button button || button.Tag is not string shapeId)
         {
             return;
         }
 
         try
         {
-            await EnsureStarterPresetsAsync();
-            StartSetupFromPreset(presetId);
+            await EnsureCreationOptionsAsync();
+            StartSetupFromShape(shapeId);
         }
         catch (Exception error)
         {
@@ -296,6 +297,7 @@ public partial class MainWindow : Window
             var health = await daemonClient.GetHealthAsync();
             var bot = await daemonClient.GetBotIdentityAsync();
             var presets = await daemonClient.GetBotPresetsAsync();
+            var options = await daemonClient.GetBotCreationOptionsAsync();
             var setupState = await daemonClient.GetSetupStateAsync();
             var catalog = await daemonClient.GetFunctionCatalogAsync();
             var recent = await daemonClient.GetRecentFunctionRunsAsync();
@@ -305,6 +307,7 @@ public partial class MainWindow : Window
 
             currentBot = bot;
             starterPresets = presets.Items;
+            creationOptions = options;
             currentRepoWorkspace = repoWorkspaces.Items.OrderByDescending(item => item.UpdatedAt).FirstOrDefault();
             currentBrowserState = browserState;
 
@@ -381,6 +384,39 @@ public partial class MainWindow : Window
 
         var presets = await daemonClient.GetBotPresetsAsync();
         starterPresets = presets.Items;
+    }
+
+    private async Task EnsureCreationOptionsAsync()
+    {
+        if (creationOptions is not null)
+        {
+            return;
+        }
+
+        creationOptions = await daemonClient.GetBotCreationOptionsAsync();
+    }
+
+    private void StartSetupFromShape(string shapeId)
+    {
+        var shape = creationOptions?.Shapes.FirstOrDefault(item => item.Id == shapeId)
+            ?? creationOptions?.Shapes.FirstOrDefault()
+            ?? throw new InvalidOperationException("No bot shapes returned.");
+        var now = DateTimeOffset.UtcNow.ToString("O");
+        setupDraftBot = new BotIdentity(
+            Id: $"active-{shape.Id}",
+            Name: shape.StarterName,
+            Body: shape.Body,
+            Color: shape.DefaultColor,
+            Eye: shape.DefaultEye,
+            Skills: CollectSetupSkills(),
+            StarterPresetId: shape.StarterPresetId,
+            CreatedAt: now,
+            UpdatedAt: now);
+
+        ApplySetupDraft(setupDraftBot);
+        ApplyBot(setupDraftBot, reaction: null);
+        SetupStepText.Text = "Shape / Skills / Save";
+        SetupDetailText.Text = shape.BenchPrompt;
     }
 
     private void StartSetupFromPreset(string presetId)

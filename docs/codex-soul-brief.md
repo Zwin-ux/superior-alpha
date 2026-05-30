@@ -330,18 +330,41 @@ Do not start by building every platform. Start by proving the identity is real.
 
 Milestone 1:
 
-1. Create the static Windows workshop scene.
-2. Use the avatar/icon assets in the app window and taskbar.
-3. Show the central Clawd preview.
-4. Show status pills: `Daemon: ready`, `OpenAI: ready`, `Browser: unpaired`.
-5. Show the parts tray.
-6. Add hover and pressed states to clay buttons.
-7. Define the first `BotSpore` schema.
-8. Save/load one local spore.
-9. Make `Browser Link` open a placeholder pairing panel.
-10. Keep the code modular enough that Chrome and macOS can reuse the same spore and avatar.
+1. Start with an empty bench.
+2. Let the user choose a shape: `Orb`, `Gremlin`, `Scanner`, `Sentinel`, or `Core`.
+3. Let the user set the first loadout: `Eye`, `Badge`, `Side`, and later `Crown` / `Charm`.
+4. Create the static Windows workshop scene.
+5. Use the avatar/icon assets in the app window and taskbar.
+6. Show the central Clawd preview.
+7. Show status pills: `Daemon: ready`, `OpenAI: ready`, `Browser: unpaired`.
+8. Show the parts tray.
+9. Add hover and pressed states to clay buttons.
+10. Define the first `BotSpore` schema.
+11. Save/load one local spore.
+12. Make `Browser Link` open a placeholder pairing panel.
+13. Keep the code modular enough that Chrome and macOS can reuse the same spore and avatar.
 
 Milestone 1 is successful when the app feels like the screenshot even before the deeper features are finished.
+
+## 10A. Onboarding Shape Rule
+
+The onboarding fantasy should feel like a starter-creature moment, not a settings form.
+
+Flow:
+
+```text
+empty bench -> choose shape -> choose skills -> name -> save spore
+```
+
+Presets like `Clawd`, `Hermes`, and `Mote` are seeds under the hood. The user-facing moment is choosing the creature shape and fitting useful parts.
+
+The skill setup should read like a JRPG loadout:
+
+- `Eye`: page reading and extraction tools.
+- `Badge`: explanation or proof tools.
+- `Side`: repo/workbench tools.
+- `Crown`: later knowledge or transcript tools.
+- `Charm`: later monitor and notifier tools.
 
 ---
 

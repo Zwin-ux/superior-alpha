@@ -2,6 +2,7 @@ import { createServer, IncomingMessage, ServerResponse } from "node:http";
 import {
   ArticleXrayError,
   ArticleXrayRequest,
+  BotCreationOptionsResponse,
   BotIdentity,
   BotStarterPresetsResponse,
   BrowserPairingCompleteRequest,
@@ -20,6 +21,8 @@ import {
   SuperiorFunctionErrorCode,
   SuperiorFunctionRunRequest,
   SuperiorSetupState,
+  botCreationShapes,
+  botSkillLoadoutOptions,
   botStarterPresets,
   createSuperiorFunctionRunRequest
 } from "@clawdbot/shared";
@@ -79,6 +82,11 @@ const server = createServer(async (request, response) => {
 
   if (request.method === "GET" && url.pathname === "/bot-presets") {
     sendJson(response, 200, readBotStarterPresets());
+    return;
+  }
+
+  if (request.method === "GET" && url.pathname === "/bot-creation-options") {
+    sendJson(response, 200, readBotCreationOptions());
     return;
   }
 
@@ -936,6 +944,15 @@ function readBotStarterPresets(): BotStarterPresetsResponse {
   };
 }
 
+function readBotCreationOptions(): BotCreationOptionsResponse {
+  return {
+    type: "bot-creation-options",
+    shapes: botCreationShapes.map((shape) => ({ ...shape })),
+    skills: botSkillLoadoutOptions.map((skill) => ({ ...skill })),
+    createdAt: new Date().toISOString()
+  };
+}
+
 function readSetupState(): SuperiorSetupState {
   const bot = readServiceBotIdentity();
   const browserLinkState = readBrowserLinkState();
@@ -972,10 +989,16 @@ function readSetupState(): SuperiorSetupState {
         detail: browserReady ? "hand fitted" : browserLinkState.status
       },
       {
-        step: "preset",
+        step: "shape",
         status: "ready",
-        label: "Pick",
-        detail: activeBotSaved ? "saved bot" : "choose starter"
+        label: "Shape",
+        detail: activeBotSaved ? bot.body : "empty bench"
+      },
+      {
+        step: "skills",
+        status: "ready",
+        label: "Skills",
+        detail: bot.skills.join(" / ")
       },
       {
         step: "assembly",

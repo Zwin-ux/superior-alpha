@@ -9,9 +9,11 @@ Last checked: 2026-05-30
 - Root build passes: `corepack pnpm build`
 - Host contract fixture passes: `corepack pnpm fixture:host-contract`
 - Host contract fixture now verifies `GET /bot-presets` and `GET /setup-state`.
-- Latest host contract fixture report: `.clawdbot/verification/host-contract-fixture-1780167293997.json`.
+- Latest host contract fixture report: `.clawdbot/verification/host-contract-fixture-1780167726706.json`.
 - Shared tests verify starter presets seed valid active bot identities and only include runnable skills.
 - Shared tests verify `BotSpore` export keeps portable identity safe and excludes raw pairing tokens.
+- Shared tests verify empty-bench creation starts from shape choices and runnable JRPG-style loadout parts.
+- Host contract fixture verifies `/bot-creation-options` returns platform-agnostic shape and skill options.
 - Soul asset shelf imported under `assets/bots/soul/`; Windows and Chrome static icons now use the provided Clawd/Hermes starter avatar assets.
 - Native Windows toolchain/proof gate passes with the 0.9 setup surface: `corepack pnpm windows:proof`.
 - Extension MV3 build passes: `corepack pnpm --filter @clawdbot/extension build`

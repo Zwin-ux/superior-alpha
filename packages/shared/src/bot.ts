@@ -43,6 +43,8 @@ export const skillSlots = ["eye", "crown", "side", "badge", "charm"] as const;
 export type SkillSlot = (typeof skillSlots)[number];
 export const botStarterPresetIds = ["clawd", "hermes", "mote"] as const;
 export type BotStarterPresetId = (typeof botStarterPresetIds)[number];
+export const botCreationShapeIds = ["orb", "gremlin", "scanner", "sentinel", "core"] as const;
+export type BotCreationShapeId = (typeof botCreationShapeIds)[number];
 
 export const skillSlotLabels: Record<SkillSlot, string> = {
   eye: "Eye",
@@ -315,6 +317,26 @@ export interface BotStarterPreset {
   eye: BotEye;
   skills: SkillId[];
   slotNotes: Partial<Record<SkillSlot, string>>;
+}
+
+export interface BotCreationShapeDefinition {
+  id: BotCreationShapeId;
+  label: string;
+  body: BotBody;
+  defaultColor: BotColorId;
+  defaultEye: BotEye;
+  starterPresetId: BotStarterPresetId;
+  starterName: string;
+  role: string;
+  benchPrompt: string;
+}
+
+export interface BotSkillLoadoutOption {
+  skillId: SkillId;
+  slot: SkillSlot;
+  label: string;
+  effect: string;
+  attachment: string;
 }
 
 export type BotSpecies = "clawd" | "hermes";
@@ -616,6 +638,72 @@ export const botStarterPresets: readonly BotStarterPreset[] = [
   }
 ];
 
+export const botCreationShapes: readonly BotCreationShapeDefinition[] = [
+  {
+    id: "orb",
+    label: "Orb",
+    body: "orb",
+    defaultColor: "lavender",
+    defaultEye: "glow",
+    starterPresetId: "clawd",
+    starterName: "Clawd",
+    role: "Soft starter",
+    benchPrompt: "round clay, steady light"
+  },
+  {
+    id: "gremlin",
+    label: "Gremlin",
+    body: "gremlin",
+    defaultColor: "mossGreen",
+    defaultEye: "pixel",
+    starterPresetId: "clawd",
+    starterName: "Clawd",
+    role: "Workshop tinkerer",
+    benchPrompt: "scrappy clay, tool hand"
+  },
+  {
+    id: "scanner",
+    label: "Scanner",
+    body: "scanner",
+    defaultColor: "skyBlue",
+    defaultEye: "lens",
+    starterPresetId: "hermes",
+    starterName: "Hermes",
+    role: "Browser courier",
+    benchPrompt: "wide lens, page hand"
+  },
+  {
+    id: "sentinel",
+    label: "Sentinel",
+    body: "sentinel",
+    defaultColor: "brickRed",
+    defaultEye: "dot",
+    starterPresetId: "clawd",
+    starterName: "Ward",
+    role: "Guard shape",
+    benchPrompt: "helmet clay, shield mark"
+  },
+  {
+    id: "core",
+    label: "Core",
+    body: "core",
+    defaultColor: "chalkWhite",
+    defaultEye: "dot",
+    starterPresetId: "mote",
+    starterName: "Mote",
+    role: "Plain helper",
+    benchPrompt: "blank clay, simple eyes"
+  }
+];
+
+export const botSkillLoadoutOptions: readonly BotSkillLoadoutOption[] = runnableSkillShelf.map((skill) => ({
+  skillId: skill.id,
+  slot: skill.slot,
+  label: skill.shortLabel,
+  effect: skill.effect,
+  attachment: skill.attachment
+}));
+
 export function sanitizeSkillIds(skills: SkillId[]): SkillId[] {
   const runnableIds = new Set<SkillId>(runnableSkillIds);
   const seenIds = new Set<SkillId>();
@@ -672,6 +760,16 @@ export function getBotStarterPreset(presetId: BotStarterPresetId): BotStarterPre
   return botStarterPresets.find((preset) => preset.id === presetId) ?? fallback;
 }
 
+export function getBotCreationShape(shapeId: BotCreationShapeId): BotCreationShapeDefinition {
+  const fallback = botCreationShapes[0];
+
+  if (!fallback) {
+    throw new Error("SUPERIOR needs at least one bot creation shape.");
+  }
+
+  return botCreationShapes.find((shape) => shape.id === shapeId) ?? fallback;
+}
+
 export function createBotIdentityFromStarterPreset(
   presetId: BotStarterPresetId,
   options: {
@@ -708,6 +806,47 @@ export function createBotIdentityFromStarterPreset(
       eye: preset.eye,
       name: options.name ?? preset.name,
       skills: [...preset.skills]
+    }
+  );
+}
+
+export function createBotIdentityFromShape(
+  shapeId: BotCreationShapeId,
+  options: {
+    id?: string;
+    name?: string;
+    skills?: SkillId[];
+    createdAt?: string;
+  } = {}
+): BotIdentity {
+  const shape = getBotCreationShape(shapeId);
+  const createdAt = options.createdAt ?? new Date().toISOString();
+
+  return updateBotIdentity(
+    {
+      ...DEFAULT_BOT_IDENTITY,
+      id: options.id ?? `active-${shape.id}`,
+      name: options.name ?? shape.starterName,
+      body: shape.body,
+      color: shape.defaultColor,
+      eye: shape.defaultEye,
+      skills: sanitizeSkillIds(options.skills ?? defaultSkillLoadout),
+      starterPresetId: shape.starterPresetId,
+      createdAt,
+      updatedAt: createdAt,
+      iconVariant: {
+        ...DEFAULT_BOT_IDENTITY.iconVariant,
+        body: shape.body,
+        color: shape.defaultColor,
+        eye: shape.defaultEye
+      }
+    },
+    {
+      body: shape.body,
+      color: shape.defaultColor,
+      eye: shape.defaultEye,
+      name: options.name ?? shape.starterName,
+      skills: options.skills ?? defaultSkillLoadout
     }
   );
 }

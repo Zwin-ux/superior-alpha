@@ -45,6 +45,30 @@ public sealed record BotStarterPreset(
     [property: JsonPropertyName("eye")] string Eye,
     [property: JsonPropertyName("skills")] IReadOnlyList<string> Skills);
 
+public sealed record BotCreationOptionsResponse(
+    [property: JsonPropertyName("type")] string Type,
+    [property: JsonPropertyName("shapes")] IReadOnlyList<BotCreationShape> Shapes,
+    [property: JsonPropertyName("skills")] IReadOnlyList<BotSkillLoadoutOption> Skills,
+    [property: JsonPropertyName("createdAt")] string CreatedAt);
+
+public sealed record BotCreationShape(
+    [property: JsonPropertyName("id")] string Id,
+    [property: JsonPropertyName("label")] string Label,
+    [property: JsonPropertyName("body")] string Body,
+    [property: JsonPropertyName("defaultColor")] string DefaultColor,
+    [property: JsonPropertyName("defaultEye")] string DefaultEye,
+    [property: JsonPropertyName("starterPresetId")] string StarterPresetId,
+    [property: JsonPropertyName("starterName")] string StarterName,
+    [property: JsonPropertyName("role")] string Role,
+    [property: JsonPropertyName("benchPrompt")] string BenchPrompt);
+
+public sealed record BotSkillLoadoutOption(
+    [property: JsonPropertyName("skillId")] string SkillId,
+    [property: JsonPropertyName("slot")] string Slot,
+    [property: JsonPropertyName("label")] string Label,
+    [property: JsonPropertyName("effect")] string Effect,
+    [property: JsonPropertyName("attachment")] string Attachment);
+
 public sealed record SuperiorSetupState(
     [property: JsonPropertyName("type")] string Type,
     [property: JsonPropertyName("activeBotSaved")] bool ActiveBotSaved,

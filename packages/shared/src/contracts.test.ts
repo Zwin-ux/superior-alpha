@@ -1,11 +1,14 @@
 import { describe, expect, it } from "vitest";
 import {
   DEFAULT_BOT_IDENTITY,
+  botCreationShapes,
+  botSkillLoadoutOptions,
   botStarterPresetIds,
   botStarterPresets,
   createArticleXrayRequest,
   createBotIconSvg,
   createBotIdentityFromStarterPreset,
+  createBotIdentityFromShape,
   createBotSporeFromIdentity,
   createBrowserPairingCompleteRequest,
   createCustomSkillImportRequest,
@@ -47,6 +50,27 @@ describe("shared SUPERIOR contracts", () => {
     expect(hermes.skills).toEqual(["page-explainer", "article-xray"]);
     expect(hermes.starterPresetId).toBe("hermes");
     expect(hermes.createdAt).toBe(new Date(0).toISOString());
+  });
+
+  it("starts creation from shape, then loadout", () => {
+    expect(botCreationShapes.map((shape) => shape.id)).toEqual(["orb", "gremlin", "scanner", "sentinel", "core"]);
+    expect(botSkillLoadoutOptions.map((option) => `${option.slot}:${option.skillId}`)).toEqual([
+      "badge:page-explainer",
+      "eye:article-xray",
+      "side:repo-reader"
+    ]);
+
+    const scanner = createBotIdentityFromShape("scanner", {
+      skills: ["page-explainer"],
+      createdAt: new Date(0).toISOString()
+    });
+
+    expect(scanner.name).toBe("Hermes");
+    expect(scanner.body).toBe("scanner");
+    expect(scanner.color).toBe("skyBlue");
+    expect(scanner.eye).toBe("lens");
+    expect(scanner.skills).toEqual(["page-explainer"]);
+    expect(scanner.starterPresetId).toBe("hermes");
   });
 
   it("keeps starter preset skills runnable-only", () => {

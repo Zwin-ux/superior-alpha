@@ -20,7 +20,8 @@ Current focus is `0.9 Bot Creation Alpha`:
 - add starter presets: `Clawd`, `Hermes`, and `Mote`
 - treat presets as seeds, then save through the same active `BotIdentity`
 - expose `GET /bot-presets` and `GET /setup-state` through the daemon
-- make setup read as `Power`, `Key`, `Browser`, `Pick`, `Build`, `Save`
+- expose `GET /bot-creation-options` so every shell can start from shape plus skill loadout
+- make setup read as `Power`, `Key`, `Browser`, `Shape`, `Skills`, `Build`, `Save`
 - keep the extension, browser playpen, icons, and daemon identity tied to the saved active bot
 - keep `apps/windows` as the flagship EXE lane
 - keep `apps/desktop` as alpha harness only

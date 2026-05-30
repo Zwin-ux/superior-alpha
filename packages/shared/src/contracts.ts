@@ -3,8 +3,11 @@ import {
   BotColorId,
   BotEye,
   BotIdentity,
+  BotCreationShapeDefinition,
+  BotCreationShapeId,
   BotStarterPreset,
   BotStarterPresetId,
+  BotSkillLoadoutOption,
   BrowserLinkState,
   SkillCategory,
   SkillId,
@@ -437,12 +440,13 @@ export interface DaemonHealth {
   };
 }
 
-export type BotCreationStep = "daemon" | "key" | "browser" | "preset" | "assembly" | "finish";
+export type BotCreationStep = "daemon" | "key" | "browser" | "shape" | "skills" | "assembly" | "finish";
 export type BotCreationStepStatus = "ready" | "missing" | "blocked";
 
 export interface BotCreationDraft {
   type: "bot-creation-draft";
   step: BotCreationStep;
+  shapeId?: BotCreationShapeId;
   starterPresetId?: BotStarterPresetId;
   name: string;
   body: BotBody;
@@ -458,10 +462,17 @@ export interface BotStarterPresetsResponse {
   createdAt: string;
 }
 
+export interface BotCreationOptionsResponse {
+  type: "bot-creation-options";
+  shapes: BotCreationShapeDefinition[];
+  skills: BotSkillLoadoutOption[];
+  createdAt: string;
+}
+
 export interface SuperiorSetupStepState {
   step: BotCreationStep;
   status: BotCreationStepStatus;
-  label: "Power" | "Key" | "Browser" | "Pick" | "Build" | "Save";
+  label: "Power" | "Key" | "Browser" | "Shape" | "Skills" | "Build" | "Save";
   detail: string;
 }
 

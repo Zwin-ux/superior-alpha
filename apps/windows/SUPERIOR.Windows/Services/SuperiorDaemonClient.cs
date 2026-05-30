@@ -39,6 +39,11 @@ public sealed class SuperiorDaemonClient
         return GetRequiredAsync<SuperiorSetupState>("setup-state");
     }
 
+    public Task<BotCreationOptionsResponse> GetBotCreationOptionsAsync()
+    {
+        return GetRequiredAsync<BotCreationOptionsResponse>("bot-creation-options");
+    }
+
     public Task<FunctionCatalogResponse> GetFunctionCatalogAsync()
     {
         return GetRequiredAsync<FunctionCatalogResponse>("functions");

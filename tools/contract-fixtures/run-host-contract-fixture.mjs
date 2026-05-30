@@ -56,6 +56,23 @@ await runCheck("bot-presets", async () => {
   };
 });
 
+await runCheck("bot-creation-options", async () => {
+  const options = await getJson("/bot-creation-options");
+  const shapeIds = options.shapes?.map((item) => item.id) ?? [];
+  const skillIds = options.skills?.map((item) => item.skillId) ?? [];
+
+  assert(options.type === "bot-creation-options", "Expected bot creation options response.");
+  assert(shapeIds.join(",") === "orb,gremlin,scanner,sentinel,core", "Expected setup shape order.");
+  assert(skillIds.includes("page-explainer"), "Expected Page Explainer loadout option.");
+  assert(skillIds.includes("article-xray"), "Expected Article X-Ray loadout option.");
+  assert(skillIds.includes("repo-reader"), "Expected Repo Reader loadout option.");
+
+  return {
+    shapes: shapeIds,
+    skills: skillIds
+  };
+});
+
 await runCheck("setup-state", async () => {
   const setup = await getJson("/setup-state");
   const steps = setup.steps?.map((item) => item.step) ?? [];
@@ -63,7 +80,7 @@ await runCheck("setup-state", async () => {
   assert(setup.type === "superior-setup-state", "Expected setup state response.");
   assert(typeof setup.activeBotSaved === "boolean", "Expected activeBotSaved flag.");
   assert(typeof setup.requiresSetup === "boolean", "Expected requiresSetup flag.");
-  assert(steps.join(",") === "daemon,key,browser,preset,assembly,finish", "Expected setup step order.");
+  assert(steps.join(",") === "daemon,key,browser,shape,skills,assembly,finish", "Expected setup step order.");
   assert(setup.bot?.identity?.id === botIdentity.id, "Expected setup state active bot.");
 
   return {

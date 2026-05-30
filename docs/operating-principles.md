@@ -18,6 +18,8 @@ If the answer is no, simplify it.
 
 The current identity rule is `one spore, many shells`: one active bot identity should carry through Windows, Chrome, macOS, web, CLI, and future mobile shells. Platform code can be native and different, but it should not invent a different bot.
 
+Onboarding rule: start from an empty bench. The user chooses a shape first, then fits skills like loadout parts, then saves the spore. Presets are implementation seeds, not the primary user-facing mental model.
+
 ## Valve-Inspired Lessons
 
 These notes are inspired by public Valve/Source material, not copied as a style guide.

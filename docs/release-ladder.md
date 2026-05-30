@@ -77,8 +77,9 @@ Every release cycle must follow [platform-release-testing.md](platform-release-t
 
 - Build the first real setup flow around one active bot, not a roster.
 - Add starter presets: `Clawd`, `Hermes`, and `Mote`; presets seed the current `BotIdentity` and can be renamed/customized before save.
-- Add daemon setup contracts: `GET /bot-presets`, `GET /setup-state`, and final save through `PUT /bot-identity`.
-- Native Windows `New Bot` opens setup mode: `Power`, `Key`, `Browser`, `Pick`, `Build`, `Save`.
+- Add daemon setup contracts: `GET /bot-presets`, `GET /bot-creation-options`, `GET /setup-state`, and final save through `PUT /bot-identity`.
+- Native Windows `New Bot` opens setup mode: `Power`, `Key`, `Browser`, `Shape`, `Skills`, `Build`, `Save`.
+- User-facing onboarding starts from an empty bench, chooses shape, then fits runnable skill parts.
 - Goal: waking up a small desktop creature feels like a physical setup loop, while daemon, extension, playpen, and icons still follow one active bot.
 
 ## 0.10 Beta Candidate

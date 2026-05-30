@@ -154,12 +154,15 @@
         <Border Style="{StaticResource TrayCardStyle}">
           <StackPanel>
             <TextBlock Text="SETUP" FontSize="11" FontWeight="Black" Foreground="{StaticResource ClayMuted}" />
-            <TextBlock x:Name="SetupStepText" Text="Power / Key / Browser / Pick / Build / Save" FontWeight="Bold" TextWrapping="Wrap" />
-            <TextBlock x:Name="SetupDetailText" Text="one active bot" FontSize="11" Foreground="{StaticResource ClayMuted}" TextWrapping="Wrap" />
+            <TextBlock x:Name="SetupStepText" Text="Power / Key / Browser / Shape / Skills / Save" FontWeight="Bold" TextWrapping="Wrap" />
+            <TextBlock x:Name="SetupDetailText" Text="empty bench" FontSize="11" Foreground="{StaticResource ClayMuted}" TextWrapping="Wrap" />
+            <TextBlock Text="SHAPE" FontSize="11" FontWeight="Black" Foreground="{StaticResource ClayMuted}" Margin="0,10,0,2" />
             <UniformGrid Columns="3" Margin="0,10,0,2">
-              <Button Content="Clawd" Tag="clawd" Click="OnPresetClicked" Margin="0,0,5,8" />
-              <Button Content="Hermes" Tag="hermes" Click="OnPresetClicked" Margin="3,0,3,8" />
-              <Button Content="Mote" Tag="mote" Click="OnPresetClicked" Margin="5,0,0,8" />
+              <Button Content="Orb" Tag="orb" Click="OnShapeClicked" Margin="0,0,5,8" />
+              <Button Content="Gremlin" Tag="gremlin" Click="OnShapeClicked" Margin="3,0,3,8" />
+              <Button Content="Scanner" Tag="scanner" Click="OnShapeClicked" Margin="5,0,0,8" />
+              <Button Content="Sentinel" Tag="sentinel" Click="OnShapeClicked" Margin="0,0,5,8" />
+              <Button Content="Core" Tag="core" Click="OnShapeClicked" Margin="3,0,3,8" />
             </UniformGrid>
             <TextBox x:Name="BotNameInput"
                      Height="34"
@@ -195,6 +198,7 @@
                 <ComboBoxItem Content="dot" />
               </ComboBox>
             </Grid>
+            <TextBlock Text="SKILLS" FontSize="11" FontWeight="Black" Foreground="{StaticResource ClayMuted}" Margin="0,2,0,2" />
             <WrapPanel>
               <CheckBox x:Name="SkillExplainCheck" Content="Explain" Margin="0,0,12,8" FontWeight="Bold" />
               <CheckBox x:Name="SkillXrayCheck" Content="X-Ray" Margin="0,0,12,8" FontWeight="Bold" />
