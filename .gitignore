@@ -1,0 +1,22 @@
+node_modules/
+dist/
+coverage/
+.clawdbot/
+*.tsbuildinfo
+.env
+.env.*
+!.env.example
+*.local
+
+# Tauri and Rust
+target/
+apps/desktop/src-tauri/target/
+apps/desktop/src-tauri/resources/node/node.exe
+apps/desktop/src-tauri/resources/extension/
+
+# OS and editor files
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
+.gstack/

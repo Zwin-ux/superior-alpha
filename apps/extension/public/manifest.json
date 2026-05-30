@@ -1,0 +1,38 @@
+{
+  "manifest_version": 3,
+  "name": "SUPERIOR",
+  "version": "0.1.0",
+  "description": "A clay desktop creature that brings local browser skills into your workflow.",
+  "permissions": ["activeTab", "contextMenus", "scripting", "storage", "tabs"],
+  "host_permissions": ["http://127.0.0.1:5317/*", "http://localhost:5317/*"],
+  "icons": {
+    "16": "icons/clawdbot-16.png",
+    "32": "icons/clawdbot-32.png",
+    "48": "icons/clawdbot-48.png",
+    "128": "icons/clawdbot-128.png"
+  },
+  "background": {
+    "service_worker": "assets/background.js",
+    "type": "module"
+  },
+  "content_scripts": [
+    {
+      "matches": [
+        "http://127.0.0.1:5317/browser-session/*",
+        "http://localhost:5317/browser-session/*"
+      ],
+      "js": ["assets/superiorBrowserAttach.js"],
+      "run_at": "document_idle"
+    }
+  ],
+  "action": {
+    "default_title": "SUPERIOR",
+    "default_popup": "popup.html",
+    "default_icon": {
+      "16": "icons/clawdbot-16.png",
+      "32": "icons/clawdbot-32.png",
+      "48": "icons/clawdbot-48.png",
+      "128": "icons/clawdbot-128.png"
+    }
+  }
+}

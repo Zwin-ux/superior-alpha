@@ -1,0 +1,25 @@
+{
+  "name": "clawdbot",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "packageManager": "pnpm@11.4.0",
+  "engines": {
+    "node": ">=22"
+  },
+  "scripts": {
+    "dev": "corepack pnpm --parallel --filter @clawdbot/daemon --filter @clawdbot/desktop dev",
+    "dev:daemon": "corepack pnpm --filter @clawdbot/daemon dev",
+    "dev:desktop": "corepack pnpm --filter @clawdbot/desktop dev",
+    "dev:extension": "corepack pnpm --filter @clawdbot/extension dev",
+    "build": "corepack pnpm -r --workspace-concurrency=1 build",
+    "typecheck": "corepack pnpm --filter @clawdbot/shared build && corepack pnpm -r --workspace-concurrency=1 typecheck",
+    "test": "corepack pnpm -r --workspace-concurrency=1 test",
+    "service:install:windows": "powershell -ExecutionPolicy Bypass -File apps/daemon/scripts/install-windows-service.ps1 -Build",
+    "service:uninstall:windows": "powershell -ExecutionPolicy Bypass -File apps/daemon/scripts/uninstall-windows-service.ps1"
+  },
+  "devDependencies": {
+    "typescript": "6.0.3",
+    "vitest": "4.1.7"
+  }
+}

@@ -1,0 +1,35 @@
+{
+  "name": "@clawdbot/desktop",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "tauri dev",
+    "dev:vite": "node ./scripts/start-vite-if-needed.mjs",
+    "dev:vite:raw": "vite --host 127.0.0.1 --strictPort",
+    "icons": "node ../extension/scripts/generate-icons.mjs",
+    "daemon:bundle": "corepack pnpm --filter @clawdbot/daemon bundle:desktop",
+    "node:stage": "node ./scripts/stage-node-runtime.mjs",
+    "extension:stage": "corepack pnpm --filter @clawdbot/extension build && node ./scripts/stage-extension.mjs",
+    "build": "corepack pnpm icons && corepack pnpm build:vite",
+    "build:vite": "tsc -p tsconfig.json --noEmit && vite build",
+    "tauri:build": "corepack pnpm icons && corepack pnpm daemon:bundle && corepack pnpm node:stage && corepack pnpm extension:stage && tauri build",
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "test": "vitest run --passWithNoTests"
+  },
+  "dependencies": {
+    "@clawdbot/shared": "workspace:*",
+    "@tauri-apps/api": "2.11.0",
+    "react": "19.2.6",
+    "react-dom": "19.2.6"
+  },
+  "devDependencies": {
+    "@tauri-apps/cli": "2.11.2",
+    "@types/node": "25.9.1",
+    "@types/react": "19.2.15",
+    "@types/react-dom": "19.2.3",
+    "@vitejs/plugin-react": "6.0.2",
+    "vite": "8.0.14",
+    "vitest": "4.1.7"
+  }
+}

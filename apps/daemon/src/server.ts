@@ -1,0 +1,699 @@
+import { createServer, IncomingMessage, ServerResponse } from "node:http";
+import {
+  ArticleXrayError,
+  ArticleXrayRequest,
+  BotIdentity,
+  BrowserPairingCompleteRequest,
+  BrowserPairingError,
+  CustomSkillImportError,
+  CustomSkillImportRequest,
+  ExplainPageError,
+  ExplainPageRequest,
+  RepoReaderError as RepoReaderContractError,
+  RepoReaderRequest,
+  SuperiorBrowserAttachRequest,
+  SuperiorBrowserError,
+  SuperiorBrowserStartRequest,
+  hasUsablePageText
+} from "@clawdbot/shared";
+import { hasArticleContent, runArticleXray } from "./articleXray.js";
+import {
+  completeBrowserPairing,
+  readBrowserLinkState,
+  resetBrowserPairing,
+  startBrowserPairing,
+  touchBrowserPairing
+} from "./browserLinkStore.js";
+import { readBotIdentity, writeBotIdentity } from "./botIdentityStore.js";
+import { getDaemonConfig } from "./config.js";
+import { CustomSkillImportScanError, proposeCustomSkillImport } from "./customSkillImport.js";
+import { explainPageWithOpenAI, MissingOpenAIConfigError } from "./openaiProvider.js";
+import {
+  readRecentSkillResults,
+  rememberArticleXrayResult,
+  rememberExplainPageResult,
+  rememberRepoReaderResult
+} from "./recentResultsStore.js";
+import { RepoReaderError, runRepoReader } from "./repoReader.js";
+import { readRepoWorkspaceRecords, rememberRepoWorkspaceRecord } from "./repoWorkspaceStore.js";
+import {
+  BrowserRuntimeError,
+  attachSuperiorBrowserSession,
+  getSuperiorBrowserState,
+  renderSuperiorBrowserHome,
+  startSuperiorBrowser,
+  stopSuperiorBrowser
+} from "./browserRuntime.js";
+
+const config = getDaemonConfig();
+
+const server = createServer(async (request, response) => {
+  setCorsHeaders(response);
+
+  if (request.method === "OPTIONS") {
+    response.writeHead(204);
+    response.end();
+    return;
+  }
+
+  const url = new URL(request.url ?? "/", `http://${config.host}:${config.port}`);
+
+  if (request.method === "GET" && url.pathname === "/health") {
+    sendJson(response, 200, {
+      service: "superior-daemon",
+      status: config.openaiApiKey ? "ready" : "missing_config",
+      version: config.version,
+      openaiConfigured: Boolean(config.openaiApiKey),
+      localConfig: {
+        stateDirectory: config.localStateDirectory,
+        keyFilePath: config.keyFilePath,
+        keyFilePresent: config.keyFilePresent,
+        openaiConfigSource: config.openaiConfigSource
+      },
+      browserLinkState: readBrowserLinkState()
+    });
+    return;
+  }
+
+  if (request.method === "GET" && url.pathname === "/bot-identity") {
+    sendJson(response, 200, readServiceBotIdentity());
+    return;
+  }
+
+  if (request.method === "GET" && url.pathname === "/recent-results") {
+    sendJson(response, 200, readRecentSkillResults());
+    return;
+  }
+
+  if (request.method === "GET" && url.pathname === "/repo-workspaces") {
+    sendJson(response, 200, readRepoWorkspaceRecords());
+    return;
+  }
+
+  if (request.method === "GET" && url.pathname === "/browser-runtime") {
+    sendJson(response, 200, getSuperiorBrowserState());
+    return;
+  }
+
+  const browserSessionHomeMatch = /^\/browser-session\/([^/]+)\/home$/.exec(url.pathname);
+
+  if (request.method === "GET" && browserSessionHomeMatch?.[1]) {
+    handleBrowserSessionHome(browserSessionHomeMatch[1], response);
+    return;
+  }
+
+  const browserSessionAttachMatch = /^\/browser-session\/([^/]+)\/attach$/.exec(url.pathname);
+
+  if (request.method === "POST" && browserSessionAttachMatch?.[1]) {
+    await handleBrowserSessionAttach(browserSessionAttachMatch[1], request, response);
+    return;
+  }
+
+  if ((request.method === "POST" || request.method === "PUT") && url.pathname === "/bot-identity") {
+    await handleBotIdentitySave(request, response);
+    return;
+  }
+
+  if (request.method === "POST" && url.pathname === "/explain") {
+    await handleExplain(request, response);
+    return;
+  }
+
+  if (request.method === "POST" && url.pathname === "/skills/article-xray") {
+    await handleArticleXray(request, response);
+    return;
+  }
+
+  if (request.method === "POST" && url.pathname === "/skills/repo-reader") {
+    await handleRepoReader(request, response);
+    return;
+  }
+
+  if (request.method === "POST" && url.pathname === "/browser-link/start") {
+    await handleBrowserPairingStart(request, response);
+    return;
+  }
+
+  if (request.method === "POST" && url.pathname === "/browser-link/complete") {
+    await handleBrowserPairingComplete(request, response);
+    return;
+  }
+
+  if (request.method === "POST" && url.pathname === "/browser-link/reset") {
+    await handleBrowserPairingReset(request, response);
+    return;
+  }
+
+  if (request.method === "POST" && url.pathname === "/browser-runtime/start") {
+    await handleBrowserRuntimeStart(request, response);
+    return;
+  }
+
+  if (request.method === "POST" && url.pathname === "/browser-runtime/stop") {
+    await handleBrowserRuntimeStop(request, response);
+    return;
+  }
+
+  if (request.method === "POST" && url.pathname === "/custom-skills/import-proposal") {
+    await handleCustomSkillImport(request, response);
+    return;
+  }
+
+  sendJson(response, 404, {
+    type: "explain-page-error",
+    code: "bad_request",
+    message: "Unknown SUPERIOR daemon route."
+  } satisfies ExplainPageError);
+});
+
+server.listen(config.port, config.host, () => {
+  console.log(`SUPERIOR daemon listening on http://${config.host}:${config.port}`);
+});
+
+async function handleBrowserRuntimeStart(request: IncomingMessage, response: ServerResponse): Promise<void> {
+  if (!isTrustedLocalOrigin(request.headers.origin)) {
+    sendJson(response, 403, {
+      type: "superior-browser-error",
+      code: "unauthorized",
+      message: "SUPERIOR Browser can only be started from the local Workshop."
+    } satisfies SuperiorBrowserError);
+    return;
+  }
+
+  let payload: SuperiorBrowserStartRequest;
+
+  try {
+    payload = (await readJsonBody(request)) as SuperiorBrowserStartRequest;
+  } catch {
+    sendJson(response, 400, {
+      type: "superior-browser-error",
+      code: "bad_request",
+      message: "Expected a valid SUPERIOR Browser start request."
+    } satisfies SuperiorBrowserError);
+    return;
+  }
+
+  if (payload.type !== "superior-browser-start" || typeof payload.repoWorkspaceId !== "string") {
+    sendJson(response, 400, {
+      type: "superior-browser-error",
+      requestId: payload.requestId,
+      code: "bad_request",
+      message: "Choose a saved repo playpen before starting SUPERIOR Browser."
+    } satisfies SuperiorBrowserError);
+    return;
+  }
+
+  try {
+    sendJson(response, 200, await startSuperiorBrowser(payload));
+  } catch (error) {
+    sendBrowserRuntimeError(response, payload.requestId, error);
+  }
+}
+
+async function handleBrowserRuntimeStop(request: IncomingMessage, response: ServerResponse): Promise<void> {
+  if (!isTrustedLocalOrigin(request.headers.origin)) {
+    sendJson(response, 403, {
+      type: "superior-browser-error",
+      code: "unauthorized",
+      message: "SUPERIOR Browser can only be stopped from the local Workshop."
+    } satisfies SuperiorBrowserError);
+    return;
+  }
+
+  sendJson(response, 200, {
+    type: "superior-browser-stop-result",
+    state: await stopSuperiorBrowser(),
+    createdAt: new Date().toISOString()
+  });
+}
+
+function handleBrowserSessionHome(sessionId: string, response: ServerResponse): void {
+  const html = renderSuperiorBrowserHome(decodeURIComponent(sessionId));
+
+  if (!html) {
+    sendHtml(response, 404, "<!doctype html><title>SUPERIOR Browser</title><p>Session closed.</p>");
+    return;
+  }
+
+  sendHtml(response, 200, html);
+}
+
+async function handleBrowserSessionAttach(
+  sessionId: string,
+  request: IncomingMessage,
+  response: ServerResponse
+): Promise<void> {
+  let payload: SuperiorBrowserAttachRequest;
+
+  try {
+    payload = (await readJsonBody(request)) as SuperiorBrowserAttachRequest;
+  } catch {
+    sendJson(response, 400, {
+      type: "superior-browser-error",
+      code: "bad_request",
+      message: "Expected a valid SUPERIOR Browser attach request."
+    } satisfies SuperiorBrowserError);
+    return;
+  }
+
+  if (payload.type !== "superior-browser-attach" || typeof payload.sessionToken !== "string") {
+    sendJson(response, 400, {
+      type: "superior-browser-error",
+      requestId: payload.requestId,
+      code: "bad_request",
+      message: "SUPERIOR Browser needs a session token."
+    } satisfies SuperiorBrowserError);
+    return;
+  }
+
+  try {
+    sendJson(response, 200, attachSuperiorBrowserSession(decodeURIComponent(sessionId), payload));
+  } catch (error) {
+    sendBrowserRuntimeError(response, payload.requestId, error);
+  }
+}
+
+async function handleBrowserPairingStart(request: IncomingMessage, response: ServerResponse): Promise<void> {
+  if (!isTrustedLocalOrigin(request.headers.origin)) {
+    sendJson(response, 403, {
+      type: "browser-pairing-error",
+      code: "unauthorized",
+      message: "Browser pairing can only be started from the local Workshop."
+    } satisfies BrowserPairingError);
+    return;
+  }
+
+  const started = startBrowserPairing();
+
+  sendJson(response, 200, {
+    type: "browser-pairing-started",
+    pairingToken: started.pairingToken,
+    browserLinkState: {
+      status: "pairing"
+    },
+    createdAt: new Date().toISOString()
+  });
+}
+
+async function handleBrowserPairingComplete(request: IncomingMessage, response: ServerResponse): Promise<void> {
+  let payload: BrowserPairingCompleteRequest;
+
+  try {
+    payload = (await readJsonBody(request)) as BrowserPairingCompleteRequest;
+  } catch {
+    sendJson(response, 400, {
+      type: "browser-pairing-error",
+      code: "bad_request",
+      message: "Expected a valid browser pairing request."
+    } satisfies BrowserPairingError);
+    return;
+  }
+
+  const token = payload.pairingToken?.trim();
+
+  if (payload.type !== "browser-pairing-complete" || !token) {
+    sendJson(response, 400, {
+      type: "browser-pairing-error",
+      requestId: payload.requestId,
+      code: "bad_request",
+      message: "Paste the pairing token from SUPERIOR."
+    } satisfies BrowserPairingError);
+    return;
+  }
+
+  const browserLinkState = completeBrowserPairing(token, payload.extensionId);
+
+  if (!browserLinkState || browserLinkState.status !== "paired" || !browserLinkState.lastSeenAt) {
+    sendJson(response, 401, {
+      type: "browser-pairing-error",
+      requestId: payload.requestId,
+      code: "unauthorized",
+      message: "Pairing token did not match the local daemon."
+    } satisfies BrowserPairingError);
+    return;
+  }
+
+  sendJson(response, 200, {
+    type: "browser-pairing-complete-result",
+    requestId: payload.requestId,
+    browserLinkState: {
+      status: "paired",
+      ...(browserLinkState.extensionId ? { extensionId: browserLinkState.extensionId } : {}),
+      lastSeenAt: browserLinkState.lastSeenAt
+    },
+    createdAt: new Date().toISOString()
+  });
+}
+
+async function handleBrowserPairingReset(request: IncomingMessage, response: ServerResponse): Promise<void> {
+  if (!isTrustedLocalOrigin(request.headers.origin) && !isValidPairingHeader(request)) {
+    sendJson(response, 403, {
+      type: "browser-pairing-error",
+      code: "unauthorized",
+      message: "Browser pairing can only be reset from the local Workshop or paired extension."
+    } satisfies BrowserPairingError);
+    return;
+  }
+
+  resetBrowserPairing();
+  sendJson(response, 200, {
+    type: "browser-pairing-reset-result",
+    browserLinkState: {
+      status: "unpaired"
+    },
+    createdAt: new Date().toISOString()
+  });
+}
+
+async function handleCustomSkillImport(request: IncomingMessage, response: ServerResponse): Promise<void> {
+  if (!isTrustedLocalOrigin(request.headers.origin)) {
+    sendJson(response, 403, {
+      type: "custom-skill-import-error",
+      code: "unauthorized",
+      message: "Custom skill import only accepts local Workshop requests."
+    } satisfies CustomSkillImportError);
+    return;
+  }
+
+  let payload: CustomSkillImportRequest;
+
+  try {
+    payload = (await readJsonBody(request)) as CustomSkillImportRequest;
+  } catch {
+    sendJson(response, 400, {
+      type: "custom-skill-import-error",
+      code: "bad_request",
+      message: "Expected a valid JSON custom skill import request."
+    } satisfies CustomSkillImportError);
+    return;
+  }
+
+  if (payload.type !== "custom-skill-import" || typeof payload.folderPath !== "string") {
+    sendJson(response, 400, {
+      type: "custom-skill-import-error",
+      requestId: payload.requestId,
+      code: "bad_request",
+      message: "Drop a JS/TS project folder for custom skill import."
+    } satisfies CustomSkillImportError);
+    return;
+  }
+
+  try {
+    sendJson(response, 200, await proposeCustomSkillImport(payload));
+  } catch (error) {
+    if (error instanceof CustomSkillImportScanError) {
+      sendJson(response, error.code === "not_found" ? 404 : 400, {
+        type: "custom-skill-import-error",
+        requestId: payload.requestId,
+        code: error.code,
+        message: error.message
+      } satisfies CustomSkillImportError);
+      return;
+    }
+
+    sendJson(response, 500, {
+      type: "custom-skill-import-error",
+      requestId: payload.requestId,
+      code: "scan_failed",
+      message: error instanceof Error ? error.message : "Custom skill scan failed."
+    } satisfies CustomSkillImportError);
+  }
+}
+
+async function handleBotIdentitySave(request: IncomingMessage, response: ServerResponse): Promise<void> {
+  try {
+    const payload = (await readJsonBody(request)) as BotIdentity;
+    sendJson(
+      response,
+      200,
+      writeBotIdentity({
+        ...payload,
+        browserLinkState: readBrowserLinkState()
+      })
+    );
+  } catch {
+    sendJson(response, 400, {
+      code: "bad_request",
+      message: "Expected a valid bot identity."
+    });
+  }
+}
+
+async function handleArticleXray(request: IncomingMessage, response: ServerResponse): Promise<void> {
+  let payload: ArticleXrayRequest;
+
+  try {
+    payload = (await readJsonBody(request)) as ArticleXrayRequest;
+  } catch {
+    sendJson(response, 400, {
+      type: "article-xray-error",
+      code: "bad_request",
+      message: "Expected a valid JSON Article X-Ray request."
+    } satisfies ArticleXrayError);
+    return;
+  }
+
+  if (!validatePairingRequest(request, payload.pairingToken)) {
+    sendJson(response, 401, {
+      type: "article-xray-error",
+      requestId: payload.requestId,
+      code: "unauthorized",
+      message: "Pair the extension from SUPERIOR before running Article X-Ray."
+    } satisfies ArticleXrayError);
+    return;
+  }
+
+  if (!hasArticleContent(payload)) {
+    sendJson(response, 400, {
+      type: "article-xray-error",
+      requestId: payload.requestId,
+      code: "empty_page",
+      message: "SUPERIOR needs selected text, readable article blocks, or page text to X-Ray."
+    } satisfies ArticleXrayError);
+    return;
+  }
+
+  const result = runArticleXray(payload);
+  rememberArticleXrayResult(result);
+  sendJson(response, 200, result);
+}
+
+async function handleRepoReader(request: IncomingMessage, response: ServerResponse): Promise<void> {
+  if (!isTrustedLocalOrigin(request.headers.origin)) {
+    sendJson(response, 403, {
+      type: "repo-reader-error",
+      code: "bad_request",
+      message: "Repo Reader only accepts local Workshop requests."
+    } satisfies RepoReaderContractError);
+    return;
+  }
+
+  let payload: RepoReaderRequest;
+
+  try {
+    payload = (await readJsonBody(request)) as RepoReaderRequest;
+  } catch {
+    sendJson(response, 400, {
+      type: "repo-reader-error",
+      code: "bad_request",
+      message: "Expected a valid JSON Repo Reader request."
+    } satisfies RepoReaderContractError);
+    return;
+  }
+
+  if (payload.type !== "repo-reader" || typeof payload.repoUrl !== "string") {
+    sendJson(response, 400, {
+      type: "repo-reader-error",
+      requestId: payload.requestId,
+      code: "bad_request",
+      message: "Give SUPERIOR a GitHub repo link."
+    } satisfies RepoReaderContractError);
+    return;
+  }
+
+  try {
+    const result = await runRepoReader(payload);
+
+    rememberRepoReaderResult(result);
+    rememberRepoWorkspaceRecord(result);
+    sendJson(response, 200, result);
+  } catch (error) {
+    if (error instanceof RepoReaderError) {
+      const statusCode = error.code === "not_found" ? 404 : error.code === "rate_limited" ? 429 : 400;
+
+      sendJson(response, statusCode, {
+        type: "repo-reader-error",
+        requestId: payload.requestId,
+        code: error.code,
+        message: error.message
+      } satisfies RepoReaderContractError);
+      return;
+    }
+
+    sendJson(response, 502, {
+      type: "repo-reader-error",
+      requestId: payload.requestId,
+      code: "network_error",
+      message: error instanceof Error ? error.message : "Repo Reader failed."
+    } satisfies RepoReaderContractError);
+  }
+}
+
+async function handleExplain(request: IncomingMessage, response: ServerResponse): Promise<void> {
+  let payload: ExplainPageRequest;
+
+  try {
+    payload = (await readJsonBody(request)) as ExplainPageRequest;
+  } catch {
+    sendJson(response, 400, {
+      type: "explain-page-error",
+      code: "bad_request",
+      message: "Expected a valid JSON explain request."
+    } satisfies ExplainPageError);
+    return;
+  }
+
+  if (!validatePairingRequest(request, payload.pairingToken)) {
+    sendJson(response, 401, {
+      type: "explain-page-error",
+      requestId: payload.requestId,
+      code: "unauthorized",
+      message: "Pair the extension from SUPERIOR before explaining pages."
+    } satisfies ExplainPageError);
+    return;
+  }
+
+  if (!hasUsablePageText(payload.page)) {
+    sendJson(response, 400, {
+      type: "explain-page-error",
+      requestId: payload.requestId,
+      code: "empty_page",
+      message: "SUPERIOR needs selected text or readable page text to explain."
+    } satisfies ExplainPageError);
+    return;
+  }
+
+  try {
+    const result = await explainPageWithOpenAI(payload, config);
+    rememberExplainPageResult(result);
+    sendJson(response, 200, result);
+  } catch (error) {
+    if (error instanceof MissingOpenAIConfigError) {
+      sendJson(response, 503, {
+        type: "explain-page-error",
+        requestId: payload.requestId,
+        code: "missing_config",
+        message: "Set OPENAI_API_KEY in a local .env.local to use Page Explainer."
+      } satisfies ExplainPageError);
+      return;
+    }
+
+    sendJson(response, 502, {
+      type: "explain-page-error",
+      requestId: payload.requestId,
+      code: "provider_error",
+      message: error instanceof Error ? error.message : "OpenAI provider failed."
+    } satisfies ExplainPageError);
+  }
+}
+
+async function readJsonBody(request: IncomingMessage): Promise<unknown> {
+  let body = "";
+
+  for await (const chunk of request) {
+    body += chunk;
+
+    if (body.length > 1_000_000) {
+      throw new Error("Request body too large.");
+    }
+  }
+
+  return JSON.parse(body);
+}
+
+function sendJson(response: ServerResponse, statusCode: number, payload: unknown): void {
+  response.writeHead(statusCode, {
+    "Content-Type": "application/json; charset=utf-8"
+  });
+  response.end(JSON.stringify(payload, null, 2));
+}
+
+function sendHtml(response: ServerResponse, statusCode: number, html: string): void {
+  response.writeHead(statusCode, {
+    "Content-Type": "text/html; charset=utf-8"
+  });
+  response.end(html);
+}
+
+function sendBrowserRuntimeError(response: ServerResponse, requestId: string | undefined, error: unknown): void {
+  if (error instanceof BrowserRuntimeError) {
+    const statusCode =
+      error.code === "unknown_repo" || error.code === "not_running"
+        ? 404
+        : error.code === "missing_browser" || error.code === "missing_extension"
+          ? 503
+          : error.code === "unauthorized"
+            ? 401
+            : 400;
+
+    sendJson(response, statusCode, {
+      type: "superior-browser-error",
+      ...(requestId ? { requestId } : {}),
+      code: error.code,
+      message: error.message
+    } satisfies SuperiorBrowserError);
+    return;
+  }
+
+  sendJson(response, 500, {
+    type: "superior-browser-error",
+    ...(requestId ? { requestId } : {}),
+    code: "launch_failed",
+    message: error instanceof Error ? error.message : "SUPERIOR Browser failed."
+  } satisfies SuperiorBrowserError);
+}
+
+function setCorsHeaders(response: ServerResponse): void {
+  response.setHeader("Access-Control-Allow-Origin", "*");
+  response.setHeader("Access-Control-Allow-Methods", "GET,POST,PUT,OPTIONS");
+  response.setHeader("Access-Control-Allow-Headers", "Content-Type,X-Clawdbot-Pairing-Token");
+  response.setHeader("Access-Control-Max-Age", "86400");
+}
+
+function readServiceBotIdentity(): BotIdentity {
+  return {
+    ...readBotIdentity(),
+    browserLinkState: readBrowserLinkState()
+  };
+}
+
+function validatePairingRequest(request: IncomingMessage, payloadPairingToken: string | undefined): boolean {
+  const headerToken = readPairingHeader(request);
+  const token = payloadPairingToken?.trim();
+
+  return Boolean(token && headerToken === token && touchBrowserPairing(token));
+}
+
+function isValidPairingHeader(request: IncomingMessage): boolean {
+  const headerToken = readPairingHeader(request);
+
+  return Boolean(headerToken && touchBrowserPairing(headerToken));
+}
+
+function readPairingHeader(request: IncomingMessage): string | undefined {
+  const headerPairingToken = request.headers["x-clawdbot-pairing-token"];
+
+  return Array.isArray(headerPairingToken) ? headerPairingToken[0] : headerPairingToken;
+}
+
+function isTrustedLocalOrigin(origin: string | undefined): boolean {
+  if (!origin) {
+    return true;
+  }
+
+  return (
+    origin === "tauri://localhost" ||
+    origin === "http://127.0.0.1:5173" ||
+    origin === "http://localhost:5173"
+  );
+}

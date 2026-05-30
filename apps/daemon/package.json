@@ -1,0 +1,25 @@
+{
+  "name": "@clawdbot/daemon",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "main": "./dist/server.js",
+  "scripts": {
+    "dev": "node ./scripts/start-daemon-if-needed.mjs",
+    "dev:raw": "tsx watch --conditions development src/server.ts",
+    "start": "node dist/server.js",
+    "build": "tsc -p tsconfig.json",
+    "bundle:desktop": "corepack pnpm exec esbuild src/server.ts --bundle --platform=node --format=esm --outfile=../desktop/src-tauri/resources/daemon/server.mjs",
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "@clawdbot/shared": "workspace:*",
+    "openai": "6.39.0"
+  },
+  "devDependencies": {
+    "@types/node": "25.9.1",
+    "tsx": "4.22.3",
+    "vitest": "4.1.7"
+  }
+}

@@ -1,0 +1,12 @@
+{
+  "name": "@superior/sample-synergy-feed-reader",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "main": "src/index.ts",
+  "scripts": {
+    "smoke": "tsx src/index.ts",
+    "test": "vitest run",
+    "build": "tsc -p tsconfig.json"
+  }
+}
