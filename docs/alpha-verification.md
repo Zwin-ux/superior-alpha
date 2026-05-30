@@ -13,6 +13,9 @@ Last checked: 2026-05-30
 - Extension Chrome store artifact produced: `.clawdbot/artifacts/extension/SUPERIOR-0.8.0-chrome-mv3.zip`
 - Extension store validator confirms MV3, `SUPERIOR` name, version `0.8.0`, exact permissions, localhost-only host permissions, popup, worker, controlled-profile content script, and `16/32/48/128/256` icons.
 - GitHub README is the public alpha hub with `ALPHA BUILD` stamp, workshop imagery, and SVG platform cards for Windows, Chrome, and macOS.
+- Public GitHub repo is live: `https://github.com/Zwin-ux/superior-alpha`.
+- Alpha prerelease is live with Windows MSI and Chrome MV3 ZIP: `https://github.com/Zwin-ux/superior-alpha/releases/tag/v0.8.0-alpha`.
+- Chrome privacy policy URL is live: `https://github.com/Zwin-ux/superior-alpha/blob/main/docs/extension-privacy.md`.
 - Windows desktop bundle passes: `corepack pnpm --filter @clawdbot/desktop tauri:build`
 - NSIS installer produced: `apps/desktop/src-tauri/target/release/bundle/nsis/SUPERIOR_0.2.0_x64-setup.exe`
 - MSI produced: `apps/desktop/src-tauri/target/release/bundle/msi/SUPERIOR_0.2.0_x64_en-US.msi`
@@ -102,7 +105,7 @@ The packaged alpha carries a private Windows Node runtime. If the app cannot fin
 
 GitHub may rate-limit unauthenticated Repo Reader calls. Add `GITHUB_TOKEN` or `GH_TOKEN` to the local daemon environment when running repeated repo reads.
 
-The Chrome Web Store privacy policy source exists at `docs/extension-privacy.md`, but the final public GitHub URL cannot return `200` until this repo has a configured remote/public docs location. GitHub Releases artifact links are also blocked until that remote exists.
+The Chrome Web Store privacy policy source exists at `docs/extension-privacy.md` and now has a public GitHub URL. Chrome Developer Dashboard upload and review remain manual.
 
 ## Current Alpha Shape
 

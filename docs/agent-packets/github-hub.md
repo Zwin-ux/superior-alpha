@@ -12,6 +12,7 @@ Keep the repo front door visual and direct:
 - product explanation stays to two sentences
 - Windows, Chrome, and macOS lanes are shown with SVG platform icons
 - artifacts point to GitHub Releases once a remote exists
+- privacy policy URL points to the public GitHub doc
 - privacy policy and Chrome listing docs live in repo docs
 - no generic landing page, no feature-card grid, no long pitch copy
 
@@ -26,4 +27,4 @@ corepack pnpm extension:store-package
 
 ## Caveat
 
-The public privacy URL, release artifact URLs, and Chrome Web Store support links cannot be final until the repository has a GitHub remote and release page.
+The public repo is `https://github.com/Zwin-ux/superior-alpha`. Chrome Web Store upload and review still happen manually in the Developer Dashboard.

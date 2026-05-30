@@ -9,7 +9,8 @@ Target release: `0.8.0` public listing
 - Short description: `A clay robot browser hand for local page skills from the SUPERIOR desktop app.`
 - Single purpose: SUPERIOR captures the current page on user command and sends it to the user's local SUPERIOR desktop daemon so the selected robot skill can run.
 - Privacy policy source: `docs/extension-privacy.md`
-- Privacy policy public URL: use the GitHub-hosted URL for `docs/extension-privacy.md` after a remote repository is configured.
+- Privacy policy public URL: `https://github.com/Zwin-ux/superior-alpha/blob/main/docs/extension-privacy.md`
+- Support URL: `https://github.com/Zwin-ux/superior-alpha/issues`
 
 ## Permission Rationale
 

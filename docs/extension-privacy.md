@@ -36,4 +36,4 @@ If the local daemon is configured with an OpenAI API key, the daemon may send th
 
 ## Contact
 
-Use the GitHub repository issues page for support once the public repository is configured.
+Use the GitHub repository issues page for support: `https://github.com/Zwin-ux/superior-alpha/issues`.

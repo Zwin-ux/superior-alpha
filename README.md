@@ -14,7 +14,7 @@ SUPERIOR is an alpha native app and browser extension where a small clay robot b
 | --- | --- | --- |
 | ![Windows alpha](assets/github/platform-windows.svg) | ![Chrome extension](assets/github/platform-chrome.svg) | ![macOS planned](assets/github/platform-mac.svg) |
 | Alpha MSI built | Store ZIP built | Planned after Windows proof |
-| `.clawdbot/artifacts/windows/SUPERIOR-0.7.0-alpha-win-x64.msi` | `.clawdbot/artifacts/extension/SUPERIOR-0.8.0-chrome-mv3.zip` | Native lane, not a web wrapper |
+| [Download alpha MSI](https://github.com/Zwin-ux/superior-alpha/releases/tag/v0.8.0-alpha) | [Download MV3 ZIP](https://github.com/Zwin-ux/superior-alpha/releases/tag/v0.8.0-alpha) | Native lane, not a web wrapper |
 
 ## Showpiece
 
@@ -30,6 +30,7 @@ SUPERIOR is an alpha native app and browser extension where a small clay robot b
 | Chrome store packet | `corepack pnpm extension:store-package` |
 | Extension skill fixture | `.clawdbot/verification/extension-skill-fixture-1780164331918.json` |
 | Windows install loop | `corepack pnpm windows:beta-gate` |
+| Alpha release | [v0.8.0-alpha](https://github.com/Zwin-ux/superior-alpha/releases/tag/v0.8.0-alpha) |
 | Verification log | [docs/alpha-verification.md](docs/alpha-verification.md) |
 
 ## Hub
@@ -40,6 +41,7 @@ SUPERIOR is an alpha native app and browser extension where a small clay robot b
 | [Build Plan](docs/build-plan.md) | What the next agent should build |
 | [Chrome Store Packet](docs/chrome-web-store-listing.md) | Public extension listing prep |
 | [Privacy Policy Source](docs/extension-privacy.md) | GitHub-hosted privacy doc source |
+| [Issues](https://github.com/Zwin-ux/superior-alpha/issues) | Public support and alpha feedback |
 | [Platform Testing](docs/platform-release-testing.md) | Gates for Windows, extension, service, hub, and mobile |
 | [Operating Principles](docs/operating-principles.md) | Taste and product rules |
 
