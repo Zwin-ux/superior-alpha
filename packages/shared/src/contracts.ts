@@ -344,6 +344,27 @@ export interface SuperiorBrowserAttachResult {
   createdAt: string;
 }
 
+export interface SuperiorBrowserActivePageReport {
+  type: "superior-browser-active-page";
+  requestId: string;
+  pairingToken: string;
+  page: {
+    url: string;
+    title: string;
+    tabId?: number;
+    windowId?: number;
+    capturedAt: string;
+  };
+  createdAt: string;
+}
+
+export interface SuperiorBrowserActivePageResult {
+  type: "superior-browser-active-page-result";
+  inspection: SuperiorBrowserInspection;
+  state: SuperiorBrowserState;
+  createdAt: string;
+}
+
 export interface SuperiorBrowserError {
   type: "superior-browser-error";
   requestId?: string;
@@ -559,6 +580,19 @@ export function createSuperiorBrowserAttachRequest(input: {
     requestId: createLocalId("browser_attach"),
     sessionToken: input.sessionToken,
     ...(input.extensionId ? { extensionId: input.extensionId } : {}),
+    createdAt: new Date().toISOString()
+  };
+}
+
+export function createSuperiorBrowserActivePageReport(input: {
+  pairingToken: string;
+  page: SuperiorBrowserActivePageReport["page"];
+}): SuperiorBrowserActivePageReport {
+  return {
+    type: "superior-browser-active-page",
+    requestId: createLocalId("browser_page"),
+    pairingToken: input.pairingToken,
+    page: input.page,
     createdAt: new Date().toISOString()
   };
 }

@@ -1,5 +1,23 @@
 # SUPERIOR Build Plan
 
+Current source of truth:
+
+- Full spec: [full-product-spec.md](full-product-spec.md)
+- Release ladder: [release-ladder.md](release-ladder.md)
+- Verification: [alpha-verification.md](alpha-verification.md)
+
+## Current Release Focus
+
+Finish `0.2.x` before the asset pass:
+
+- keep the live exe/daemon/extension loop runnable
+- finish active-page proof from the controlled browser profile
+- show compact browser proof in the Workshop
+- keep repo playpen records local and typed
+- keep all checks green
+
+Then move to `0.3 Clay Asset Pass`.
+
 ## Phase 1: Product Frame
 
 - Lock the primary browser use case.

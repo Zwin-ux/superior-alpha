@@ -11,6 +11,8 @@ import {
   SuperiorBrowserEvent,
   SuperiorBrowserEventsResponse,
   SuperiorBrowserEventKind,
+  SuperiorBrowserActivePageReport,
+  SuperiorBrowserActivePageResult,
   SuperiorBrowserInspectResult,
   SuperiorBrowserInspection,
   SuperiorBrowserKind,
@@ -117,6 +119,44 @@ export async function inspectSuperiorBrowser(): Promise<SuperiorBrowserInspectRe
     type: "superior-browser-inspect-result",
     state: getSuperiorBrowserState(),
     inspection,
+    createdAt: new Date().toISOString()
+  };
+}
+
+export function reportSuperiorBrowserActivePage(
+  report: SuperiorBrowserActivePageReport
+): SuperiorBrowserActivePageResult {
+  const session = activeRuntime?.session;
+
+  if (!session) {
+    throw new BrowserRuntimeError("not_running", "Start a playpen before reporting an active page.");
+  }
+
+  if (session.status !== "paired" || report.pairingToken !== session.pairingToken) {
+    throw new BrowserRuntimeError("unauthorized", "SUPERIOR Browser active page report was not paired.");
+  }
+
+  const inspection: SuperiorBrowserInspection = {
+    type: "superior-browser-inspection",
+    status: "ready",
+    inspectedAt: new Date().toISOString(),
+    extensionPaired: true,
+    ...(session.browserKind ? { browserKind: session.browserKind } : {}),
+    currentUrl: report.page.url,
+    pageTitle: report.page.title || report.page.url,
+    ...(typeof report.page.tabId === "number" ? { tabId: String(report.page.tabId) } : {}),
+    consoleErrorCount: session.inspection?.consoleErrorCount ?? 0,
+    networkFailureCount: session.inspection?.networkFailureCount ?? 0,
+    note: "extension active tab"
+  };
+
+  session.inspection = inspection;
+  maybeRecordInspectionEvent(session, inspection, "Page focused");
+
+  return {
+    type: "superior-browser-active-page-result",
+    inspection,
+    state: getSuperiorBrowserState(),
     createdAt: new Date().toISOString()
   };
 }
@@ -740,7 +780,7 @@ async function readSuperiorBrowserInspection(session: InternalBrowserSession): P
 
   try {
     const targets = await fetchDebugTargets(session.debugPort);
-    const target = pickSuperiorBrowserDebugTarget(targets, session);
+    const target = pickSuperiorBrowserDebugTarget(targets, session, session.inspection?.currentUrl);
 
     if (!target) {
       return {
@@ -780,16 +820,24 @@ async function readSuperiorBrowserInspection(session: InternalBrowserSession): P
 
 export function pickSuperiorBrowserDebugTarget(
   targets: readonly SuperiorBrowserDebugTarget[],
-  session: Pick<SuperiorBrowserSession, "sessionId" | "repoUrl">
+  session: Pick<SuperiorBrowserSession, "sessionId" | "repoUrl">,
+  preferredUrl?: string
 ): SuperiorBrowserDebugTarget | null {
   const pageTargets = targets.filter((target) => isInspectablePageTarget(target));
+  const preferredTarget = preferredUrl
+    ? pageTargets.find((target) => isSameBrowserTarget(target.url, preferredUrl))
+    : undefined;
   const repoTarget = pageTargets.find((target) => isRepoTarget(target, session.repoUrl));
   const nonHomeTarget = pageTargets.find((target) => !isRobotHomeTarget(target, session.sessionId));
 
-  return repoTarget ?? nonHomeTarget ?? pageTargets[0] ?? null;
+  return preferredTarget ?? repoTarget ?? nonHomeTarget ?? pageTargets[0] ?? null;
 }
 
-function maybeRecordInspectionEvent(session: InternalBrowserSession, inspection: SuperiorBrowserInspection): void {
+function maybeRecordInspectionEvent(
+  session: InternalBrowserSession,
+  inspection: SuperiorBrowserInspection,
+  readyLabel = "Page inspected"
+): void {
   const signature = [
     inspection.status,
     inspection.currentUrl ?? "",
@@ -805,7 +853,7 @@ function maybeRecordInspectionEvent(session: InternalBrowserSession, inspection:
 
   session.lastInspectionEventSignature = signature;
 
-  const label = inspection.status === "ready" ? "Page inspected" : "Inspect blocked";
+  const label = inspection.status === "ready" ? readyLabel : "Inspect blocked";
   const detail =
     inspection.status === "ready"
       ? [
@@ -987,10 +1035,17 @@ function isRepoTarget(target: SuperiorBrowserDebugTarget, repoUrl: string): bool
     return false;
   }
 
-  const normalizedTargetUrl = normalizeUrlForComparison(target.url);
   const normalizedRepoUrl = normalizeUrlForComparison(repoUrl);
 
-  return normalizedTargetUrl === normalizedRepoUrl || normalizedTargetUrl.startsWith(`${normalizedRepoUrl}/`);
+  return isSameBrowserTarget(target.url, repoUrl) || normalizeUrlForComparison(target.url).startsWith(`${normalizedRepoUrl}/`);
+}
+
+function isSameBrowserTarget(targetUrl: string | undefined, expectedUrl: string): boolean {
+  if (!targetUrl) {
+    return false;
+  }
+
+  return normalizeUrlForComparison(targetUrl) === normalizeUrlForComparison(expectedUrl);
 }
 
 function isRobotHomeTarget(target: SuperiorBrowserDebugTarget, sessionId: string): boolean {

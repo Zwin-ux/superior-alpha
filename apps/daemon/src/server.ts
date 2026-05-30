@@ -12,6 +12,7 @@ import {
   RepoReaderError as RepoReaderContractError,
   RepoReaderRequest,
   SuperiorBrowserAttachRequest,
+  SuperiorBrowserActivePageReport,
   SuperiorBrowserError,
   SuperiorBrowserStartRequest,
   hasUsablePageText
@@ -43,6 +44,7 @@ import {
   getSuperiorBrowserState,
   inspectSuperiorBrowser,
   rememberSuperiorBrowserSkillRun,
+  reportSuperiorBrowserActivePage,
   renderSuperiorBrowserHome,
   startSuperiorBrowser,
   stopSuperiorBrowser
@@ -167,6 +169,11 @@ const server = createServer(async (request, response) => {
     return;
   }
 
+  if (request.method === "POST" && url.pathname === "/browser-runtime/active-page") {
+    await handleBrowserRuntimeActivePage(request, response);
+    return;
+  }
+
   if (request.method === "POST" && url.pathname === "/custom-skills/import-proposal") {
     await handleCustomSkillImport(request, response);
     return;
@@ -245,6 +252,52 @@ async function handleBrowserRuntimeInspect(response: ServerResponse): Promise<vo
     sendJson(response, 200, await inspectSuperiorBrowser());
   } catch (error) {
     sendBrowserRuntimeError(response, undefined, error);
+  }
+}
+
+async function handleBrowserRuntimeActivePage(request: IncomingMessage, response: ServerResponse): Promise<void> {
+  let payload: SuperiorBrowserActivePageReport;
+
+  try {
+    payload = (await readJsonBody(request)) as SuperiorBrowserActivePageReport;
+  } catch {
+    sendJson(response, 400, {
+      type: "superior-browser-error",
+      code: "bad_request",
+      message: "Expected a valid SUPERIOR Browser active page report."
+    } satisfies SuperiorBrowserError);
+    return;
+  }
+
+  if (
+    payload.type !== "superior-browser-active-page" ||
+    typeof payload.pairingToken !== "string" ||
+    typeof payload.page?.url !== "string" ||
+    typeof payload.page?.title !== "string"
+  ) {
+    sendJson(response, 400, {
+      type: "superior-browser-error",
+      requestId: payload.requestId,
+      code: "bad_request",
+      message: "SUPERIOR Browser active page report needs a page URL and title."
+    } satisfies SuperiorBrowserError);
+    return;
+  }
+
+  if (readPairingHeader(request) !== payload.pairingToken) {
+    sendJson(response, 401, {
+      type: "superior-browser-error",
+      requestId: payload.requestId,
+      code: "unauthorized",
+      message: "SUPERIOR Browser active page report needs the paired token."
+    } satisfies SuperiorBrowserError);
+    return;
+  }
+
+  try {
+    sendJson(response, 200, reportSuperiorBrowserActivePage(payload));
+  } catch (error) {
+    sendBrowserRuntimeError(response, payload.requestId, error);
   }
 }
 

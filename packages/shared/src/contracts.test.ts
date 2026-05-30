@@ -7,6 +7,7 @@ import {
   createCustomSkillImportRequest,
   createExplainPageRequest,
   createRepoReaderRequest,
+  createSuperiorBrowserActivePageReport,
   createSuperiorBrowserAttachRequest,
   createSuperiorBrowserStartRequest,
   getEquippedSkillSlots,
@@ -153,6 +154,23 @@ describe("shared SUPERIOR contracts", () => {
     expect(inspection.type).toBe("superior-browser-inspection");
     expect(inspection.extensionPaired).toBe(true);
     expect(inspection.networkFailureCount).toBe(1);
+  });
+
+  it("creates typed SUPERIOR Browser active page reports", () => {
+    const report = createSuperiorBrowserActivePageReport({
+      pairingToken: "pair_test",
+      page: {
+        url: "https://github.com/owner/project",
+        title: "owner/project",
+        tabId: 12,
+        windowId: 3,
+        capturedAt: new Date(0).toISOString()
+      }
+    });
+
+    expect(report.type).toBe("superior-browser-active-page");
+    expect(report.requestId).toMatch(/^browser_page_/);
+    expect(report.page.url).toContain("github.com");
   });
 
   it("creates typed browser pairing completion requests", () => {

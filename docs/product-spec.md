@@ -1,6 +1,6 @@
 # SUPERIOR Product Spec
 
-Note: [superior-alpha-prd.md](superior-alpha-prd.md) is the current alpha PRD. This file preserves the creature/workshop product spec.
+Note: [full-product-spec.md](full-product-spec.md) is the canonical product and release spec. [superior-alpha-prd.md](superior-alpha-prd.md) preserves the current alpha PRD.
 
 ## Product Thesis
 
@@ -247,11 +247,11 @@ If a feature needs a paragraph to feel useful, the interaction is probably too a
 - Perfect sci-fi holograms
 - Arbitrary-language custom skill import before the JS/TS path is proven
 
-## Open Questions
+## Locked Decisions
 
-- What is the primary job SUPERIOR performs first: explain pages, scan feeds, inspect repos, or review job posts?
-- Does the daemon run continuously or only on demand?
-- What does the browser extension observe or control?
-- What data must stay local?
-- What should feel playful, and what should stay quiet?
-- How is the tiny clay right-click icon rendered from user choices?
+- Primary early jobs: explain pages, X-Ray articles, and map GitHub repos into playpens.
+- Daemon runs locally and is started by the desktop app when needed.
+- Extension observes active page context only after pairing and never receives the OpenAI key.
+- Local identity, tokens, repo records, browser profiles, and custom skill proposals stay local.
+- Playfulness belongs in the bot, clay parts, pressed controls, notes, and icon consistency.
+- The tiny icon is generated from shared bot identity: body, pigment, eye, and equipped slots.

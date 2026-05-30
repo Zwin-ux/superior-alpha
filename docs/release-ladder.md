@@ -11,6 +11,7 @@
 
 - Harden the repo-to-browser loop.
 - Add browser inspection notes: current URL, title, browser kind, extension paired state, console errors, and network failures.
+- Add active-page proof from the paired extension so tab switches are reflected in the Workshop.
 - Keep playpen notes compact: `started`, `home loaded`, `extension paired`, `repo opened`, `page inspected`, `skill ran`, `stopped`, `failed`.
 - Proof: fresh Windows package build plus daemon route checks.
 

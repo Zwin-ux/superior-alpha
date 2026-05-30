@@ -2,7 +2,11 @@ import { mkdtempSync, mkdirSync, rmSync, writeFileSync } from "node:fs";
 import { basename, join, relative } from "node:path";
 import { tmpdir } from "node:os";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
-import { DEFAULT_BOT_IDENTITY, createSuperiorBrowserStartRequest } from "@clawdbot/shared";
+import {
+  DEFAULT_BOT_IDENTITY,
+  createSuperiorBrowserActivePageReport,
+  createSuperiorBrowserStartRequest
+} from "@clawdbot/shared";
 import {
   BrowserRuntimeError,
   findBrowserExecutable,
@@ -10,6 +14,7 @@ import {
   getProfilePath,
   getSuperiorBrowserEvents,
   pickSuperiorBrowserDebugTarget,
+  reportSuperiorBrowserActivePage,
   startSuperiorBrowser
 } from "./browserRuntime.js";
 
@@ -159,6 +164,45 @@ describe("SUPERIOR browser runtime", () => {
     );
 
     expect(target?.id).toBe("repo");
+  });
+
+  it("keeps an extension-reported active tab ahead of the repo tab during inspection", () => {
+    const target = pickSuperiorBrowserDebugTarget(
+      [
+        {
+          id: "repo",
+          type: "page",
+          url: "https://github.com/acme/widget",
+          title: "acme/widget"
+        },
+        {
+          id: "docs",
+          type: "page",
+          url: "https://github.com/acme/widget/blob/main/docs/README.md",
+          title: "README.md"
+        }
+      ],
+      {
+        sessionId: "browser_session_test",
+        repoUrl: "https://github.com/acme/widget"
+      },
+      "https://github.com/acme/widget/blob/main/docs/README.md"
+    );
+
+    expect(target?.id).toBe("docs");
+  });
+
+  it("rejects active page reports when no playpen is running", () => {
+    const report = createSuperiorBrowserActivePageReport({
+      pairingToken: "pair_test",
+      page: {
+        url: "https://github.com/acme/widget",
+        title: "acme/widget",
+        capturedAt: new Date(0).toISOString()
+      }
+    });
+
+    expect(() => reportSuperiorBrowserActivePage(report)).toThrow(BrowserRuntimeError);
   });
 });
 

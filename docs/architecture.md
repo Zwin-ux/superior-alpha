@@ -184,6 +184,7 @@ SUPERIOR should be easy to inspect locally:
 - `/browser-link/start` and `/browser-link/complete` own extension pairing.
 - `/browser-runtime` exposes the active SUPERIOR Browser session.
 - `/browser-runtime/inspect` samples the active robot-owned browser through its remote debugging port.
+- `/browser-runtime/active-page` accepts paired extension focus reports from the controlled profile.
 - `/browser-runtime/start` launches a saved repo workspace in an isolated Chrome/Edge profile.
 - `/browser-runtime/stop` stops the tracked browser process.
 - `/browser-session/:sessionId/home` serves the robot-owned playpen home page.
