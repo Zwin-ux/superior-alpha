@@ -45,11 +45,50 @@ export function rememberRepoWorkspaceRecord(result: RepoReaderResult): RepoWorks
     risks: result.risks,
     nextMoves: result.nextMoves,
     ...(existingRecord?.localPath ? { localPath: existingRecord.localPath } : {}),
+    ...(existingRecord?.profilePath ? { profilePath: existingRecord.profilePath } : {}),
+    ...(existingRecord?.lastBrowserSessionId ? { lastBrowserSessionId: existingRecord.lastBrowserSessionId } : {}),
+    ...(existingRecord?.lastBrowserEventSummary
+      ? { lastBrowserEventSummary: existingRecord.lastBrowserEventSummary }
+      : {}),
+    nextMove: result.nextMoves[0] ?? result.playground.primaryLoop[0] ?? "Start Playpen",
     notes: existingRecord?.notes ?? [],
     createdAt: existingRecord?.createdAt ?? now,
     updatedAt: now
   };
   const items = [record, ...stored.items.filter((item) => item.id !== id)].slice(0, maxRepoWorkspaceRecords);
+
+  writeStoredRepoWorkspaceRecords({
+    items
+  });
+
+  return record;
+}
+
+export function rememberRepoWorkspaceBrowserSession(
+  repoWorkspaceId: string,
+  details: {
+    sessionId: string;
+    profilePath: string;
+    lastBrowserEventSummary: string;
+  }
+): RepoWorkspaceRecord | null {
+  const stored = readStoredRepoWorkspaceRecords();
+  const normalizedId = repoWorkspaceId.trim().toLowerCase();
+  const existingRecord = stored.items.find((item) => item.id === normalizedId);
+
+  if (!existingRecord) {
+    return null;
+  }
+
+  const record: RepoWorkspaceRecord = {
+    ...existingRecord,
+    profilePath: details.profilePath,
+    lastBrowserSessionId: details.sessionId,
+    lastBrowserEventSummary: details.lastBrowserEventSummary,
+    nextMove: details.lastBrowserEventSummary,
+    updatedAt: new Date().toISOString()
+  };
+  const items = [record, ...stored.items.filter((item) => item.id !== normalizedId)].slice(0, maxRepoWorkspaceRecords);
 
   writeStoredRepoWorkspaceRecords({
     items

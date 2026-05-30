@@ -39,7 +39,9 @@ import { readRepoWorkspaceRecords, rememberRepoWorkspaceRecord } from "./repoWor
 import {
   BrowserRuntimeError,
   attachSuperiorBrowserSession,
+  getSuperiorBrowserEvents,
   getSuperiorBrowserState,
+  rememberSuperiorBrowserSkillRun,
   renderSuperiorBrowserHome,
   startSuperiorBrowser,
   stopSuperiorBrowser
@@ -92,6 +94,11 @@ const server = createServer(async (request, response) => {
 
   if (request.method === "GET" && url.pathname === "/browser-runtime") {
     sendJson(response, 200, getSuperiorBrowserState());
+    return;
+  }
+
+  if (request.method === "GET" && url.pathname === "/browser-runtime/events") {
+    sendJson(response, 200, getSuperiorBrowserEvents());
     return;
   }
 
@@ -475,6 +482,7 @@ async function handleArticleXray(request: IncomingMessage, response: ServerRespo
 
   const result = runArticleXray(payload);
   rememberArticleXrayResult(result);
+  rememberSuperiorBrowserSkillRun("Article X-Ray", result.source.title, result.source.url);
   sendJson(response, 200, result);
 }
 
@@ -576,6 +584,7 @@ async function handleExplain(request: IncomingMessage, response: ServerResponse)
   try {
     const result = await explainPageWithOpenAI(payload, config);
     rememberExplainPageResult(result);
+    rememberSuperiorBrowserSkillRun("Page Explainer", result.source.title, result.source.url);
     sendJson(response, 200, result);
   } catch (error) {
     if (error instanceof MissingOpenAIConfigError) {

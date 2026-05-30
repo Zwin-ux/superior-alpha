@@ -29,6 +29,7 @@ POST /browser-link/start
 POST /browser-link/complete
 POST /browser-link/reset
 GET  /browser-runtime
+GET  /browser-runtime/events
 POST /browser-runtime/start
 POST /browser-runtime/stop
 GET  /browser-session/:sessionId/home
@@ -68,7 +69,19 @@ repos/repo-workspaces.json
 
 `/browser-runtime` reports the active daemon-owned `SUPERIOR Browser` session, if any.
 
-`/browser-runtime/start` accepts a saved repo workspace id plus the active bot identity. It launches Chrome first, Edge as fallback, using a per-repo profile under:
+`/browser-runtime/events` returns compact playpen notes for the active or last browser session:
+
+```text
+started
+home_loaded
+extension_paired
+repo_opened
+skill_ran
+stopped
+failed
+```
+
+`/browser-runtime/start` accepts a saved repo workspace id plus the active bot identity. It launches Chrome first when that install can load the staged extension, Edge as fallback, using a per-repo profile under:
 
 ```text
 browser-profiles/<repo-id>/
@@ -163,8 +176,10 @@ The token is read by the daemon only. It is not sent to the extension.
 Browser executable detection checks:
 
 1. `SUPERIOR_BROWSER_PATH`
-2. installed Chrome paths
+2. installed Chrome paths that still support command-line staged extensions
 3. installed Edge paths
+
+Current Chrome-branded installs can block command-line extension loading. In that case, automatic detection falls through to Edge so the controlled profile can still auto-pair.
 
 Extension folder detection checks:
 

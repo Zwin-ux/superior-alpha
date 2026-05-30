@@ -11,6 +11,7 @@ import {
   RepoReaderResult,
   SkillId,
   SkillDefinition,
+  SuperiorBrowserEvent,
   SuperiorBrowserState,
   botBodies,
   botBodyCatalog,
@@ -35,6 +36,7 @@ import {
   fetchDaemonHealth,
   fetchRepoWorkspaceRecords,
   fetchRecentSkillResults,
+  fetchSuperiorBrowserEvents,
   fetchSuperiorBrowserState,
   openExtensionFolder,
   openLocalFolder,
@@ -74,6 +76,7 @@ export function App(): React.ReactElement {
   const [repoReaderBusy, setRepoReaderBusy] = useState(false);
   const [repoWorkspaces, setRepoWorkspaces] = useState<RepoWorkspaceRecord[]>([]);
   const [superiorBrowserState, setSuperiorBrowserState] = useState<SuperiorBrowserState | null>(null);
+  const [superiorBrowserEvents, setSuperiorBrowserEvents] = useState<SuperiorBrowserEvent[]>([]);
   const [superiorBrowserBusy, setSuperiorBrowserBusy] = useState(false);
   const [superiorBrowserError, setSuperiorBrowserError] = useState<string | null>(null);
   const [recentResults, setRecentResults] = useState<RecentSkillResult[]>([]);
@@ -106,11 +109,18 @@ export function App(): React.ReactElement {
 
     async function refresh(): Promise<void> {
       try {
-        const [nextHealth, nextRecentResults, nextRepoWorkspaces, nextSuperiorBrowserState] = await Promise.all([
+        const [
+          nextHealth,
+          nextRecentResults,
+          nextRepoWorkspaces,
+          nextSuperiorBrowserState,
+          nextSuperiorBrowserEvents
+        ] = await Promise.all([
           fetchDaemonHealth(),
           fetchRecentSkillResults(),
           fetchRepoWorkspaceRecords(),
-          fetchSuperiorBrowserState()
+          fetchSuperiorBrowserState(),
+          fetchSuperiorBrowserEvents()
         ]);
 
         if (!disposed) {
@@ -118,12 +128,14 @@ export function App(): React.ReactElement {
           setRecentResults(nextRecentResults.items);
           setRepoWorkspaces(nextRepoWorkspaces.items);
           setSuperiorBrowserState(nextSuperiorBrowserState);
+          setSuperiorBrowserEvents(nextSuperiorBrowserEvents.items);
           setHealthError(null);
         }
       } catch {
         if (!disposed) {
           setHealth(null);
           setSuperiorBrowserState(null);
+          setSuperiorBrowserEvents([]);
           setHealthError("Daemon offline");
         }
       }
@@ -409,8 +421,12 @@ export function App(): React.ReactElement {
 
     try {
       const result = await startSuperiorBrowser(repoWorkspaceId, bot);
+      const events = await fetchSuperiorBrowserEvents().catch(() => null);
 
       setSuperiorBrowserState(result.state);
+      if (events) {
+        setSuperiorBrowserEvents(events.items);
+      }
       setHealth((currentHealth) =>
         currentHealth
           ? {
@@ -434,8 +450,12 @@ export function App(): React.ReactElement {
 
     try {
       const result = await stopSuperiorBrowser();
+      const events = await fetchSuperiorBrowserEvents().catch(() => null);
 
       setSuperiorBrowserState(result.state);
+      if (events) {
+        setSuperiorBrowserEvents(events.items);
+      }
     } catch (error) {
       setSuperiorBrowserError(error instanceof Error ? error.message : "SUPERIOR Browser could not stop.");
     } finally {
@@ -491,6 +511,7 @@ export function App(): React.ReactElement {
               pairingToken={pairingToken}
               pairingCopied={pairingCopied}
               superiorBrowserState={superiorBrowserState}
+              superiorBrowserEvents={superiorBrowserEvents}
               superiorBrowserBusy={superiorBrowserBusy}
               superiorBrowserError={superiorBrowserError}
               onStartPairing={() => void beginBrowserPairing()}
@@ -957,6 +978,7 @@ function BrowserLinkPanel(props: {
   pairingToken: string | null;
   pairingCopied: boolean;
   superiorBrowserState: SuperiorBrowserState | null;
+  superiorBrowserEvents: SuperiorBrowserEvent[];
   superiorBrowserBusy: boolean;
   superiorBrowserError: string | null;
   onStartPairing: () => void;
@@ -1037,6 +1059,7 @@ function BrowserLinkPanel(props: {
         </div>
         <p>{props.superiorBrowserError ?? getProfileFolderStatusText(profileFolderStatus, activeSession?.profilePath)}</p>
       </div>
+      <BrowserEventLog events={props.superiorBrowserEvents} />
       {props.pairingToken ? (
         <div className="pairing-token-row">
           <code>{props.pairingToken}</code>
@@ -1091,6 +1114,43 @@ function getExtensionFolderStatusText(status: "idle" | "opened" | "missing" | "f
   }
 
   return "Load unpacked in Chrome.";
+}
+
+function BrowserEventLog(props: { events: SuperiorBrowserEvent[] }): React.ReactElement {
+  const events = props.events.slice(-6).reverse();
+
+  return (
+    <div className="browser-event-log" aria-label="Playpen notes">
+      <div className="extension-folder-head">
+        <span>Playpen Notes</span>
+        <strong>{events.length > 0 ? "live" : "empty"}</strong>
+      </div>
+      {events.length > 0 ? (
+        events.map((event) => (
+          <div className="browser-event-row" data-kind={event.kind} key={event.id}>
+            <span>{formatBrowserEventKind(event.kind)}</span>
+            <strong title={event.detail}>{event.label}</strong>
+          </div>
+        ))
+      ) : (
+        <p>Start a playpen.</p>
+      )}
+    </div>
+  );
+}
+
+function formatBrowserEventKind(kind: SuperiorBrowserEvent["kind"]): string {
+  const labels: Record<SuperiorBrowserEvent["kind"], string> = {
+    started: "Start",
+    home_loaded: "Home",
+    extension_paired: "Pair",
+    repo_opened: "Repo",
+    skill_ran: "Skill",
+    stopped: "Stop",
+    failed: "Fail"
+  };
+
+  return labels[kind];
 }
 
 function getProfileFolderStatusText(

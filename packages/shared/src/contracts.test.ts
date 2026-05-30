@@ -123,6 +123,21 @@ describe("shared SUPERIOR contracts", () => {
     expect(attachRequest.extensionId).toBe("extension_test");
   });
 
+  it("defines compact SUPERIOR Browser playpen events", () => {
+    const event = {
+      type: "superior-browser-event",
+      id: "browser_event_test",
+      sessionId: "browser_session_test",
+      repoWorkspaceId: "owner/project",
+      kind: "extension_paired",
+      label: "Extension paired",
+      createdAt: new Date(0).toISOString()
+    } as const;
+
+    expect(event.type).toBe("superior-browser-event");
+    expect(event.kind).toBe("extension_paired");
+  });
+
   it("creates typed browser pairing completion requests", () => {
     const request = createBrowserPairingCompleteRequest({
       pairingToken: "pair_test",

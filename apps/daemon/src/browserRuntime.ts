@@ -1,5 +1,5 @@
 import { ChildProcess, spawn } from "node:child_process";
-import { existsSync, mkdirSync } from "node:fs";
+import { existsSync, mkdirSync, readdirSync } from "node:fs";
 import { createServer } from "node:net";
 import { dirname, join, parse, resolve } from "node:path";
 import {
@@ -8,6 +8,9 @@ import {
   SuperiorBrowserAttachRequest,
   SuperiorBrowserAttachResult,
   SuperiorBrowserError,
+  SuperiorBrowserEvent,
+  SuperiorBrowserEventsResponse,
+  SuperiorBrowserEventKind,
   SuperiorBrowserKind,
   SuperiorBrowserSession,
   SuperiorBrowserSessionMode,
@@ -20,7 +23,7 @@ import {
 } from "@clawdbot/shared";
 import { completeBrowserPairing, resetBrowserPairing, startBrowserPairing } from "./browserLinkStore.js";
 import { getSuperiorStateDirectory, findUpDirectory } from "./localPaths.js";
-import { readRepoWorkspaceRecord } from "./repoWorkspaceStore.js";
+import { readRepoWorkspaceRecord, rememberRepoWorkspaceBrowserSession } from "./repoWorkspaceStore.js";
 
 interface BrowserExecutable {
   kind: SuperiorBrowserKind;
@@ -41,7 +44,10 @@ interface ActiveBrowserRuntime {
 }
 
 const sessionTokenTtlMs = 5 * 60 * 1000;
+const maxBrowserEvents = 60;
 let activeRuntime: ActiveBrowserRuntime | null = null;
+let lastSessionId: string | undefined;
+let browserEvents: SuperiorBrowserEvent[] = [];
 
 export class BrowserRuntimeError extends Error {
   constructor(
@@ -63,6 +69,18 @@ export function getSuperiorBrowserState(): SuperiorBrowserState {
     type: "superior-browser-state",
     status,
     ...(activeRuntime ? { activeSession: toPublicSession(activeRuntime.session) } : {}),
+    createdAt: new Date().toISOString()
+  };
+}
+
+export function getSuperiorBrowserEvents(): SuperiorBrowserEventsResponse {
+  const sessionId = activeRuntime?.session.sessionId ?? lastSessionId;
+  const items = sessionId ? browserEvents.filter((event) => event.sessionId === sessionId) : browserEvents;
+
+  return {
+    type: "superior-browser-events",
+    ...(sessionId ? { sessionId } : {}),
+    items,
     createdAt: new Date().toISOString()
   };
 }
@@ -125,6 +143,7 @@ export async function startSuperiorBrowser(request: SuperiorBrowserStartRequest)
   const args = [
     `--user-data-dir=${profilePath}`,
     `--remote-debugging-port=${debugPort}`,
+    `--disable-extensions-except=${extensionPath}`,
     `--load-extension=${extensionPath}`,
     "--no-first-run",
     "--disable-default-apps",
@@ -144,6 +163,8 @@ export async function startSuperiorBrowser(request: SuperiorBrowserStartRequest)
     session,
     child
   };
+  recordBrowserEvent(session, "started", "Started", `${browser.kind} profile opened`);
+  recordBrowserEvent(session, "repo_opened", "Repo opened", repoWorkspace.source.url);
 
   child.once("spawn", () => {
     if (activeRuntime?.session.sessionId === sessionId) {
@@ -154,10 +175,13 @@ export async function startSuperiorBrowser(request: SuperiorBrowserStartRequest)
     if (activeRuntime?.session.sessionId === sessionId) {
       activeRuntime.session.status = "failed";
       activeRuntime.session.error = error.message;
+      recordBrowserEvent(activeRuntime.session, "failed", "Failed", error.message);
     }
   });
   child.once("exit", () => {
     if (activeRuntime?.session.sessionId === sessionId) {
+      recordBrowserEvent(activeRuntime.session, "stopped", "Stopped", "Browser process closed");
+      lastSessionId = sessionId;
       activeRuntime = null;
     }
   });
@@ -190,6 +214,8 @@ export async function stopSuperiorBrowser(): Promise<SuperiorBrowserState> {
   const runtime = activeRuntime;
   const shouldResetPairing = !runtime.session.attached;
 
+  recordBrowserEvent(runtime.session, "stopped", "Stopped", "Browser process stopped");
+  lastSessionId = runtime.session.sessionId;
   activeRuntime = null;
 
   if (!runtime.child.killed) {
@@ -211,6 +237,7 @@ export function renderSuperiorBrowserHome(sessionId: string): string | null {
   }
 
   const iconSvg = createBotIconSvg(session.bot, 128);
+  recordBrowserEvent(session, "home_loaded", "Home loaded", "Robot room opened");
   const data = {
     sessionId: session.sessionId,
     sessionToken: session.sessionToken,
@@ -383,6 +410,7 @@ export function attachSuperiorBrowserSession(
   session.attached = true;
   session.status = "paired";
   session.pairedAt = now;
+  recordBrowserEvent(session, "extension_paired", "Extension paired", request.extensionId ?? "controlled profile");
 
   return {
     type: "superior-browser-attach-result",
@@ -398,6 +426,16 @@ export function attachSuperiorBrowserSession(
   };
 }
 
+export function rememberSuperiorBrowserSkillRun(skillLabel: string, pageTitle: string, pageUrl: string): void {
+  const session = activeRuntime?.session;
+
+  if (!session || session.status !== "paired") {
+    return;
+  }
+
+  recordBrowserEvent(session, "skill_ran", skillLabel, pageTitle || pageUrl);
+}
+
 export function findBrowserExecutable(): BrowserExecutable | null {
   const envPath = process.env.SUPERIOR_BROWSER_PATH?.trim();
 
@@ -409,7 +447,7 @@ export function findBrowserExecutable(): BrowserExecutable | null {
   }
 
   for (const candidate of getBrowserCandidates()) {
-    if (existsSync(candidate.path)) {
+    if (existsSync(candidate.path) && isBrowserCandidateUsable(candidate)) {
       return candidate;
     }
   }
@@ -551,6 +589,39 @@ function getBrowserKindFromPath(path: string): SuperiorBrowserKind {
   return path.toLowerCase().includes("edge") || path.toLowerCase().includes("msedge") ? "edge" : "chrome";
 }
 
+function isBrowserCandidateUsable(browser: BrowserExecutable): boolean {
+  if (browser.kind !== "chrome") {
+    return true;
+  }
+
+  const majorVersion = getInstalledBrowserMajorVersion(browser.path);
+
+  if (!majorVersion) {
+    return true;
+  }
+
+  return majorVersion < 137;
+}
+
+function getInstalledBrowserMajorVersion(browserPath: string): number | null {
+  const applicationFolder = dirname(browserPath);
+
+  try {
+    const majorVersions = readdirSync(applicationFolder, {
+      withFileTypes: true
+    })
+      .filter((entry) => entry.isDirectory())
+      .map((entry) => /^(\d+)\./.exec(entry.name)?.[1])
+      .filter((majorVersion): majorVersion is string => Boolean(majorVersion))
+      .map((majorVersion) => Number.parseInt(majorVersion, 10))
+      .filter(Number.isFinite);
+
+    return majorVersions.length > 0 ? Math.max(...majorVersions) : null;
+  } catch {
+    return null;
+  }
+}
+
 function getResourceRoots(startDirectory: string): string[] {
   const roots = new Set<string>();
   const resolvedStart = resolve(startDirectory);
@@ -570,6 +641,32 @@ function getResourceRoots(startDirectory: string): string[] {
 
 function hasManifest(folder: string): boolean {
   return existsSync(join(folder, "manifest.json"));
+}
+
+function recordBrowserEvent(
+  session: InternalBrowserSession,
+  kind: SuperiorBrowserEventKind,
+  label: string,
+  detail?: string
+): void {
+  const event: SuperiorBrowserEvent = {
+    type: "superior-browser-event",
+    id: createLocalId("browser_event"),
+    sessionId: session.sessionId,
+    repoWorkspaceId: session.repoWorkspaceId,
+    kind,
+    label,
+    ...(detail ? { detail } : {}),
+    createdAt: new Date().toISOString()
+  };
+
+  browserEvents = [...browserEvents, event].slice(-maxBrowserEvents);
+  lastSessionId = session.sessionId;
+  rememberRepoWorkspaceBrowserSession(session.repoWorkspaceId, {
+    sessionId: session.sessionId,
+    profilePath: session.profilePath,
+    lastBrowserEventSummary: label
+  });
 }
 
 function getDaemonPort(): number {

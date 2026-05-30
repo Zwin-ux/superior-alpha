@@ -2,7 +2,11 @@ import { existsSync, rmSync } from "node:fs";
 import { join } from "node:path";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { RepoReaderResult } from "@clawdbot/shared";
-import { readRepoWorkspaceRecords, rememberRepoWorkspaceRecord } from "./repoWorkspaceStore.js";
+import {
+  readRepoWorkspaceRecords,
+  rememberRepoWorkspaceBrowserSession,
+  rememberRepoWorkspaceRecord
+} from "./repoWorkspaceStore.js";
 
 const stateDirectory = join(process.cwd(), ".test-repo-workspaces-state");
 
@@ -34,6 +38,22 @@ describe("repo workspace store", () => {
     expect(records.items[0]?.playground.label).toBe("SUPERIOR Browser");
     expect(records.items[0]?.createdAt).toBe("2026-05-30T00:00:00.000Z");
     expect(records.items[0]?.updatedAt).toBe("2026-05-30T00:00:01.000Z");
+  });
+
+  it("records the latest browser playpen session on a saved repo", () => {
+    rememberRepoWorkspaceRecord(createRepoReaderResult("repo_first", "SUPERIOR Browser"));
+    rememberRepoWorkspaceBrowserSession("acme/widget", {
+      sessionId: "browser_session_test",
+      profilePath: "C:\\state\\browser-profiles\\acme-widget",
+      lastBrowserEventSummary: "Extension paired"
+    });
+
+    const [record] = readRepoWorkspaceRecords().items;
+
+    expect(record?.profilePath).toContain("acme-widget");
+    expect(record?.lastBrowserSessionId).toBe("browser_session_test");
+    expect(record?.lastBrowserEventSummary).toBe("Extension paired");
+    expect(record?.nextMove).toBe("Extension paired");
   });
 });
 

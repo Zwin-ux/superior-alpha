@@ -8,6 +8,7 @@ import {
   findBrowserExecutable,
   findExtensionFolder,
   getProfilePath,
+  getSuperiorBrowserEvents,
   startSuperiorBrowser
 } from "./browserRuntime.js";
 
@@ -16,6 +17,9 @@ let testRoot = "";
 const previousStateDirectory = process.env.CLAWDBOT_STATE_DIR;
 const previousBrowserPath = process.env.SUPERIOR_BROWSER_PATH;
 const previousExtensionPath = process.env.SUPERIOR_EXTENSION_PATH;
+const previousProgramFiles = process.env.ProgramFiles;
+const previousProgramFilesX86 = process.env["ProgramFiles(x86)"];
+const previousLocalAppData = process.env.LOCALAPPDATA;
 
 beforeEach(() => {
   testRoot = mkdtempSync(join(tmpdir(), "superior-browser-runtime-"));
@@ -33,6 +37,9 @@ afterEach(() => {
   restoreEnv("CLAWDBOT_STATE_DIR", previousStateDirectory);
   restoreEnv("SUPERIOR_BROWSER_PATH", previousBrowserPath);
   restoreEnv("SUPERIOR_EXTENSION_PATH", previousExtensionPath);
+  restoreEnv("ProgramFiles", previousProgramFiles);
+  restoreEnv("ProgramFiles(x86)", previousProgramFilesX86);
+  restoreEnv("LOCALAPPDATA", previousLocalAppData);
 });
 
 describe("SUPERIOR browser runtime", () => {
@@ -53,6 +60,31 @@ describe("SUPERIOR browser runtime", () => {
     expect(findBrowserExecutable()).toEqual({
       kind: "chrome",
       path: fakeBrowserPath
+    });
+  });
+
+  it("falls back to Edge when installed Chrome blocks command-line extension loading", () => {
+    const programFiles = join(testRoot, "Program Files");
+    const chromeApplicationPath = join(programFiles, "Google", "Chrome", "Application");
+    const edgeApplicationPath = join(programFiles, "Microsoft", "Edge", "Application");
+    const chromePath = join(chromeApplicationPath, "chrome.exe");
+    const edgePath = join(edgeApplicationPath, "msedge.exe");
+
+    mkdirSync(join(chromeApplicationPath, "148.0.7778.179"), {
+      recursive: true
+    });
+    mkdirSync(edgeApplicationPath, {
+      recursive: true
+    });
+    writeFileSync(chromePath, "", "utf8");
+    writeFileSync(edgePath, "", "utf8");
+    process.env.ProgramFiles = programFiles;
+    delete process.env["ProgramFiles(x86)"];
+    delete process.env.LOCALAPPDATA;
+
+    expect(findBrowserExecutable()).toEqual({
+      kind: "edge",
+      path: edgePath
     });
   });
 
@@ -94,6 +126,13 @@ describe("SUPERIOR browser runtime", () => {
     await expect(startSuperiorBrowser(request)).rejects.toMatchObject<Partial<BrowserRuntimeError>>({
       code: "unknown_repo"
     });
+  });
+
+  it("returns a typed empty event feed when no playpen has run", () => {
+    const events = getSuperiorBrowserEvents();
+
+    expect(events.type).toBe("superior-browser-events");
+    expect(events.items).toEqual([]);
   });
 });
 

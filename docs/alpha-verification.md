@@ -29,8 +29,11 @@ Last checked: 2026-05-30
 - Repo Reader smoke classified `openai/openai-node` as a CLI-oriented Node/TypeScript project, returned setup mode `both`, picked a local playpen, and recorded a recent result.
 - Repo Reader can use local `GITHUB_TOKEN` or `GH_TOKEN` when present so the daemon can avoid low unauthenticated GitHub limits.
 - Repo workspace route smoke returned a seeded saved playpen record from `/repo-workspaces`.
-- SUPERIOR Browser API smoke launched Chrome for saved repo workspace `openai/openai-node` using isolated profile `.clawdbot/browser-profiles/openai-openai-node`.
-- SUPERIOR Browser API smoke verified `/browser-runtime` reports `ready` while active and `closed` after `POST /browser-runtime/stop`.
+- SUPERIOR Browser API smoke launched a controlled browser for saved repo workspace `openai/openai-node` using isolated profile `.clawdbot/browser-profiles/openai-openai-node`.
+- SUPERIOR Browser API smoke verified `/browser-runtime` reports `paired` after extension auto-attach and `closed` after `POST /browser-runtime/stop`.
+- SUPERIOR Browser auto-detection skipped Chrome v148 command-line extension loading and fell through to Edge, which paired successfully.
+- SUPERIOR Browser events smoke returned `started`, `repo_opened`, `home_loaded`, and `extension_paired`.
+- Active playpen Article X-Ray smoke returned `article-xray-result` and recorded a `skill_ran` event.
 - SUPERIOR Browser stop smoke resets unattached playpen pairing back to `unpaired`.
 - Extension MV3 build includes `assets/superiorBrowserAttach.js` for robot home-page auto-pairing.
 - Page Explainer returns structured OpenAI output with `gpt-4.1-mini`.
@@ -41,6 +44,7 @@ Last checked: 2026-05-30
 - Desktop browser QA confirms Options shows `Key file`, the active key path, and an `Open Folder` action.
 - Desktop browser QA confirms Browser Link shows `Extension`, `MV3 build`, and an `Open Folder` action for the bundled extension.
 - Desktop browser QA confirms Browser Link shows compact `SUPERIOR Browser`, `Open Profile`, and `Stop` states.
+- Desktop browser QA confirms Browser Link shows compact playpen notes.
 - Desktop browser QA confirms Repo Reader shows `Start Playpen` after a saved repo read and updates to active playpen state after start.
 - Desktop browser QA confirms the Continue tray renders real recent skill results and hides the empty placeholder.
 
@@ -74,7 +78,7 @@ SUPERIOR now has:
 - A deterministic Article X-Ray.
 - A runnable Repo Reader that classifies GitHub project surfaces, peeks into common folders, and recommends a local playpen plus learn/spin-up setup paths.
 - Local repo workspace records for successful Repo Reader runs under `.clawdbot/repos/`.
-- Daemon-owned SUPERIOR Browser sessions with Chrome-first detection, Edge fallback, per-repo profile folders, and start/stop routes.
+- Daemon-owned SUPERIOR Browser sessions with Chrome-first detection, Edge fallback, per-repo profile folders, start/stop routes, and playpen notes.
 - A daemon-owned recent results feed for completed browser skills.
 - Shared clay bot identity across surfaces.
 - Generated desktop and extension icons from the same clay head source.

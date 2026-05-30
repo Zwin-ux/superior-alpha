@@ -31,17 +31,10 @@ async function attachControlledProfile(): Promise<void> {
   const statusElement = document.getElementById("superior-attach-status");
 
   try {
-    const existingToken = await readStoredValue(pairingStorageKey);
-
-    if (existingToken) {
-      writeStatus(statusElement, "paired");
-      return;
-    }
-
     const sessionData = readSessionData();
 
     if (!sessionData) {
-      writeStatus(statusElement, "missing token");
+      writeStatus(statusElement, (await readStoredValue(pairingStorageKey)) ? "paired" : "missing token");
       return;
     }
 

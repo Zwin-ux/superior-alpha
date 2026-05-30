@@ -205,6 +205,10 @@ export interface RepoWorkspaceRecord {
   risks: string[];
   nextMoves: string[];
   localPath?: string;
+  profilePath?: string;
+  lastBrowserSessionId?: string;
+  lastBrowserEventSummary?: string;
+  nextMove?: string;
   notes: string[];
   createdAt: string;
   updatedAt: string;
@@ -243,6 +247,33 @@ export interface SuperiorBrowserState {
   type: "superior-browser-state";
   status: SuperiorBrowserStatus;
   activeSession?: SuperiorBrowserSession;
+  createdAt: string;
+}
+
+export type SuperiorBrowserEventKind =
+  | "started"
+  | "home_loaded"
+  | "extension_paired"
+  | "repo_opened"
+  | "skill_ran"
+  | "stopped"
+  | "failed";
+
+export interface SuperiorBrowserEvent {
+  type: "superior-browser-event";
+  id: string;
+  sessionId: string;
+  repoWorkspaceId: string;
+  kind: SuperiorBrowserEventKind;
+  label: string;
+  detail?: string;
+  createdAt: string;
+}
+
+export interface SuperiorBrowserEventsResponse {
+  type: "superior-browser-events";
+  sessionId?: string;
+  items: SuperiorBrowserEvent[];
   createdAt: string;
 }
 

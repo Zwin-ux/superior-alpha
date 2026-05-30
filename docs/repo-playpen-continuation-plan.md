@@ -203,25 +203,29 @@ Shipped now:
 - daemon serves robot profile-room pages at `GET /browser-session/:sessionId/home`
 - controlled browser home pages carry short-lived attach tokens for extension auto-pairing
 - extension content script auto-attaches on daemon-served browser session pages, stores the pairing token, saves the active bot identity, and updates the toolbar icon
+- daemon exposes compact playpen notes at `GET /browser-runtime/events`
+- playpen notes record `started`, `home_loaded`, `extension_paired`, `repo_opened`, `skill_ran`, `stopped`, and `failed`
+- daemon records active browser skill runs into the playpen notes stream
+- automatic browser detection skips Chrome builds that block command-line staged extensions and falls through to Edge
 - Workshop Repo Reader results show `Start Playpen` once a repo workspace record exists
-- Browser Link tray shows compact `SUPERIOR Browser` state, active repo, profile folder, and stop control
+- Browser Link tray shows compact `SUPERIOR Browser` state, active repo, profile folder, stop control, and playpen notes
 - tests cover desktop/service monorepo and nested extension repo classification
 - tests cover browser executable override, profile path containment, extension dist detection, and unknown repo rejection
+- smoke confirmed Edge fallback reaches `paired` and records `extension_paired`
+- smoke confirmed Article X-Ray records `skill_ran` while a playpen is active
 
 ## Next Build Slice
 
-### 1. Controlled Browser Notes
+### 1. Browser Inspection Notes
 
-SUPERIOR Browser now launches an isolated Chrome/Edge profile and opens the robot room plus the GitHub repo page.
+SUPERIOR Browser now launches an isolated Chrome/Edge profile, opens the robot room plus the GitHub repo page, auto-pairs the extension, and records compact playpen notes.
 
-Next, attach a compact notes stream:
+Next, add DevTools Protocol inspection:
 
-- browser started/stopped
-- extension attached
-- first tab loaded
+- current URL after tab switches
 - console errors
-- current URL
-- page skill run result
+- page title
+- simple network failure count
 
 Keep this local and short. It is a session trail, not a chat log.
 
@@ -287,16 +291,17 @@ What shipped:
 - robot-owned home page with icon favicon and attach token
 - extension auto-attach path for controlled profiles
 - Workshop start/stop/profile controls
+- playpen notes stream
+- Edge fallback for Chrome installs that block staged extensions
 
 What is weak:
 
-- no session notes stream yet
 - no DevTools Protocol page inspection yet
 - no packaged-path smoke for extension loading yet
 
 What broke or blocked:
 
-- none in typecheck/tests after strict optional fields were fixed
+- Chrome-branded v148 did not load command-line staged extensions; automatic detection now falls through to Edge
 
 Do not re-decide:
 
