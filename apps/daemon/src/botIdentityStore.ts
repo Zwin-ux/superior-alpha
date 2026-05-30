@@ -20,7 +20,12 @@ export function readBotIdentity(): BotIdentity {
 }
 
 export function writeBotIdentity(bot: BotIdentity): BotIdentity {
-  const normalized = normalizeBotIdentity(bot);
+  const now = new Date().toISOString();
+  const normalized = normalizeBotIdentity({
+    ...bot,
+    createdAt: bot.createdAt ?? now,
+    updatedAt: now
+  });
   const filePath = getIdentityFilePath();
 
   mkdirSync(dirname(filePath), {
@@ -31,8 +36,15 @@ export function writeBotIdentity(bot: BotIdentity): BotIdentity {
   return normalized;
 }
 
+export function hasSavedBotIdentity(): boolean {
+  return existsSync(getIdentityFilePath());
+}
+
 function normalizeBotIdentity(bot: BotIdentity): BotIdentity {
-  return updateBotIdentity(
+  const createdAt = bot.createdAt;
+  const updatedAt = bot.updatedAt;
+  const starterPresetId = bot.starterPresetId;
+  const normalized = updateBotIdentity(
     {
       ...DEFAULT_BOT_IDENTITY,
       ...bot,
@@ -47,6 +59,13 @@ function normalizeBotIdentity(bot: BotIdentity): BotIdentity {
       name: bot.name
     }
   );
+
+  return {
+    ...normalized,
+    ...(starterPresetId ? { starterPresetId } : {}),
+    ...(createdAt ? { createdAt } : {}),
+    ...(updatedAt ? { updatedAt } : {})
+  };
 }
 
 function getIdentityFilePath(): string {

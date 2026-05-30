@@ -1,4 +1,16 @@
-import { BotIdentity, SkillCategory, SkillId, SkillSlot, createLocalId } from "./bot.js";
+import {
+  BotBody,
+  BotColorId,
+  BotEye,
+  BotIdentity,
+  BotStarterPreset,
+  BotStarterPresetId,
+  BrowserLinkState,
+  SkillCategory,
+  SkillId,
+  SkillSlot,
+  createLocalId
+} from "./bot.js";
 
 export interface PageContentBlock {
   type: "heading" | "paragraph" | "list" | "quote";
@@ -423,6 +435,61 @@ export interface DaemonHealth {
     status: "unpaired" | "pairing" | "paired" | "offline";
     lastSeenAt?: string;
   };
+}
+
+export type BotCreationStep = "daemon" | "key" | "browser" | "preset" | "assembly" | "finish";
+export type BotCreationStepStatus = "ready" | "missing" | "blocked";
+
+export interface BotCreationDraft {
+  type: "bot-creation-draft";
+  step: BotCreationStep;
+  starterPresetId?: BotStarterPresetId;
+  name: string;
+  body: BotBody;
+  color: BotColorId;
+  eye: BotEye;
+  skills: SkillId[];
+  updatedAt: string;
+}
+
+export interface BotStarterPresetsResponse {
+  type: "bot-starter-presets";
+  items: BotStarterPreset[];
+  createdAt: string;
+}
+
+export interface SuperiorSetupStepState {
+  step: BotCreationStep;
+  status: BotCreationStepStatus;
+  label: "Power" | "Key" | "Browser" | "Pick" | "Build" | "Save";
+  detail: string;
+}
+
+export interface SuperiorSetupState {
+  type: "superior-setup-state";
+  activeBotSaved: boolean;
+  requiresSetup: boolean;
+  steps: SuperiorSetupStepState[];
+  daemon: {
+    status: "ready";
+    detail: string;
+  };
+  key: {
+    status: "ready" | "missing";
+    keyFilePath: string;
+    source: DaemonHealth["localConfig"]["openaiConfigSource"];
+  };
+  browser: {
+    status: BrowserLinkState["status"];
+    extensionId?: string;
+    lastSeenAt?: string;
+  };
+  bot: {
+    status: "saved" | "starter-seed" | "custom";
+    identity: BotIdentity;
+    starterPresetId?: BotStarterPresetId;
+  };
+  createdAt: string;
 }
 
 export interface BrowserPairingStartResult {

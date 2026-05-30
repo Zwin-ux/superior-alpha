@@ -73,9 +73,17 @@ Every release cycle must follow [platform-release-testing.md](platform-release-t
 - Add the public privacy policy doc and listing packet for Chrome review.
 - Goal: the extension feels like the user's robot in the browser, not a generic companion popup.
 
-## 0.9 Beta Candidate
+## 0.9 Bot Creation Alpha
 
-- First-run recovery, installer QA on a second Windows user/machine, and fewer setup assumptions.
+- Build the first real setup flow around one active bot, not a roster.
+- Add starter presets: `Clawd`, `Hermes`, and `Mote`; presets seed the current `BotIdentity` and can be renamed/customized before save.
+- Add daemon setup contracts: `GET /bot-presets`, `GET /setup-state`, and final save through `PUT /bot-identity`.
+- Native Windows `New Bot` opens setup mode: `Power`, `Key`, `Browser`, `Pick`, `Build`, `Save`.
+- Goal: waking up a small desktop creature feels like a physical setup loop, while daemon, extension, playpen, and icons still follow one active bot.
+
+## 0.10 Beta Candidate
+
+- First-run recovery, installer QA on a second Windows user/machine, and fewer setup assumptions after bot creation is real.
 - Start Windows-native host proof: the future `.NET` shell/host must pass the shared backend contract fixture suite before replacing the Tauri/Node alpha path.
 
 ## 1.0 Official Beta

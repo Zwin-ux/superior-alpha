@@ -26,7 +26,60 @@ public sealed record BotIdentity(
     [property: JsonPropertyName("body")] string Body,
     [property: JsonPropertyName("color")] string Color,
     [property: JsonPropertyName("eye")] string Eye,
+    [property: JsonPropertyName("skills")] IReadOnlyList<string> Skills,
+    [property: JsonPropertyName("starterPresetId")] string? StarterPresetId = null,
+    [property: JsonPropertyName("createdAt")] string? CreatedAt = null,
+    [property: JsonPropertyName("updatedAt")] string? UpdatedAt = null);
+
+public sealed record BotStarterPresetsResponse(
+    [property: JsonPropertyName("type")] string Type,
+    [property: JsonPropertyName("items")] IReadOnlyList<BotStarterPreset> Items,
+    [property: JsonPropertyName("createdAt")] string CreatedAt);
+
+public sealed record BotStarterPreset(
+    [property: JsonPropertyName("id")] string Id,
+    [property: JsonPropertyName("name")] string Name,
+    [property: JsonPropertyName("role")] string Role,
+    [property: JsonPropertyName("body")] string Body,
+    [property: JsonPropertyName("color")] string Color,
+    [property: JsonPropertyName("eye")] string Eye,
     [property: JsonPropertyName("skills")] IReadOnlyList<string> Skills);
+
+public sealed record SuperiorSetupState(
+    [property: JsonPropertyName("type")] string Type,
+    [property: JsonPropertyName("activeBotSaved")] bool ActiveBotSaved,
+    [property: JsonPropertyName("requiresSetup")] bool RequiresSetup,
+    [property: JsonPropertyName("steps")] IReadOnlyList<SuperiorSetupStepState> Steps,
+    [property: JsonPropertyName("daemon")] SuperiorSetupDaemonState Daemon,
+    [property: JsonPropertyName("key")] SuperiorSetupKeyState Key,
+    [property: JsonPropertyName("browser")] SuperiorSetupBrowserState Browser,
+    [property: JsonPropertyName("bot")] SuperiorSetupBotState Bot,
+    [property: JsonPropertyName("createdAt")] string CreatedAt);
+
+public sealed record SuperiorSetupStepState(
+    [property: JsonPropertyName("step")] string Step,
+    [property: JsonPropertyName("status")] string Status,
+    [property: JsonPropertyName("label")] string Label,
+    [property: JsonPropertyName("detail")] string Detail);
+
+public sealed record SuperiorSetupDaemonState(
+    [property: JsonPropertyName("status")] string Status,
+    [property: JsonPropertyName("detail")] string Detail);
+
+public sealed record SuperiorSetupKeyState(
+    [property: JsonPropertyName("status")] string Status,
+    [property: JsonPropertyName("keyFilePath")] string KeyFilePath,
+    [property: JsonPropertyName("source")] string Source);
+
+public sealed record SuperiorSetupBrowserState(
+    [property: JsonPropertyName("status")] string Status,
+    [property: JsonPropertyName("extensionId")] string? ExtensionId,
+    [property: JsonPropertyName("lastSeenAt")] string? LastSeenAt);
+
+public sealed record SuperiorSetupBotState(
+    [property: JsonPropertyName("status")] string Status,
+    [property: JsonPropertyName("identity")] BotIdentity Identity,
+    [property: JsonPropertyName("starterPresetId")] string? StarterPresetId);
 
 public sealed record FunctionCatalogResponse(
     [property: JsonPropertyName("type")] string Type,

@@ -1,8 +1,11 @@
 import { describe, expect, it } from "vitest";
 import {
   DEFAULT_BOT_IDENTITY,
+  botStarterPresetIds,
+  botStarterPresets,
   createArticleXrayRequest,
   createBotIconSvg,
+  createBotIdentityFromStarterPreset,
   createBrowserPairingCompleteRequest,
   createCustomSkillImportRequest,
   createExplainPageRequest,
@@ -15,6 +18,7 @@ import {
   hasUsablePageText,
   makeBotCssVars,
   runnableSkillShelf,
+  runnableSkillIds,
   skillCatalog,
   skillLabels,
   skillSlotLabels,
@@ -25,6 +29,32 @@ describe("shared SUPERIOR contracts", () => {
   it("ships Page Explainer as the default skill", () => {
     expect(DEFAULT_BOT_IDENTITY.skills).toContain("page-explainer");
     expect(skillLabels["page-explainer"]).toBe("Page Explainer");
+  });
+
+  it("ships starter presets as active-bot seeds", () => {
+    expect(botStarterPresetIds).toEqual(["clawd", "hermes", "mote"]);
+    expect(botStarterPresets.map((preset) => preset.name)).toEqual(["Clawd", "Hermes", "Mote"]);
+
+    const hermes = createBotIdentityFromStarterPreset("hermes", {
+      createdAt: new Date(0).toISOString()
+    });
+
+    expect(hermes.name).toBe("Hermes");
+    expect(hermes.body).toBe("scanner");
+    expect(hermes.color).toBe("skyBlue");
+    expect(hermes.eye).toBe("lens");
+    expect(hermes.skills).toEqual(["page-explainer", "article-xray"]);
+    expect(hermes.starterPresetId).toBe("hermes");
+    expect(hermes.createdAt).toBe(new Date(0).toISOString());
+  });
+
+  it("keeps starter preset skills runnable-only", () => {
+    const runnableIds = new Set(runnableSkillIds);
+
+    for (const preset of botStarterPresets) {
+      expect(preset.skills.length).toBeGreaterThan(0);
+      expect(preset.skills.every((skillId) => runnableIds.has(skillId))).toBe(true);
+    }
   });
 
   it("keeps the user loadout limited to runnable fixed-slot skills", () => {
@@ -222,6 +252,7 @@ describe("shared SUPERIOR contracts", () => {
     expect(bot.iconVariant.body).toBe("orb");
     expect(bot.iconVariant.color).toBe("lavender");
     expect(bot.iconVariant.eye).toBe("glow");
+    expect(bot.starterPresetId).toBe("clawd");
   });
 
   it("renders tiny icon pieces from equipped skill slots", () => {

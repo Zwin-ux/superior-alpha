@@ -2,7 +2,7 @@
 
 Status: living product spec
 Updated: 2026-05-30
-Current build line: `0.8` Chrome extension store gate
+Current build line: `0.9` Bot Creation Alpha
 Beta target: `1.0`
 
 ## Product Promise
@@ -320,9 +320,21 @@ Must ship:
 - exact permission and local host-permission validation
 - public privacy policy doc and listing packet for Chrome review
 
-### 0.9 Beta Candidate
+### 0.9 Bot Creation Alpha
 
-Goal: remove hidden setup knowledge for one outside Windows tester.
+Goal: make setup feel like waking up and fitting one desktop creature.
+
+Must ship:
+
+- starter presets: `Clawd`, `Hermes`, and `Mote`
+- one active `bot-identity.json`; no roster or save slots
+- daemon setup reads: `/bot-presets` and `/setup-state`
+- native `New Bot` flow: `Power`, `Key`, `Browser`, `Pick`, `Build`, `Save`
+- final save through `/bot-identity`, then daemon, extension icon, browser playpen, and function proof follow the active bot
+
+### 0.10 Beta Candidate
+
+Goal: remove hidden setup knowledge for one outside Windows tester after bot creation is real.
 
 Must ship:
 

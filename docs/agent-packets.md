@@ -1,6 +1,6 @@
 # SUPERIOR Agent Packets
 
-Use these packets as the next-move index for `0.8`.
+Use these packets as the next-move index for `0.9`.
 
 GitHub is the public hub: README, docs, Releases, issues, and artifact links are the source of truth. The protected Vercel hub may mirror proof state, but it must not become the main product page or runtime authority.
 

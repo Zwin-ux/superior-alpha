@@ -64,7 +64,7 @@
         </StackPanel>
         <StackPanel VerticalAlignment="Center">
           <Button Content="Continue" Click="OnRefreshClicked" />
-          <Button Content="New Bot" />
+          <Button Content="New Bot" Click="OnNewBotClicked" />
           <Button Content="Customize Bot" />
           <Button Content="Skills" />
           <Button Content="Browser Link" Click="OnPairClicked" />
@@ -150,6 +150,59 @@
         <TextBlock Text="Native bench."
                    Margin="0,0,0,18"
                    Foreground="{StaticResource ClayMuted}" />
+
+        <Border Style="{StaticResource TrayCardStyle}">
+          <StackPanel>
+            <TextBlock Text="SETUP" FontSize="11" FontWeight="Black" Foreground="{StaticResource ClayMuted}" />
+            <TextBlock x:Name="SetupStepText" Text="Power / Key / Browser / Pick / Build / Save" FontWeight="Bold" TextWrapping="Wrap" />
+            <TextBlock x:Name="SetupDetailText" Text="one active bot" FontSize="11" Foreground="{StaticResource ClayMuted}" TextWrapping="Wrap" />
+            <UniformGrid Columns="3" Margin="0,10,0,2">
+              <Button Content="Clawd" Tag="clawd" Click="OnPresetClicked" Margin="0,0,5,8" />
+              <Button Content="Hermes" Tag="hermes" Click="OnPresetClicked" Margin="3,0,3,8" />
+              <Button Content="Mote" Tag="mote" Click="OnPresetClicked" Margin="5,0,0,8" />
+            </UniformGrid>
+            <TextBox x:Name="BotNameInput"
+                     Height="34"
+                     Margin="0,2,0,8"
+                     Padding="8,5"
+                     FontWeight="Bold" />
+            <Grid>
+              <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*" />
+                <ColumnDefinition Width="*" />
+                <ColumnDefinition Width="*" />
+              </Grid.ColumnDefinitions>
+              <ComboBox x:Name="BodySelect" Grid.Column="0" Height="32" Margin="0,0,4,8">
+                <ComboBoxItem Content="gremlin" />
+                <ComboBoxItem Content="scanner" />
+                <ComboBoxItem Content="orb" />
+                <ComboBoxItem Content="core" />
+                <ComboBoxItem Content="sentinel" />
+              </ComboBox>
+              <ComboBox x:Name="ColorSelect" Grid.Column="1" Height="32" Margin="4,0,4,8">
+                <ComboBoxItem Content="mossGreen" />
+                <ComboBoxItem Content="skyBlue" />
+                <ComboBoxItem Content="lavender" />
+                <ComboBoxItem Content="brickRed" />
+                <ComboBoxItem Content="sunGold" />
+                <ComboBoxItem Content="chalkWhite" />
+                <ComboBoxItem Content="charcoal" />
+              </ComboBox>
+              <ComboBox x:Name="EyeSelect" Grid.Column="2" Height="32" Margin="4,0,0,8">
+                <ComboBoxItem Content="pixel" />
+                <ComboBoxItem Content="lens" />
+                <ComboBoxItem Content="glow" />
+                <ComboBoxItem Content="dot" />
+              </ComboBox>
+            </Grid>
+            <WrapPanel>
+              <CheckBox x:Name="SkillExplainCheck" Content="Explain" Margin="0,0,12,8" FontWeight="Bold" />
+              <CheckBox x:Name="SkillXrayCheck" Content="X-Ray" Margin="0,0,12,8" FontWeight="Bold" />
+              <CheckBox x:Name="SkillRepoCheck" Content="Repo" Margin="0,0,0,8" FontWeight="Bold" />
+            </WrapPanel>
+            <Button Content="Save Bot" Click="OnSaveBotClicked" />
+          </StackPanel>
+        </Border>
 
         <Border Style="{StaticResource TrayCardStyle}">
           <StackPanel>

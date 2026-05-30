@@ -1,4 +1,5 @@
 using System.Windows;
+using System.Windows.Controls;
 using Superior.Windows.Models;
 using Superior.Windows.Services;
 
@@ -14,6 +15,8 @@ public partial class MainWindow : Window
     private RepoWorkspaceRecord? currentRepoWorkspace;
     private SuperiorBrowserState? currentBrowserState;
     private RepoReaderResult? currentRepoReaderResult;
+    private IReadOnlyList<BotStarterPreset> starterPresets = Array.Empty<BotStarterPreset>();
+    private BotIdentity? setupDraftBot;
 
     public MainWindow()
     {
@@ -29,6 +32,64 @@ public partial class MainWindow : Window
     private async void OnRefreshClicked(object sender, RoutedEventArgs e)
     {
         await RefreshWorkbenchAsync();
+    }
+
+    private async void OnNewBotClicked(object sender, RoutedEventArgs e)
+    {
+        try
+        {
+            SetupStepText.Text = "Power / Key / Browser / Pick";
+            SetupDetailText.Text = "wake machine";
+            await EnsureStarterPresetsAsync();
+            StartSetupFromPreset("clawd");
+        }
+        catch (Exception error)
+        {
+            SetupStepText.Text = "failed";
+            SetupDetailText.Text = error.Message;
+        }
+    }
+
+    private async void OnPresetClicked(object sender, RoutedEventArgs e)
+    {
+        if (sender is not Button button || button.Tag is not string presetId)
+        {
+            return;
+        }
+
+        try
+        {
+            await EnsureStarterPresetsAsync();
+            StartSetupFromPreset(presetId);
+        }
+        catch (Exception error)
+        {
+            SetupStepText.Text = "failed";
+            SetupDetailText.Text = error.Message;
+        }
+    }
+
+    private async void OnSaveBotClicked(object sender, RoutedEventArgs e)
+    {
+        try
+        {
+            SetupStepText.Text = "Save";
+            SetupDetailText.Text = "pressing clay";
+            var draft = BuildSetupDraft();
+            var saved = await daemonClient.SaveBotIdentityAsync(draft);
+            setupDraftBot = null;
+            currentBot = saved;
+            ApplyBot(saved, reaction: null);
+            ApplySetupDraft(saved);
+            SetupStepText.Text = "saved";
+            SetupDetailText.Text = $"{saved.Name} awake";
+            await RefreshWorkbenchAsync();
+        }
+        catch (Exception error)
+        {
+            SetupStepText.Text = "failed";
+            SetupDetailText.Text = error.Message;
+        }
     }
 
     private async void OnPairClicked(object sender, RoutedEventArgs e)
@@ -234,6 +295,8 @@ public partial class MainWindow : Window
                 : new DaemonLaunchState("stopped", "daemon start skipped");
             var health = await daemonClient.GetHealthAsync();
             var bot = await daemonClient.GetBotIdentityAsync();
+            var presets = await daemonClient.GetBotPresetsAsync();
+            var setupState = await daemonClient.GetSetupStateAsync();
             var catalog = await daemonClient.GetFunctionCatalogAsync();
             var recent = await daemonClient.GetRecentFunctionRunsAsync();
             var repoWorkspaces = await daemonClient.GetRepoWorkspacesAsync();
@@ -241,6 +304,7 @@ public partial class MainWindow : Window
             var browserEvents = await daemonClient.GetSuperiorBrowserEventsAsync();
 
             currentBot = bot;
+            starterPresets = presets.Items;
             currentRepoWorkspace = repoWorkspaces.Items.OrderByDescending(item => item.UpdatedAt).FirstOrDefault();
             currentBrowserState = browserState;
 
@@ -254,6 +318,7 @@ public partial class MainWindow : Window
             FunctionProofText.Text = recentReaction?.Label ?? $"{catalog.Items.Count} parts ready";
             ApplyRepoWorkspaceState(currentRepoWorkspace);
             ApplyPlaypenState(browserState, browserEvents);
+            ApplySetupState(setupState);
             UpdatePlaypenButtons();
 
             ApplyBot(bot, recentReaction);
@@ -277,6 +342,8 @@ public partial class MainWindow : Window
             OpenAiDetailText.Text = openAiKeyStore.KeyFilePath;
             BrowserStatusText.Text = "offline";
             ExtensionStatusText.Text = FormatExtensionStatus(currentBrowserState);
+            SetupStepText.Text = "Power";
+            SetupDetailText.Text = "daemon offline";
             PlaypenStatusText.Text = "offline";
             NativeLoopStatusText.Text = "failed";
             RepoReadStatusText.Text = "failed";
@@ -302,6 +369,138 @@ public partial class MainWindow : Window
         {
             ServiceStatusText.Text = "failed";
             ServiceDetailText.Text = error.Message;
+        }
+    }
+
+    private async Task EnsureStarterPresetsAsync()
+    {
+        if (starterPresets.Count > 0)
+        {
+            return;
+        }
+
+        var presets = await daemonClient.GetBotPresetsAsync();
+        starterPresets = presets.Items;
+    }
+
+    private void StartSetupFromPreset(string presetId)
+    {
+        var preset = starterPresets.FirstOrDefault(item => item.Id == presetId)
+            ?? starterPresets.FirstOrDefault()
+            ?? throw new InvalidOperationException("No starter presets returned.");
+        var now = DateTimeOffset.UtcNow.ToString("O");
+        setupDraftBot = new BotIdentity(
+            Id: $"active-{preset.Id}",
+            Name: preset.Name,
+            Body: preset.Body,
+            Color: preset.Color,
+            Eye: preset.Eye,
+            Skills: preset.Skills,
+            StarterPresetId: preset.Id,
+            CreatedAt: now,
+            UpdatedAt: now);
+
+        ApplySetupDraft(setupDraftBot);
+        ApplyBot(setupDraftBot, reaction: null);
+        SetupStepText.Text = "Pick / Build / Save";
+        SetupDetailText.Text = preset.Role;
+    }
+
+    private BotIdentity BuildSetupDraft()
+    {
+        var baseBot = setupDraftBot ?? currentBot ?? new BotIdentity(
+            Id: "active-clawd",
+            Name: "Clawd",
+            Body: "gremlin",
+            Color: "mossGreen",
+            Eye: "pixel",
+            Skills: new[] { "page-explainer", "article-xray", "repo-reader" },
+            StarterPresetId: "clawd");
+        var now = DateTimeOffset.UtcNow.ToString("O");
+        var name = string.IsNullOrWhiteSpace(BotNameInput.Text) ? baseBot.Name : BotNameInput.Text.Trim();
+        var skills = CollectSetupSkills();
+
+        return new BotIdentity(
+            Id: baseBot.Id,
+            Name: name,
+            Body: ReadComboBoxValue(BodySelect, baseBot.Body),
+            Color: ReadComboBoxValue(ColorSelect, baseBot.Color),
+            Eye: ReadComboBoxValue(EyeSelect, baseBot.Eye),
+            Skills: skills,
+            StarterPresetId: baseBot.StarterPresetId,
+            CreatedAt: baseBot.CreatedAt ?? now,
+            UpdatedAt: now);
+    }
+
+    private IReadOnlyList<string> CollectSetupSkills()
+    {
+        var skills = new List<string>();
+
+        if (SkillExplainCheck.IsChecked == true)
+        {
+            skills.Add("page-explainer");
+        }
+
+        if (SkillXrayCheck.IsChecked == true)
+        {
+            skills.Add("article-xray");
+        }
+
+        if (SkillRepoCheck.IsChecked == true)
+        {
+            skills.Add("repo-reader");
+        }
+
+        if (skills.Count == 0)
+        {
+            skills.Add("page-explainer");
+        }
+
+        return skills;
+    }
+
+    private void ApplySetupState(SuperiorSetupState setupState)
+    {
+        if (setupDraftBot is null)
+        {
+            ApplySetupDraft(setupState.Bot.Identity);
+        }
+
+        var readySteps = setupState.Steps
+            .Where(step => step.Status == "ready")
+            .Select(step => step.Label);
+        var missingStep = setupState.Steps.FirstOrDefault(step => step.Status != "ready");
+
+        SetupStepText.Text = missingStep is null ? "ready" : string.Join(" / ", readySteps.Append(missingStep.Label));
+        SetupDetailText.Text = missingStep?.Detail
+            ?? (setupState.ActiveBotSaved ? $"{setupState.Bot.Identity.Name} awake" : "save active bot");
+    }
+
+    private void ApplySetupDraft(BotIdentity bot)
+    {
+        BotNameInput.Text = bot.Name;
+        SetComboBoxValue(BodySelect, bot.Body);
+        SetComboBoxValue(ColorSelect, bot.Color);
+        SetComboBoxValue(EyeSelect, bot.Eye);
+        SkillExplainCheck.IsChecked = bot.Skills.Contains("page-explainer");
+        SkillXrayCheck.IsChecked = bot.Skills.Contains("article-xray");
+        SkillRepoCheck.IsChecked = bot.Skills.Contains("repo-reader");
+    }
+
+    private static string ReadComboBoxValue(ComboBox comboBox, string fallback)
+    {
+        return comboBox.SelectedItem is ComboBoxItem item && item.Content is string value ? value : fallback;
+    }
+
+    private static void SetComboBoxValue(ComboBox comboBox, string value)
+    {
+        foreach (var item in comboBox.Items.OfType<ComboBoxItem>())
+        {
+            if (item.Content is string itemValue && itemValue == value)
+            {
+                comboBox.SelectedItem = item;
+                return;
+            }
         }
     }
 

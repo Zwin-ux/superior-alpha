@@ -8,7 +8,13 @@ Last checked: 2026-05-30
 - Root tests pass: `corepack pnpm test`
 - Root build passes: `corepack pnpm build`
 - Host contract fixture passes: `corepack pnpm fixture:host-contract`
+- Host contract fixture now verifies `GET /bot-presets` and `GET /setup-state`.
+- Latest host contract fixture report: `.clawdbot/verification/host-contract-fixture-1780166524896.json`.
+- Shared tests verify starter presets seed valid active bot identities and only include runnable skills.
+- Native Windows toolchain/proof gate passes with the 0.9 setup surface: `corepack pnpm windows:proof`.
 - Extension MV3 build passes: `corepack pnpm --filter @clawdbot/extension build`
+- Extension skill fixture passes after 0.9 setup contracts: `corepack pnpm fixture:extension-skill`.
+- Latest extension skill fixture report: `.clawdbot/verification/extension-skill-fixture-1780166561792.json`.
 - Extension Chrome store package passes: `corepack pnpm extension:store-package`
 - Extension Chrome store artifact produced: `.clawdbot/artifacts/extension/SUPERIOR-0.8.0-chrome-mv3.zip`
 - Extension store validator confirms MV3, `SUPERIOR` name, version `0.8.0`, exact permissions, localhost-only host permissions, popup, worker, controlled-profile content script, and `16/32/48/128/256` icons.

@@ -29,6 +29,16 @@ public sealed class SuperiorDaemonClient
         return GetRequiredAsync<BotIdentity>("bot-identity");
     }
 
+    public Task<BotStarterPresetsResponse> GetBotPresetsAsync()
+    {
+        return GetRequiredAsync<BotStarterPresetsResponse>("bot-presets");
+    }
+
+    public Task<SuperiorSetupState> GetSetupStateAsync()
+    {
+        return GetRequiredAsync<SuperiorSetupState>("setup-state");
+    }
+
     public Task<FunctionCatalogResponse> GetFunctionCatalogAsync()
     {
         return GetRequiredAsync<FunctionCatalogResponse>("functions");
@@ -61,6 +71,15 @@ public sealed class SuperiorDaemonClient
 
         return await response.Content.ReadFromJsonAsync<BrowserPairingStarted>(JsonOptions)
             ?? throw new InvalidOperationException("Browser pairing returned no payload.");
+    }
+
+    public async Task<BotIdentity> SaveBotIdentityAsync(BotIdentity bot)
+    {
+        using var response = await httpClient.PutAsJsonAsync("bot-identity", bot, JsonOptions);
+        response.EnsureSuccessStatusCode();
+
+        return await response.Content.ReadFromJsonAsync<BotIdentity>(JsonOptions)
+            ?? throw new InvalidOperationException("Bot identity save returned no payload.");
     }
 
     public async Task<RepoReaderResult> RunRepoReaderAsync(string repoUrl, BotIdentity bot)

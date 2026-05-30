@@ -3,6 +3,7 @@ import {
   ArticleXrayError,
   ArticleXrayRequest,
   BotIdentity,
+  BotStarterPresetsResponse,
   BrowserPairingCompleteRequest,
   BrowserPairingError,
   CustomSkillImportError,
@@ -18,6 +19,8 @@ import {
   SuperiorFunctionError,
   SuperiorFunctionErrorCode,
   SuperiorFunctionRunRequest,
+  SuperiorSetupState,
+  botStarterPresets,
   createSuperiorFunctionRunRequest
 } from "@clawdbot/shared";
 import {
@@ -27,7 +30,7 @@ import {
   startBrowserPairing,
   touchBrowserPairing
 } from "./browserLinkStore.js";
-import { readBotIdentity, writeBotIdentity } from "./botIdentityStore.js";
+import { hasSavedBotIdentity, readBotIdentity, writeBotIdentity } from "./botIdentityStore.js";
 import { getDaemonConfig } from "./config.js";
 import { readRecentSkillResults } from "./recentResultsStore.js";
 import { readRepoWorkspaceRecords } from "./repoWorkspaceStore.js";
@@ -71,6 +74,16 @@ const server = createServer(async (request, response) => {
       },
       browserLinkState: readBrowserLinkState()
     });
+    return;
+  }
+
+  if (request.method === "GET" && url.pathname === "/bot-presets") {
+    sendJson(response, 200, readBotStarterPresets());
+    return;
+  }
+
+  if (request.method === "GET" && url.pathname === "/setup-state") {
+    sendJson(response, 200, readSetupState());
     return;
   }
 
@@ -910,6 +923,94 @@ function setCorsHeaders(response: ServerResponse): void {
   response.setHeader("Access-Control-Allow-Methods", "GET,POST,PUT,OPTIONS");
   response.setHeader("Access-Control-Allow-Headers", "Content-Type,X-Clawdbot-Pairing-Token");
   response.setHeader("Access-Control-Max-Age", "86400");
+}
+
+function readBotStarterPresets(): BotStarterPresetsResponse {
+  return {
+    type: "bot-starter-presets",
+    items: botStarterPresets.map((preset) => ({
+      ...preset,
+      skills: [...preset.skills]
+    })),
+    createdAt: new Date().toISOString()
+  };
+}
+
+function readSetupState(): SuperiorSetupState {
+  const bot = readServiceBotIdentity();
+  const browserLinkState = readBrowserLinkState();
+  const activeBotSaved = hasSavedBotIdentity();
+  const keyReady = Boolean(config.openaiApiKey);
+  const browserReady = browserLinkState.status === "paired";
+  const botStatus: SuperiorSetupState["bot"]["status"] = activeBotSaved
+    ? bot.starterPresetId
+      ? "saved"
+      : "custom"
+    : "starter-seed";
+
+  return {
+    type: "superior-setup-state",
+    activeBotSaved,
+    requiresSetup: !activeBotSaved,
+    steps: [
+      {
+        step: "daemon",
+        status: "ready",
+        label: "Power",
+        detail: "daemon awake"
+      },
+      {
+        step: "key",
+        status: keyReady ? "ready" : "missing",
+        label: "Key",
+        detail: keyReady ? "key ready" : "key missing"
+      },
+      {
+        step: "browser",
+        status: browserReady ? "ready" : "missing",
+        label: "Browser",
+        detail: browserReady ? "hand fitted" : browserLinkState.status
+      },
+      {
+        step: "preset",
+        status: "ready",
+        label: "Pick",
+        detail: activeBotSaved ? "saved bot" : "choose starter"
+      },
+      {
+        step: "assembly",
+        status: "ready",
+        label: "Build",
+        detail: `${bot.body} / ${bot.color} / ${bot.eye}`
+      },
+      {
+        step: "finish",
+        status: activeBotSaved ? "ready" : "blocked",
+        label: "Save",
+        detail: activeBotSaved ? "active bot saved" : "save active bot"
+      }
+    ],
+    daemon: {
+      status: "ready",
+      detail: `SUPERIOR daemon ${config.version}`
+    },
+    key: {
+      status: keyReady ? "ready" : "missing",
+      keyFilePath: config.keyFilePath,
+      source: config.openaiConfigSource
+    },
+    browser: {
+      status: browserLinkState.status,
+      ...(browserLinkState.extensionId ? { extensionId: browserLinkState.extensionId } : {}),
+      ...(browserLinkState.lastSeenAt ? { lastSeenAt: browserLinkState.lastSeenAt } : {})
+    },
+    bot: {
+      status: botStatus,
+      identity: bot,
+      ...(bot.starterPresetId ? { starterPresetId: bot.starterPresetId } : {})
+    },
+    createdAt: new Date().toISOString()
+  };
 }
 
 function readServiceBotIdentity(): BotIdentity {

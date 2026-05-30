@@ -6,21 +6,22 @@ Make the `.NET` Windows EXE the flagship surface.
 
 ## Next Move
 
-Finish the installed Windows loop:
+Finish native bot creation:
 
-- build the native MSI
-- launch installed WPF without Vite or repo checkout
-- save the OpenAI key from the native tray
-- start the packaged daemon with packaged Node and MV3 extension resources
-- prove Repo Reader -> Start Playpen -> Article X-Ray -> Stop
+- make `New Bot` open setup mode
+- fetch `Clawd`, `Hermes`, and `Mote` from `/bot-presets`
+- show setup state from `/setup-state`
+- let the user rename, pick body/color/eye, and equip runnable skills
+- save one active bot through `/bot-identity`
+- prove extension/icon/playpen identity still follows the saved bot
 
 ## Proof
 
 ```powershell
-corepack pnpm windows:msi
-corepack pnpm windows:installed-loop-smoke
+corepack pnpm fixture:host-contract
+corepack pnpm windows:proof
 ```
 
 ## Caveat
 
-0.7 is your-machine proof first. Wider Beta still needs a second Windows user/machine pass.
+0.9 is one active bot only. Starter presets are seeds, not save slots.

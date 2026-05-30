@@ -36,6 +36,44 @@ await runCheck("bot-identity-read", async () => {
   };
 });
 
+await runCheck("bot-presets", async () => {
+  const presets = await getJson("/bot-presets");
+  const ids = presets.items?.map((item) => item.id) ?? [];
+  const runnableIds = new Set(["page-explainer", "article-xray", "repo-reader"]);
+
+  assert(presets.type === "bot-starter-presets", "Expected bot starter presets response.");
+  assert(ids.includes("clawd"), "Expected Clawd preset.");
+  assert(ids.includes("hermes"), "Expected Hermes preset.");
+  assert(ids.includes("mote"), "Expected Mote preset.");
+  assert(
+    presets.items.every((item) => item.skills?.every((skillId) => runnableIds.has(skillId))),
+    "Expected presets to use runnable skills only."
+  );
+
+  return {
+    ids,
+    count: ids.length
+  };
+});
+
+await runCheck("setup-state", async () => {
+  const setup = await getJson("/setup-state");
+  const steps = setup.steps?.map((item) => item.step) ?? [];
+
+  assert(setup.type === "superior-setup-state", "Expected setup state response.");
+  assert(typeof setup.activeBotSaved === "boolean", "Expected activeBotSaved flag.");
+  assert(typeof setup.requiresSetup === "boolean", "Expected requiresSetup flag.");
+  assert(steps.join(",") === "daemon,key,browser,preset,assembly,finish", "Expected setup step order.");
+  assert(setup.bot?.identity?.id === botIdentity.id, "Expected setup state active bot.");
+
+  return {
+    requiresSetup: setup.requiresSetup,
+    steps,
+    key: setup.key?.status,
+    browser: setup.browser?.status
+  };
+});
+
 await runCheck("bot-identity-roundtrip", async () => {
   assert(botIdentity, "Bot identity was not loaded.");
 

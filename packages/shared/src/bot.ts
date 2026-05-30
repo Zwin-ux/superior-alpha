@@ -41,6 +41,8 @@ export type SkillStatus = "equipped" | "source-mapped" | "concept";
 export type SkillCategory = "explain" | "extract" | "detect" | "monitor" | "predict" | "work";
 export const skillSlots = ["eye", "crown", "side", "badge", "charm"] as const;
 export type SkillSlot = (typeof skillSlots)[number];
+export const botStarterPresetIds = ["clawd", "hermes", "mote"] as const;
+export type BotStarterPresetId = (typeof botStarterPresetIds)[number];
 
 export const skillSlotLabels: Record<SkillSlot, string> = {
   eye: "Eye",
@@ -299,6 +301,20 @@ export interface BotIdentity {
   rules: BotRule[];
   browserLinkState: BrowserLinkState;
   iconVariant: IconVariant;
+  starterPresetId?: BotStarterPresetId;
+  createdAt?: string;
+  updatedAt?: string;
+}
+
+export interface BotStarterPreset {
+  id: BotStarterPresetId;
+  name: string;
+  role: string;
+  body: BotBody;
+  color: BotColorId;
+  eye: BotEye;
+  skills: SkillId[];
+  slotNotes: Partial<Record<SkillSlot, string>>;
 }
 
 export const skillCatalog: Record<SkillId, SkillDefinition> = {
@@ -513,6 +529,48 @@ export const runnableSkillShelf = skillShelf.filter(isRunnableSkill);
 export const runnableSkillIds = runnableSkillShelf.map((skill) => skill.id);
 export const defaultSkillLoadout: SkillId[] = ["page-explainer", "article-xray", "repo-reader"];
 
+export const botStarterPresets: readonly BotStarterPreset[] = [
+  {
+    id: "clawd",
+    name: "Clawd",
+    role: "Starter builder",
+    body: "gremlin",
+    color: "mossGreen",
+    eye: "pixel",
+    skills: ["page-explainer", "article-xray", "repo-reader"],
+    slotNotes: {
+      eye: "X-Ray lens",
+      side: "repo gear",
+      badge: "explain tab"
+    }
+  },
+  {
+    id: "hermes",
+    name: "Hermes",
+    role: "Browser courier",
+    body: "scanner",
+    color: "skyBlue",
+    eye: "lens",
+    skills: ["page-explainer", "article-xray"],
+    slotNotes: {
+      eye: "courier lens",
+      badge: "explain tab"
+    }
+  },
+  {
+    id: "mote",
+    name: "Mote",
+    role: "Soft helper",
+    body: "orb",
+    color: "lavender",
+    eye: "glow",
+    skills: ["page-explainer"],
+    slotNotes: {
+      badge: "explain tab"
+    }
+  }
+];
+
 export function sanitizeSkillIds(skills: SkillId[]): SkillId[] {
   const runnableIds = new Set<SkillId>(runnableSkillIds);
   const seenIds = new Set<SkillId>();
@@ -530,11 +588,12 @@ export function sanitizeSkillIds(skills: SkillId[]): SkillId[] {
 
 export const DEFAULT_BOT_IDENTITY: BotIdentity = {
   id: "local-default",
-  name: "Superior",
+  name: "Clawd",
   body: "gremlin",
   color: "mossGreen",
   eye: "pixel",
   skills: [...defaultSkillLoadout],
+  starterPresetId: "clawd",
   rules: [
     {
       id: "concise",
@@ -557,6 +616,56 @@ export const DEFAULT_BOT_IDENTITY: BotIdentity = {
     eye: "pixel"
   }
 };
+
+export function getBotStarterPreset(presetId: BotStarterPresetId): BotStarterPreset {
+  const fallback = botStarterPresets[0];
+
+  if (!fallback) {
+    throw new Error("SUPERIOR needs at least one bot starter preset.");
+  }
+
+  return botStarterPresets.find((preset) => preset.id === presetId) ?? fallback;
+}
+
+export function createBotIdentityFromStarterPreset(
+  presetId: BotStarterPresetId,
+  options: {
+    id?: string;
+    name?: string;
+    createdAt?: string;
+  } = {}
+): BotIdentity {
+  const preset = getBotStarterPreset(presetId);
+  const createdAt = options.createdAt ?? new Date().toISOString();
+
+  return updateBotIdentity(
+    {
+      ...DEFAULT_BOT_IDENTITY,
+      id: options.id ?? `active-${preset.id}`,
+      name: options.name ?? preset.name,
+      body: preset.body,
+      color: preset.color,
+      eye: preset.eye,
+      skills: [...preset.skills],
+      starterPresetId: preset.id,
+      createdAt,
+      updatedAt: createdAt,
+      iconVariant: {
+        ...DEFAULT_BOT_IDENTITY.iconVariant,
+        body: preset.body,
+        color: preset.color,
+        eye: preset.eye
+      }
+    },
+    {
+      body: preset.body,
+      color: preset.color,
+      eye: preset.eye,
+      name: options.name ?? preset.name,
+      skills: [...preset.skills]
+    }
+  );
+}
 
 export function makeBotCssVars(bot: BotIdentity): Record<string, string> {
   const pigment = clayPigments[bot.color];

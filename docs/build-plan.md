@@ -13,15 +13,15 @@ Current source of truth:
 
 ## Current Release Focus
 
-Current focus is `0.8 Chrome Extension Store Gate`:
+Current focus is `0.9 Bot Creation Alpha`:
 
-- prepare the MV3 extension for a public Chrome Web Store listing
-- make GitHub the main public hub through README, docs, Releases, and artifact links
-- make toolbar icon and popup identity follow the active user-created bot
-- package `.clawdbot/artifacts/extension/SUPERIOR-0.8.0-chrome-mv3.zip`
-- keep permissions tight: active tab capture, context menus, scripting, storage, tabs, and localhost daemon access only
-- keep OpenAI key, pairing authority, browser profiles, and repo workspaces out of extension storage
-- add public privacy/listing docs for Chrome review
+- make `New Bot` real in the native Windows app
+- keep one active local bot in `bot-identity.json`; no multi-bot roster yet
+- add starter presets: `Clawd`, `Hermes`, and `Mote`
+- treat presets as seeds, then save through the same active `BotIdentity`
+- expose `GET /bot-presets` and `GET /setup-state` through the daemon
+- make setup read as `Power`, `Key`, `Browser`, `Pick`, `Build`, `Save`
+- keep the extension, browser playpen, icons, and daemon identity tied to the saved active bot
 - keep `apps/windows` as the flagship EXE lane
 - keep `apps/desktop` as alpha harness only
 - keep `apps/hub` as a private Vercel proof mirror only
@@ -31,8 +31,8 @@ Current focus is `0.8 Chrome Extension Store Gate`:
 
 Recommended work packet:
 
-- `Extension: Chrome Store Gate`
-- Build the store ZIP, prove dynamic bot icon sync, and prepare public listing/privacy material.
+- `Windows: Bot Creation Alpha`
+- Prove native setup can select Hermes/Clawd/Mote, save a customized active bot, and have daemon/extension identity follow it.
 
 ## Phase 1: Product Frame
 
