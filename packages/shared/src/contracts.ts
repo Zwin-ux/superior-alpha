@@ -3,6 +3,7 @@ import {
   BotColorId,
   BotEye,
   BotIdentity,
+  BotSpore,
   BotCreationShapeDefinition,
   BotCreationShapeId,
   BotStarterPreset,
@@ -440,8 +441,22 @@ export interface DaemonHealth {
   };
 }
 
-export type BotCreationStep = "daemon" | "key" | "browser" | "shape" | "skills" | "assembly" | "finish";
+export type BotCreationStep =
+  | "account"
+  | "daemon"
+  | "key"
+  | "model"
+  | "browser"
+  | "starter"
+  | "shape"
+  | "skills"
+  | "assembly"
+  | "finish";
 export type BotCreationStepStatus = "ready" | "missing" | "blocked";
+export type SuperiorAccountStatus = "signed-out" | "code-sent" | "signed-in" | "offline";
+export type SuperiorModelProvider = "ollama" | "openai-byok" | "missing";
+export type SuperiorOllamaStatus = "available" | "missing" | "starting" | "failed";
+export type SuperiorOpenAiKeyStatus = "missing" | "saved" | "ready" | "invalid";
 
 export interface BotCreationDraft {
   type: "bot-creation-draft";
@@ -472,8 +487,27 @@ export interface BotCreationOptionsResponse {
 export interface SuperiorSetupStepState {
   step: BotCreationStep;
   status: BotCreationStepStatus;
-  label: "Power" | "Key" | "Browser" | "Shape" | "Skills" | "Build" | "Save";
+  label: "Account" | "Power" | "Key" | "Model" | "Browser" | "Starter" | "Shape" | "Skills" | "Build" | "Save";
   detail: string;
+}
+
+export interface SuperiorAccountState {
+  status: SuperiorAccountStatus;
+  handle?: string;
+  email?: string;
+  userId?: string;
+  syncedAt?: string;
+  detail: string;
+}
+
+export interface SuperiorModelProviderState {
+  type: "superior-model-provider-state";
+  modelProvider: SuperiorModelProvider;
+  ollamaStatus: SuperiorOllamaStatus;
+  openAiKeyStatus: SuperiorOpenAiKeyStatus;
+  selectedAt?: string;
+  detail: string;
+  createdAt: string;
 }
 
 export interface SuperiorSetupState {
@@ -481,6 +515,7 @@ export interface SuperiorSetupState {
   activeBotSaved: boolean;
   requiresSetup: boolean;
   steps: SuperiorSetupStepState[];
+  account: SuperiorAccountState;
   daemon: {
     status: "ready";
     detail: string;
@@ -495,12 +530,75 @@ export interface SuperiorSetupState {
     extensionId?: string;
     lastSeenAt?: string;
   };
+  model: SuperiorModelProviderState;
   bot: {
     status: "saved" | "starter-seed" | "custom";
     identity: BotIdentity;
     starterPresetId?: BotStarterPresetId;
   };
   createdAt: string;
+}
+
+export interface SuperiorModelProviderSelectRequest {
+  type: "superior-model-provider-select";
+  provider: Exclude<SuperiorModelProvider, "missing">;
+}
+
+export interface SuperiorOpenAiKeySaveRequest {
+  type: "superior-openai-key-save";
+  apiKey: string;
+  model?: string;
+}
+
+export interface SuperiorModelProviderError {
+  type: "superior-model-provider-error";
+  code: "bad_request" | "not_found" | "start_failed";
+  message: string;
+}
+
+export interface SuperiorAccountStartEmailCodeRequest {
+  type: "superior-account-start-email-code";
+  email: string;
+}
+
+export interface SuperiorAccountStartEmailCodeResult {
+  type: "superior-account-code-sent";
+  email: string;
+  createdAt: string;
+}
+
+export interface SuperiorAccountVerifyEmailCodeRequest {
+  type: "superior-account-verify-email-code";
+  email: string;
+  token: string;
+}
+
+export interface SuperiorAccountSession {
+  type: "superior-account-session";
+  userId: string;
+  email: string;
+  accessToken: string;
+  expiresAt?: number;
+  createdAt: string;
+}
+
+export interface SuperiorAccountProfile {
+  type: "superior-account-profile";
+  userId: string;
+  email?: string;
+  handle: string;
+  activeSporeId?: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface SuperiorAccountSpore {
+  type: "superior-account-spore";
+  userId: string;
+  spore: BotSpore;
+  starterPresetId?: BotStarterPresetId;
+  createdAt: string;
+  updatedAt: string;
 }
 
 export interface BrowserPairingStartResult {

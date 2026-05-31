@@ -1,0 +1,12 @@
+{
+  "name": "@superior/godot-client",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "build": "node tools/check-project.mjs",
+    "typecheck": "node tools/check-project.mjs",
+    "test": "node tools/check-project.mjs",
+    "godot:check": "node tools/check-godot.mjs"
+  }
+}

@@ -1,0 +1,269 @@
+{
+  "version": "0.13",
+  "name": "Godot Clay Asset Generator Sheet",
+  "artRule": "clay = world + bot + props + parts; pixel = HUD + labels + terminal + status + icons; AI mush = rejected",
+  "runtime": {
+    "contactSheet": "assets/bots/0.13/sheet/superior-clay-contact-sheet.png",
+    "atlas": "assets/bots/0.13/sheet/superior-clay-atlas.png",
+    "atlasManifest": "assets/bots/0.13/sheet/superior-clay-atlas.json",
+    "godotAtlas": "superior/godot-client/assets/clay/superior-clay-atlas.png",
+    "godotManifest": "superior/godot-client/assets/clay/superior-clay-atlas.json"
+  },
+  "assets": [
+    {
+      "id": "clay.wall",
+      "kind": "clay-world",
+      "state": "approved",
+      "approvedPath": "assets/bots/0.13/approved/generated/clay.wall.png",
+      "godotTarget": "res://assets/clay/superior-clay-atlas.png#clay.wall",
+      "qualityNotes": [
+        "matte teal clay wall tile",
+        "procedural placeholder approved for atlas plumbing"
+      ],
+      "atlasRect": {
+        "x": 0,
+        "y": 0,
+        "width": 128,
+        "height": 128
+      }
+    },
+    {
+      "id": "clay.table",
+      "kind": "clay-world",
+      "state": "approved",
+      "approvedPath": "assets/bots/0.13/approved/generated/clay.table.png",
+      "godotTarget": "res://assets/clay/superior-clay-atlas.png#clay.table",
+      "qualityNotes": [
+        "warm workbench clay",
+        "surface must stay matte"
+      ],
+      "atlasRect": {
+        "x": 128,
+        "y": 0,
+        "width": 128,
+        "height": 128
+      }
+    },
+    {
+      "id": "clay.pedestal",
+      "kind": "clay-world",
+      "state": "approved",
+      "approvedPath": "assets/bots/0.13/approved/generated/clay.pedestal.png",
+      "godotTarget": "res://assets/clay/superior-clay-atlas.png#clay.pedestal",
+      "qualityNotes": [
+        "raised bench plinth",
+        "visible contact shadow expected in runtime"
+      ],
+      "atlasRect": {
+        "x": 256,
+        "y": 0,
+        "width": 128,
+        "height": 128
+      }
+    },
+    {
+      "id": "clay.lamp",
+      "kind": "clay-world",
+      "state": "approved",
+      "approvedPath": "assets/bots/0.13/approved/generated/clay.lamp.png",
+      "godotTarget": "res://assets/clay/superior-clay-atlas.png#clay.lamp",
+      "qualityNotes": [
+        "warm lamp cap and glow swatch",
+        "no chrome or sci-fi metal"
+      ],
+      "atlasRect": {
+        "x": 384,
+        "y": 0,
+        "width": 128,
+        "height": 128
+      }
+    },
+    {
+      "id": "clay.rail",
+      "kind": "clay-world",
+      "state": "approved",
+      "approvedPath": "assets/bots/0.13/approved/generated/clay.rail.png",
+      "godotTarget": "res://assets/clay/superior-clay-atlas.png#clay.rail",
+      "qualityNotes": [
+        "left launcher rail clay",
+        "chunky pressed menu surface"
+      ],
+      "atlasRect": {
+        "x": 512,
+        "y": 0,
+        "width": 128,
+        "height": 128
+      }
+    },
+    {
+      "id": "clay.tray",
+      "kind": "clay-world",
+      "state": "approved",
+      "approvedPath": "assets/bots/0.13/approved/generated/clay.tray.png",
+      "godotTarget": "res://assets/clay/superior-clay-atlas.png#clay.tray",
+      "qualityNotes": [
+        "right parts tray clay",
+        "tool surface, not dashboard card"
+      ],
+      "atlasRect": {
+        "x": 0,
+        "y": 128,
+        "width": 128,
+        "height": 128
+      }
+    },
+    {
+      "id": "bot.clawd.head",
+      "kind": "bot-part",
+      "state": "approved",
+      "approvedPath": "assets/bots/0.13/approved/generated/bot.clawd.head.png",
+      "godotTarget": "res://assets/clay/superior-clay-atlas.png#bot.clawd.head",
+      "qualityNotes": [
+        "moss gremlin head",
+        "asymmetry and handmade dents required"
+      ],
+      "atlasRect": {
+        "x": 128,
+        "y": 128,
+        "width": 128,
+        "height": 128
+      }
+    },
+    {
+      "id": "bot.clawd.eye.pixel",
+      "kind": "bot-part",
+      "state": "approved",
+      "approvedPath": "assets/bots/0.13/approved/generated/bot.clawd.eye.pixel.png",
+      "godotTarget": "res://assets/clay/superior-clay-atlas.png#bot.clawd.eye.pixel",
+      "qualityNotes": [
+        "crisp pixel eye",
+        "pixel belongs to expression and HUD only"
+      ],
+      "atlasRect": {
+        "x": 256,
+        "y": 128,
+        "width": 128,
+        "height": 128
+      }
+    },
+    {
+      "id": "bot.clawd.antenna",
+      "kind": "bot-part",
+      "state": "approved",
+      "approvedPath": "assets/bots/0.13/approved/generated/bot.clawd.antenna.png",
+      "godotTarget": "res://assets/clay/superior-clay-atlas.png#bot.clawd.antenna",
+      "qualityNotes": [
+        "uneven clay antenna",
+        "small toy silhouette"
+      ],
+      "atlasRect": {
+        "x": 384,
+        "y": 128,
+        "width": 128,
+        "height": 128
+      }
+    },
+    {
+      "id": "skill.eye.xray",
+      "kind": "bot-part",
+      "state": "approved",
+      "approvedPath": "assets/bots/0.13/approved/generated/skill.eye.xray.png",
+      "godotTarget": "res://assets/clay/superior-clay-atlas.png#skill.eye.xray",
+      "qualityNotes": [
+        "lens ring attachment",
+        "must read as stuck-on clay"
+      ],
+      "atlasRect": {
+        "x": 512,
+        "y": 128,
+        "width": 128,
+        "height": 128
+      }
+    },
+    {
+      "id": "skill.badge.explain",
+      "kind": "bot-part",
+      "state": "approved",
+      "approvedPath": "assets/bots/0.13/approved/generated/skill.badge.explain.png",
+      "godotTarget": "res://assets/clay/superior-clay-atlas.png#skill.badge.explain",
+      "qualityNotes": [
+        "paper tab badge",
+        "short readable mark only"
+      ],
+      "atlasRect": {
+        "x": 0,
+        "y": 256,
+        "width": 128,
+        "height": 128
+      }
+    },
+    {
+      "id": "skill.side.repo",
+      "kind": "bot-part",
+      "state": "approved",
+      "approvedPath": "assets/bots/0.13/approved/generated/skill.side.repo.png",
+      "godotTarget": "res://assets/clay/superior-clay-atlas.png#skill.side.repo",
+      "qualityNotes": [
+        "side gear attachment",
+        "plain utility read"
+      ],
+      "atlasRect": {
+        "x": 128,
+        "y": 256,
+        "width": 128,
+        "height": 128
+      }
+    },
+    {
+      "id": "ui.status.light",
+      "kind": "pixel-ui",
+      "state": "approved",
+      "approvedPath": "assets/bots/0.13/approved/generated/ui.status.light.png",
+      "godotTarget": "res://assets/clay/superior-clay-atlas.png#ui.status.light",
+      "qualityNotes": [
+        "small pixel status light",
+        "sharp and readable"
+      ],
+      "atlasRect": {
+        "x": 256,
+        "y": 256,
+        "width": 128,
+        "height": 128
+      }
+    },
+    {
+      "id": "ui.stamp.spore",
+      "kind": "pixel-ui",
+      "state": "approved",
+      "approvedPath": "assets/bots/0.13/approved/generated/ui.stamp.spore.png",
+      "godotTarget": "res://assets/clay/superior-clay-atlas.png#ui.stamp.spore",
+      "qualityNotes": [
+        "spore save stamp",
+        "success feedback before text changes"
+      ],
+      "atlasRect": {
+        "x": 384,
+        "y": 256,
+        "width": 128,
+        "height": 128
+      }
+    },
+    {
+      "id": "onboarding.empty-bench",
+      "kind": "onboarding",
+      "state": "approved",
+      "approvedPath": "assets/bots/0.13/approved/generated/onboarding.empty-bench.png",
+      "godotTarget": "res://assets/clay/superior-clay-atlas.png#onboarding.empty-bench",
+      "qualityNotes": [
+        "empty bench setup state",
+        "starter creature moment"
+      ],
+      "atlasRect": {
+        "x": 512,
+        "y": 256,
+        "width": 128,
+        "height": 128
+      }
+    }
+  ]
+}

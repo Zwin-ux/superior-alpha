@@ -5,6 +5,8 @@ Current source of truth:
 - Full spec: [full-product-spec.md](full-product-spec.md)
 - Release ladder: [release-ladder.md](release-ladder.md)
 - Verification: [alpha-verification.md](alpha-verification.md)
+- Video proof gate: [video-proof-gate.md](video-proof-gate.md)
+- Godot engine direction: [superior-alpha-engine.md](superior-alpha-engine.md)
 - Functional core sprint: [functional-core-sprint.md](functional-core-sprint.md)
 - Agent execution model: [agent-execution-model.md](agent-execution-model.md)
 - Agent packets: [agent-packets.md](agent-packets.md)
@@ -13,27 +15,25 @@ Current source of truth:
 
 ## Current Release Focus
 
-Current focus is `0.9 Bot Creation Alpha`:
+Current focus is `0.10 Godot Engine Reset`:
 
-- make `New Bot` real in the native Windows app
-- keep one active local bot in `bot-identity.json`; no multi-bot roster yet
-- add starter presets: `Clawd`, `Hermes`, and `Mote`
-- treat presets as seeds, then save through the same active `BotIdentity`
-- expose `GET /bot-presets` and `GET /setup-state` through the daemon
-- expose `GET /bot-creation-options` so every shell can start from shape plus skill loadout
-- make setup read as `Power`, `Key`, `Browser`, `Shape`, `Skills`, `Build`, `Save`
-- keep the extension, browser playpen, icons, and daemon identity tied to the saved active bot
-- keep `apps/windows` as the flagship EXE lane
+- treat Godot as the primary visual runtime
+- scaffold `superior/core`, `superior/server`, and `superior/godot-client`
+- render a boot screen, low-poly signal room, pixel HUD, agent/avatar, and in-world event terminal
+- stream realtime state patches over local WebSocket/SSE
+- keep the extension as the browser signal hand
+- keep `apps/windows` as an installer/service proof lane, not the final visual shell
 - keep `apps/desktop` as alpha harness only
 - keep `apps/hub` as a private Vercel proof mirror only
-- keep all robot runtime, model credentials, pairing, browser profiles, and repo workspaces local
+- keep model credentials, pairing, browser profiles, and repo workspaces local
 - use GitHub Releases as the artifact shelf when a remote exists
-- keep agent packets as the next-move index for Windows, Extension, Daemon/Contracts, Hub, and Mobile
+- add Godot MP4 proof once Godot is installed locally
 
 Recommended work packet:
 
-- `Windows: Bot Creation Alpha`
-- Prove native setup can select Hermes/Clawd/Mote, save a customized active bot, and have daemon/extension identity follow it.
+- `Godot: Signal Room Alpha`
+- Prove Godot can boot, connect to `superior/server`, receive state patches, and show signal feedback through the room/avatar/terminal.
+- Close with an MP4 from the Godot client once Godot is available on PATH.
 
 ## Phase 1: Product Frame
 

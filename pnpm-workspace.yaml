@@ -1,8 +1,11 @@
 packages:
   - apps/*
   - packages/*
+  - superior/*
 
 onlyBuiltDependencies:
   - esbuild
+  - ffmpeg-static
 allowBuilds:
   esbuild: true
+  ffmpeg-static: true

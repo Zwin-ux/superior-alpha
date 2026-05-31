@@ -7,6 +7,12 @@ clawdbot/
   package.json
   pnpm-workspace.yaml
   docs/
+  superior/
+    core/
+    godot-client/
+    server/
+    extension/
+    web-admin/
   apps/
     windows/
     desktop/
@@ -22,15 +28,31 @@ clawdbot/
 
 ## App Responsibilities
 
+The current primary engine direction lives in [superior-alpha-engine.md](superior-alpha-engine.md).
+
+### Godot Client
+
+Godot is the primary visual runtime for SUPERIOR. It owns the SNES/Saturn/PS1-inspired signal room, boot screen, pixel HUD, agent/avatar presentation, in-world terminal, and realtime sync animations.
+
+The first source lane lives in `superior/godot-client`. It consumes platform-neutral contracts from `superior/core` and realtime patches from `superior/server`.
+
+### Superior Core
+
+`superior/core` owns shared event contracts, server sync message types, and platform-neutral state reducers for the signal-analysis engine. This is separate from old UI-specific shared types so the Godot runtime does not inherit desktop/web assumptions.
+
+### Superior Server
+
+`superior/server` is the realtime backend for the engine. It starts as a local WebSocket/SSE server and broadcasts state patches to Godot, extension bridges, and later admin surfaces. It is the server brain for signal room proof, not a hosted SaaS dashboard.
+
 Platform release testing and backend portability rules live in [platform-release-testing.md](platform-release-testing.md). That document is the source of truth for how the same SUPERIOR backend contracts move across Windows EXE, extension, web, service, CLI, macOS, and Linux surfaces.
 
 Coding-agent ownership lanes and backend/frontend work packets live in [agent-execution-model.md](agent-execution-model.md). Agents should use that file before starting `0.4` function kernel work.
 
 ### Windows EXE
 
-Native `.NET` Windows app for the official SUPERIOR desktop product. This lane owns the final Windows window, tray, installer, local storage, service control, and native workbench rendering.
+Native `.NET` Windows app for the existing alpha proof lane. It still proves installer, service control, local storage, and daemon behavior, but it is no longer the primary visual product engine.
 
-The first source lane lives in `apps/windows`. It talks to the local daemon contracts over loopback and must not clone the Tauri UI. Port behavior through contracts and rebuild the surface for Windows.
+The source lane lives in `apps/windows`. Keep it useful for packaging and local service proof while the Godot client becomes the product shell.
 
 ### Desktop Alpha Harness
 

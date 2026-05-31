@@ -1,12 +1,29 @@
 # SUPERIOR Alpha Verification
 
-Last checked: 2026-05-30
+Last checked: 2026-05-31
 
 ## Passing Evidence
 
 - Root typecheck passes: `corepack pnpm typecheck`
 - Root tests pass: `corepack pnpm test`
 - Root build passes: `corepack pnpm build`
+- Godot primary engine lane is scaffolded under `superior/godot-client`.
+- Godot vertical slice includes the 0.14 console-style `SUPERIOR BOOTING` sequence, clay lamp reveal, concept-mapped workshop menu, Clawd Gremlin, terminal mock events, WebSocket fallback, lighter CRT pixel shader pass, and input-driven reactions.
+- 0.14 clay factory export passes: `corepack pnpm assets:factory-export`.
+- 0.14 clay factory quality gate passes: `corepack pnpm assets:quality-gate`.
+- Godot scaffold check passes with the 0.14 quality gate first: `corepack pnpm superior:engine-check`.
+- Godot 4.6.3 is installed locally through Winget and detected by the Godot client check.
+- Godot engine proof recorder passes: `corepack pnpm video:godot-engine`.
+- Godot proof recorder now uses Godot `--write-movie`, not desktop-region capture, so it cannot pass by recording the wrong foreground window.
+- Latest Godot proof MP4: `.clawdbot/video-proof/2026-05-31T03-39-56-715Z-godot-engine/SUPERIOR-godot-engine-2026-05-31T03-39-56-715Z.mp4`.
+- Latest Godot proof poster: `.clawdbot/video-proof/2026-05-31T03-39-56-715Z-godot-engine/SUPERIOR-godot-engine-2026-05-31T03-39-56-715Z.png`.
+- Superior core contracts build and test: `corepack pnpm --filter @superior/core build` and `corepack pnpm --filter @superior/core test`.
+- Superior realtime server builds: `corepack pnpm --filter @superior/server build`.
+- Superior realtime server smoke accepted a `browser` signal and returned state revision `2`.
+- Video proof gate is installed: `corepack pnpm video:proof`
+- Video proof writes MP4 critique artifacts under `.clawdbot/video-proof/` and tracks the latest run in `.clawdbot/video-proof/latest.json`.
+- Latest video proof MP4: `.clawdbot/video-proof/2026-05-30T19-15-58-664Z-workshop/SUPERIOR-workshop-2026-05-30T19-15-58-664Z.mp4`.
+- Latest video proof duration: `16.12s` at `1280x720`.
 - Host contract fixture passes: `corepack pnpm fixture:host-contract`
 - Host contract fixture now verifies `GET /bot-presets` and `GET /setup-state`.
 - Latest host contract fixture report: `.clawdbot/verification/host-contract-fixture-1780167726706.json`.

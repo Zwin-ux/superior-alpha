@@ -1,0 +1,491 @@
+{
+  "version": "0.14",
+  "name": "SUPERIOR Clay Factory Runtime Sheet",
+  "artRule": "clay = world + bot + props + parts; pixel = HUD + labels + terminal + status + icons; placeholders cannot be runtime-approved",
+  "visualTarget": "assets/bots/soul/clawdbot-workshop-target.png",
+  "runtime": {
+    "contactSheet": "assets/bots/0.14/sheet/superior-clay-factory-contact-sheet.png",
+    "atlas": "assets/bots/0.14/sheet/superior-clay-factory-atlas.png",
+    "atlasManifest": "assets/bots/0.14/sheet/superior-clay-factory-atlas.json",
+    "qualityReport": "assets/bots/0.14/sheet/superior-clay-factory-quality-report.json",
+    "compositionProof": "assets/bots/0.14/sheet/superior-clay-factory-composition-proof.png",
+    "godotAtlas": "superior/godot-client/assets/clay/superior-clay-factory-atlas.png",
+    "godotManifest": "superior/godot-client/assets/clay/superior-clay-factory-atlas.json"
+  },
+  "compositionZones": [
+    "boot",
+    "lamp-sign",
+    "left-rail",
+    "center-bot",
+    "right-tray",
+    "bottom-status"
+  ],
+  "assets": [
+    {
+      "id": "scene.wall",
+      "kind": "clay-world",
+      "state": "approved-runtime",
+      "width": 512,
+      "height": 288,
+      "approvedPath": "assets/bots/0.14/approved-runtime/generated/scene.wall.png",
+      "godotTarget": "res://assets/clay/superior-clay-factory-atlas.png#scene.wall",
+      "zones": [
+        "lamp-sign"
+      ],
+      "qualityNotes": [
+        "large teal clay wall plate with handmade dents"
+      ],
+      "atlasRect": {
+        "x": 4,
+        "y": 4,
+        "width": 512,
+        "height": 288
+      }
+    },
+    {
+      "id": "scene.lamp",
+      "kind": "clay-world",
+      "state": "approved-runtime",
+      "width": 256,
+      "height": 192,
+      "approvedPath": "assets/bots/0.14/approved-runtime/generated/scene.lamp.png",
+      "godotTarget": "res://assets/clay/superior-clay-factory-atlas.png#scene.lamp",
+      "zones": [
+        "lamp-sign"
+      ],
+      "qualityNotes": [
+        "warm clay lamp cap and visible cone of light"
+      ],
+      "atlasRect": {
+        "x": 520,
+        "y": 4,
+        "width": 256,
+        "height": 192
+      }
+    },
+    {
+      "id": "scene.sign",
+      "kind": "clay-world",
+      "state": "approved-runtime",
+      "width": 512,
+      "height": 160,
+      "approvedPath": "assets/bots/0.14/approved-runtime/generated/scene.sign.png",
+      "godotTarget": "res://assets/clay/superior-clay-factory-atlas.png#scene.sign",
+      "zones": [
+        "lamp-sign"
+      ],
+      "qualityNotes": [
+        "chunky workshop sign with separated clay letters"
+      ],
+      "atlasRect": {
+        "x": 780,
+        "y": 4,
+        "width": 512,
+        "height": 160
+      }
+    },
+    {
+      "id": "scene.left-rail",
+      "kind": "clay-world",
+      "state": "approved-runtime",
+      "width": 256,
+      "height": 512,
+      "approvedPath": "assets/bots/0.14/approved-runtime/generated/scene.left-rail.png",
+      "godotTarget": "res://assets/clay/superior-clay-factory-atlas.png#scene.left-rail",
+      "zones": [
+        "left-rail"
+      ],
+      "qualityNotes": [
+        "tall handmade clay launcher rail"
+      ],
+      "atlasRect": {
+        "x": 1296,
+        "y": 4,
+        "width": 256,
+        "height": 512
+      }
+    },
+    {
+      "id": "scene.menu-slab.default",
+      "kind": "clay-world",
+      "state": "approved-runtime",
+      "width": 256,
+      "height": 96,
+      "approvedPath": "assets/bots/0.14/approved-runtime/generated/scene.menu-slab.default.png",
+      "godotTarget": "res://assets/clay/superior-clay-factory-atlas.png#scene.menu-slab.default",
+      "zones": [
+        "left-rail"
+      ],
+      "qualityNotes": [
+        "raised sun-gold clay button slab"
+      ],
+      "atlasRect": {
+        "x": 1556,
+        "y": 4,
+        "width": 256,
+        "height": 96
+      }
+    },
+    {
+      "id": "scene.menu-slab.hover",
+      "kind": "clay-world",
+      "state": "approved-runtime",
+      "width": 256,
+      "height": 96,
+      "approvedPath": "assets/bots/0.14/approved-runtime/generated/scene.menu-slab.hover.png",
+      "godotTarget": "res://assets/clay/superior-clay-factory-atlas.png#scene.menu-slab.hover",
+      "zones": [
+        "left-rail"
+      ],
+      "qualityNotes": [
+        "warmer raised clay hover state"
+      ],
+      "atlasRect": {
+        "x": 4,
+        "y": 520,
+        "width": 256,
+        "height": 96
+      }
+    },
+    {
+      "id": "scene.menu-slab.pressed",
+      "kind": "clay-world",
+      "state": "approved-runtime",
+      "width": 256,
+      "height": 96,
+      "approvedPath": "assets/bots/0.14/approved-runtime/generated/scene.menu-slab.pressed.png",
+      "godotTarget": "res://assets/clay/superior-clay-factory-atlas.png#scene.menu-slab.pressed",
+      "zones": [
+        "left-rail"
+      ],
+      "qualityNotes": [
+        "pressed darker clay button slab"
+      ],
+      "atlasRect": {
+        "x": 264,
+        "y": 520,
+        "width": 256,
+        "height": 96
+      }
+    },
+    {
+      "id": "scene.table",
+      "kind": "clay-world",
+      "state": "approved-runtime",
+      "width": 768,
+      "height": 256,
+      "approvedPath": "assets/bots/0.14/approved-runtime/generated/scene.table.png",
+      "godotTarget": "res://assets/clay/superior-clay-factory-atlas.png#scene.table",
+      "zones": [
+        "center-bot",
+        "bottom-status"
+      ],
+      "qualityNotes": [
+        "wide brick clay workbench plane"
+      ],
+      "atlasRect": {
+        "x": 524,
+        "y": 520,
+        "width": 768,
+        "height": 256
+      }
+    },
+    {
+      "id": "scene.pedestal",
+      "kind": "clay-world",
+      "state": "approved-runtime",
+      "width": 384,
+      "height": 192,
+      "approvedPath": "assets/bots/0.14/approved-runtime/generated/scene.pedestal.png",
+      "godotTarget": "res://assets/clay/superior-clay-factory-atlas.png#scene.pedestal",
+      "zones": [
+        "center-bot"
+      ],
+      "qualityNotes": [
+        "center raised bench pedestal with contact shadow"
+      ],
+      "atlasRect": {
+        "x": 1296,
+        "y": 520,
+        "width": 384,
+        "height": 192
+      }
+    },
+    {
+      "id": "scene.right-tray",
+      "kind": "clay-world",
+      "state": "approved-runtime",
+      "width": 320,
+      "height": 512,
+      "approvedPath": "assets/bots/0.14/approved-runtime/generated/scene.right-tray.png",
+      "godotTarget": "res://assets/clay/superior-clay-factory-atlas.png#scene.right-tray",
+      "zones": [
+        "right-tray"
+      ],
+      "qualityNotes": [
+        "pressed clay parts tray slab"
+      ],
+      "atlasRect": {
+        "x": 1684,
+        "y": 520,
+        "width": 320,
+        "height": 512
+      }
+    },
+    {
+      "id": "scene.tray-slot.empty",
+      "kind": "clay-world",
+      "state": "approved-runtime",
+      "width": 300,
+      "height": 88,
+      "approvedPath": "assets/bots/0.14/approved-runtime/generated/scene.tray-slot.empty.png",
+      "godotTarget": "res://assets/clay/superior-clay-factory-atlas.png#scene.tray-slot.empty",
+      "zones": [
+        "right-tray"
+      ],
+      "qualityNotes": [
+        "empty recessed clay slot row"
+      ],
+      "atlasRect": {
+        "x": 4,
+        "y": 1036,
+        "width": 300,
+        "height": 88
+      }
+    },
+    {
+      "id": "scene.tray-slot.equipped",
+      "kind": "clay-world",
+      "state": "approved-runtime",
+      "width": 300,
+      "height": 88,
+      "approvedPath": "assets/bots/0.14/approved-runtime/generated/scene.tray-slot.equipped.png",
+      "godotTarget": "res://assets/clay/superior-clay-factory-atlas.png#scene.tray-slot.equipped",
+      "zones": [
+        "right-tray"
+      ],
+      "qualityNotes": [
+        "equipped slot with stamped part token"
+      ],
+      "atlasRect": {
+        "x": 308,
+        "y": 1036,
+        "width": 300,
+        "height": 88
+      }
+    },
+    {
+      "id": "scene.bottom-card",
+      "kind": "clay-world",
+      "state": "approved-runtime",
+      "width": 480,
+      "height": 160,
+      "approvedPath": "assets/bots/0.14/approved-runtime/generated/scene.bottom-card.png",
+      "godotTarget": "res://assets/clay/superior-clay-factory-atlas.png#scene.bottom-card",
+      "zones": [
+        "bottom-status"
+      ],
+      "qualityNotes": [
+        "soft paper-clay identity card"
+      ],
+      "atlasRect": {
+        "x": 612,
+        "y": 1036,
+        "width": 480,
+        "height": 160
+      }
+    },
+    {
+      "id": "scene.status-pill",
+      "kind": "pixel-ui",
+      "state": "approved-runtime",
+      "width": 256,
+      "height": 80,
+      "approvedPath": "assets/bots/0.14/approved-runtime/generated/scene.status-pill.png",
+      "godotTarget": "res://assets/clay/superior-clay-factory-atlas.png#scene.status-pill",
+      "zones": [
+        "bottom-status"
+      ],
+      "qualityNotes": [
+        "dark clay status pill with pixel light"
+      ],
+      "atlasRect": {
+        "x": 1096,
+        "y": 1036,
+        "width": 256,
+        "height": 80
+      }
+    },
+    {
+      "id": "bot.clawd.body",
+      "kind": "bot-part",
+      "state": "approved-runtime",
+      "width": 384,
+      "height": 384,
+      "approvedPath": "assets/bots/0.14/approved-runtime/generated/bot.clawd.body.png",
+      "godotTarget": "res://assets/clay/superior-clay-factory-atlas.png#bot.clawd.body",
+      "zones": [
+        "center-bot"
+      ],
+      "qualityNotes": [
+        "moss gremlin clay head/body silhouette with asymmetry"
+      ],
+      "atlasRect": {
+        "x": 1356,
+        "y": 1036,
+        "width": 384,
+        "height": 384
+      }
+    },
+    {
+      "id": "bot.clawd.eye.pixel",
+      "kind": "bot-part",
+      "state": "approved-runtime",
+      "width": 256,
+      "height": 128,
+      "approvedPath": "assets/bots/0.14/approved-runtime/generated/bot.clawd.eye.pixel.png",
+      "godotTarget": "res://assets/clay/superior-clay-factory-atlas.png#bot.clawd.eye.pixel",
+      "zones": [
+        "center-bot"
+      ],
+      "qualityNotes": [
+        "crisp pixel eyes with small glow only"
+      ],
+      "atlasRect": {
+        "x": 1744,
+        "y": 1036,
+        "width": 256,
+        "height": 128
+      }
+    },
+    {
+      "id": "bot.clawd.skill.eye",
+      "kind": "bot-part",
+      "state": "approved-runtime",
+      "width": 192,
+      "height": 192,
+      "approvedPath": "assets/bots/0.14/approved-runtime/generated/bot.clawd.skill.eye.png",
+      "godotTarget": "res://assets/clay/superior-clay-factory-atlas.png#bot.clawd.skill.eye",
+      "zones": [
+        "center-bot",
+        "right-tray"
+      ],
+      "qualityNotes": [
+        "x-ray clay lens attachment"
+      ],
+      "atlasRect": {
+        "x": 4,
+        "y": 1424,
+        "width": 192,
+        "height": 192
+      }
+    },
+    {
+      "id": "bot.clawd.skill.badge",
+      "kind": "bot-part",
+      "state": "approved-runtime",
+      "width": 192,
+      "height": 192,
+      "approvedPath": "assets/bots/0.14/approved-runtime/generated/bot.clawd.skill.badge.png",
+      "godotTarget": "res://assets/clay/superior-clay-factory-atlas.png#bot.clawd.skill.badge",
+      "zones": [
+        "center-bot",
+        "right-tray"
+      ],
+      "qualityNotes": [
+        "small paper-clay explain badge"
+      ],
+      "atlasRect": {
+        "x": 200,
+        "y": 1424,
+        "width": 192,
+        "height": 192
+      }
+    },
+    {
+      "id": "bot.clawd.skill.side",
+      "kind": "bot-part",
+      "state": "approved-runtime",
+      "width": 192,
+      "height": 192,
+      "approvedPath": "assets/bots/0.14/approved-runtime/generated/bot.clawd.skill.side.png",
+      "godotTarget": "res://assets/clay/superior-clay-factory-atlas.png#bot.clawd.skill.side",
+      "zones": [
+        "center-bot",
+        "right-tray"
+      ],
+      "qualityNotes": [
+        "side repo gear as clay part"
+      ],
+      "atlasRect": {
+        "x": 396,
+        "y": 1424,
+        "width": 192,
+        "height": 192
+      }
+    },
+    {
+      "id": "boot.seed",
+      "kind": "onboarding",
+      "state": "approved-runtime",
+      "width": 256,
+      "height": 256,
+      "approvedPath": "assets/bots/0.14/approved-runtime/generated/boot.seed.png",
+      "godotTarget": "res://assets/clay/superior-clay-factory-atlas.png#boot.seed",
+      "zones": [
+        "boot"
+      ],
+      "qualityNotes": [
+        "clay boot seed used for console startup snap"
+      ],
+      "atlasRect": {
+        "x": 592,
+        "y": 1424,
+        "width": 256,
+        "height": 256
+      }
+    },
+    {
+      "id": "boot.wordmark",
+      "kind": "pixel-ui",
+      "state": "approved-runtime",
+      "width": 512,
+      "height": 160,
+      "approvedPath": "assets/bots/0.14/approved-runtime/generated/boot.wordmark.png",
+      "godotTarget": "res://assets/clay/superior-clay-factory-atlas.png#boot.wordmark",
+      "zones": [
+        "boot"
+      ],
+      "qualityNotes": [
+        "pixel-clay SUPERIOR boot mark"
+      ],
+      "atlasRect": {
+        "x": 852,
+        "y": 1424,
+        "width": 512,
+        "height": 160
+      }
+    },
+    {
+      "id": "boot.progress-pip",
+      "kind": "pixel-ui",
+      "state": "approved-runtime",
+      "width": 96,
+      "height": 64,
+      "approvedPath": "assets/bots/0.14/approved-runtime/generated/boot.progress-pip.png",
+      "godotTarget": "res://assets/clay/superior-clay-factory-atlas.png#boot.progress-pip",
+      "zones": [
+        "boot"
+      ],
+      "qualityNotes": [
+        "small pixel boot progress pip"
+      ],
+      "atlasRect": {
+        "x": 1368,
+        "y": 1424,
+        "width": 96,
+        "height": 64
+      }
+    }
+  ]
+}

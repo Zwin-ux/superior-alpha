@@ -82,10 +82,18 @@ Every release cycle must follow [platform-release-testing.md](platform-release-t
 - User-facing onboarding starts from an empty bench, chooses shape, then fits runnable skill parts.
 - Goal: waking up a small desktop creature feels like a physical setup loop, while daemon, extension, playpen, and icons still follow one active bot.
 
-## 0.10 Beta Candidate
+## 0.10 Godot Engine Reset
 
-- First-run recovery, installer QA on a second Windows user/machine, and fewer setup assumptions after bot creation is real.
-- Start Windows-native host proof: the future `.NET` shell/host must pass the shared backend contract fixture suite before replacing the Tauri/Node alpha path.
+- Make Godot the primary visual runtime.
+- Add `superior/core`, `superior/server`, and `superior/godot-client`.
+- Prove boot screen, low-poly signal room, pixel HUD, avatar, in-world terminal, and realtime server patch flow.
+- Keep WPF/Tauri as proof harnesses, not the product shell.
+- Goal: SUPERIOR starts feeling like a game console OS connected to a server brain.
+
+## 0.11 Beta Candidate
+
+- First-run recovery, package/export QA, and fewer setup assumptions after the Godot signal room is real.
+- Godot export proof must replace WPF visual proof as the main product shell gate.
 
 ## 1.0 Official Beta
 

@@ -1,0 +1,406 @@
+extends Node3D
+class_name ClayWorkshop
+
+const CLAY_ATLAS_MANIFEST_PATH := "res://assets/clay/superior-clay-factory-atlas.json"
+
+var realtime_client := preload("res://scripts/realtime_client.gd").new()
+
+var clay_atlas: Texture2D
+var clay_image: Image
+var terminal: RichTextLabel
+var status_label: Label
+var stats_label: Label
+var signal_label: Label
+var camera: Camera3D
+var bot_rig: Node3D
+var bot_body: MeshInstance3D
+var eye_panel: MeshInstance3D
+var badge_part: MeshInstance3D
+var side_part: MeshInstance3D
+var lens_part: MeshInstance3D
+var lamp_light: OmniLight3D
+var tray_light: OmniLight3D
+var trace_nodes: Array[MeshInstance3D] = []
+var clay_textures: Dictionary = {}
+var reaction_kind := ""
+var reaction_timer := 0.0
+var pulse := 0.0
+var latest_intensity := 1
+var video_reaction_step := 0
+
+func _ready() -> void:
+	clay_image = _load_png_image("res://assets/clay/superior-clay-factory-atlas.png")
+	if clay_image:
+		clay_atlas = ImageTexture.create_from_image(clay_image)
+	_load_clay_asset_manifest()
+	_build_room()
+	_build_hud()
+	add_child(realtime_client)
+	realtime_client.message_received.connect(_on_realtime_message)
+	realtime_client.server_status_changed.connect(_on_server_status_changed)
+	realtime_client.connect_to_server("ws://127.0.0.1:7357/socket")
+	_add_terminal_line("WORKSHOP / LAMP READY")
+
+func _process(delta: float) -> void:
+	pulse += delta
+	if reaction_timer > 0.0:
+		reaction_timer = max(0.0, reaction_timer - delta)
+	_update_video_proof_reactions()
+	_update_bot_motion()
+	_update_lights()
+	_update_stats()
+
+func _input(event: InputEvent) -> void:
+	if event is InputEventKey and event.pressed and not event.echo:
+		if event.keycode == KEY_1:
+			_trigger_reaction("browser")
+			realtime_client.send_signal("browser", "BROWSER HAND CHECK", 2)
+		if event.keycode == KEY_2:
+			_trigger_reaction("repo")
+			realtime_client.send_signal("repo", "REPO SIGNAL STAMP", 2)
+		if event.keycode == KEY_3:
+			_trigger_reaction("agent")
+			realtime_client.send_signal("agent", "CLAWD SNAP", 3)
+
+func _build_room() -> void:
+	camera = Camera3D.new()
+	camera.position = Vector3(0.0, 2.34, 5.7)
+	camera.rotation_degrees = Vector3(-13.0, 0.0, 0.0)
+	camera.fov = 56.0
+	add_child(camera)
+
+	var world_light := DirectionalLight3D.new()
+	world_light.rotation_degrees = Vector3(-42, 22, 0)
+	world_light.light_energy = 0.78
+	add_child(world_light)
+
+	lamp_light = OmniLight3D.new()
+	lamp_light.position = Vector3(0.0, 3.62, -0.96)
+	lamp_light.light_color = Color("#ffc36b")
+	lamp_light.light_energy = 2.4
+	add_child(lamp_light)
+
+	tray_light = OmniLight3D.new()
+	tray_light.position = Vector3(3.25, 1.65, 0.25)
+	tray_light.light_color = Color("#8fe8ff")
+	tray_light.light_energy = 0.2
+	add_child(tray_light)
+
+	_add_panel("WallPlate", "scene.wall", Vector2(10.4, 5.8), Vector3(0, 2.06, -2.6))
+	_add_panel("TablePlate", "scene.table", Vector2(10.5, 1.28), Vector3(0, -0.82, -0.08))
+	_add_box(self, "TableDepth", Vector3(9.8, 0.42, 3.1), Vector3(0, -1.0, 0.62), Color("#5e3427"))
+	_add_panel("LampPlate", "scene.lamp", Vector2(1.78, 1.34), Vector3(0.0, 3.2, -1.68))
+	_add_panel("SignPlate", "scene.sign", Vector2(3.55, 1.12), Vector3(0.0, 2.58, -1.54))
+
+	_build_left_rail()
+	_build_parts_tray()
+	_build_bench()
+	_build_clawd()
+	_build_status_pills()
+	_build_props()
+
+func _build_left_rail() -> void:
+	_add_panel("LauncherRail", "scene.left-rail", Vector2(1.58, 3.34), Vector3(-3.06, 1.18, -0.2))
+	var labels := ["CONTINUE", "NEW BOT", "CUSTOMIZE", "SKILLS", "BROWSER", "OPTIONS", "QUIT"]
+	for index in range(labels.size()):
+		var y := 2.34 - float(index) * 0.39
+		_add_panel("MenuSlab%s" % index, "scene.menu-slab.default", Vector2(1.1, 0.38), Vector3(-3.06, y, 0.06))
+		_add_world_label(labels[index], Vector3(-3.06, y - 0.025, 0.16), 19, Color("#23170f"))
+
+func _build_parts_tray() -> void:
+	_add_panel("PartsTray", "scene.right-tray", Vector2(1.78, 3.24), Vector3(2.56, 1.32, -0.12))
+	_add_world_label("CLAY PARTS", Vector3(2.56, 2.62, 0.3), 20, Color("#23170f"))
+	var rows := [
+		["EYE", "PIXEL"],
+		["BADGE", "X-RAY"],
+		["SIDE", "REPO"],
+		["CROWN", "EMPTY"],
+		["CHARM", "EMPTY"]
+	]
+	for index in range(rows.size()):
+		var y := 2.12 - float(index) * 0.46
+		var asset_id := "scene.tray-slot.equipped" if index < 3 else "scene.tray-slot.empty"
+		_add_panel("TraySlot%s" % index, asset_id, Vector2(1.34, 0.36), Vector3(2.58, y, 0.16))
+		_add_world_label(rows[index][0], Vector3(2.46, y - 0.02, 0.28), 16, Color("#23170f"))
+		_add_world_label(rows[index][1], Vector3(2.89, y - 0.02, 0.28), 12, Color("#4c3524"))
+
+func _build_bench() -> void:
+	_add_panel("PedestalPlate", "scene.pedestal", Vector2(2.58, 1.27), Vector3(0, 0.42, 0.14))
+	_add_box(self, "BenchShadow", Vector3(2.65, 0.035, 0.42), Vector3(0, 0.13, 0.28), Color("#2c1d17"))
+	for step in range(6):
+		var x := -0.98 + float(step) * 0.39
+		var trace := _add_box(self, "BenchTrace%s" % step, Vector3(0.18, 0.035, 0.04), Vector3(x, 0.68, 0.38), Color("#385761"))
+		trace_nodes.append(trace)
+
+func _build_clawd() -> void:
+	bot_rig = Node3D.new()
+	bot_rig.name = "ClawdGremlin"
+	bot_rig.position = Vector3(0, 0.78, 0.58)
+	add_child(bot_rig)
+
+	bot_body = _add_panel_to(bot_rig, "ClawdBody", "bot.clawd.body", Vector2(1.74, 1.74), Vector3(0.0, 0.48, 0.16))
+	eye_panel = _add_panel_to(bot_rig, "PixelEyes", "bot.clawd.eye.pixel", Vector2(0.82, 0.42), Vector3(0.02, 0.62, 0.34))
+	lens_part = _add_panel_to(bot_rig, "XRayLens", "bot.clawd.skill.eye", Vector2(0.43, 0.43), Vector3(-0.64, 0.56, 0.42))
+	badge_part = _add_panel_to(bot_rig, "ExplainBadge", "bot.clawd.skill.badge", Vector2(0.38, 0.38), Vector3(0.72, 0.56, 0.42))
+	side_part = _add_panel_to(bot_rig, "RepoSidePart", "bot.clawd.skill.side", Vector2(0.42, 0.42), Vector3(-0.84, 0.25, 0.28))
+
+func _build_status_pills() -> void:
+	for index in range(3):
+		var x := -3.48 + float(index) * 0.98
+		_add_panel("StatusPill%s" % index, "scene.status-pill", Vector2(0.9, 0.3), Vector3(x, -0.34, 1.1))
+	_add_world_label("DAEMON", Vector3(-3.41, -0.35, 1.22), 12, Color("#d7c999"))
+	_add_world_label("OPENAI", Vector3(-2.44, -0.35, 1.22), 12, Color("#d7c999"))
+	_add_world_label("BROWSER", Vector3(-1.46, -0.35, 1.22), 12, Color("#d7c999"))
+	_add_panel("BotCard", "scene.bottom-card", Vector2(2.4, 0.78), Vector3(0.0, -0.42, 1.12))
+
+func _build_props() -> void:
+	_add_box(self, "BackShelf", Vector3(2.0, 0.12, 0.2), Vector3(3.2, 2.45, -1.32), Color("#65402f"))
+	_add_box(self, "ShelfBookA", Vector3(0.22, 0.5, 0.16), Vector3(3.0, 2.72, -1.2), Color("#735a43"))
+	_add_box(self, "ShelfBookB", Vector3(0.25, 0.62, 0.16), Vector3(3.32, 2.78, -1.2), Color("#4f6848"))
+	_add_sphere(self, "ClayCup", 0.24, Vector3(-4.42, -1.15, 1.02), Color("#6f7b58"))
+	_add_sphere(self, "ClayLump", 0.14, Vector3(4.36, -1.23, 1.0), Color("#7b5d78"))
+	_add_box(self, "ToolHandle", Vector3(0.18, 0.18, 0.88), Vector3(3.0, -1.22, 1.0), Color("#9a5b39"))
+	_add_box(self, "ToolBlade", Vector3(0.16, 0.08, 0.56), Vector3(3.42, -1.22, 1.0), Color("#8b8981"))
+
+func _build_hud() -> void:
+	var hud := CanvasLayer.new()
+	add_child(hud)
+
+	var root := Control.new()
+	root.set_anchors_preset(Control.PRESET_FULL_RECT)
+	hud.add_child(root)
+
+	var top_row := HBoxContainer.new()
+	top_row.position = Vector2(24, 20)
+	top_row.custom_minimum_size = Vector2(450, 34)
+	top_row.add_theme_constant_override("separation", 16)
+	root.add_child(top_row)
+
+	var title := Label.new()
+	title.text = "SUPERIOR ."
+	title.add_theme_font_size_override("font_size", 18)
+	top_row.add_child(title)
+
+	status_label = Label.new()
+	status_label.text = "SERVER / CONNECTING"
+	status_label.add_theme_font_size_override("font_size", 12)
+	top_row.add_child(status_label)
+
+	stats_label = Label.new()
+	stats_label.text = "SYNC 00  HEAT 00"
+	stats_label.add_theme_font_size_override("font_size", 12)
+	top_row.add_child(stats_label)
+
+	var terminal_panel := PanelContainer.new()
+	terminal_panel.position = Vector2(24, 622)
+	terminal_panel.custom_minimum_size = Vector2(370, 74)
+	root.add_child(terminal_panel)
+
+	terminal = RichTextLabel.new()
+	terminal.custom_minimum_size = Vector2(346, 48)
+	terminal.bbcode_enabled = true
+	terminal.scroll_active = false
+	terminal.add_theme_font_size_override("normal_font_size", 13)
+	terminal_panel.add_child(terminal)
+
+	signal_label = Label.new()
+	signal_label.position = Vector2(782, 620)
+	signal_label.text = "1 BROWSER   2 REPO   3 CLAWD"
+	signal_label.add_theme_font_size_override("font_size", 18)
+	root.add_child(signal_label)
+
+	_add_crt_pass(root)
+
+func _update_bot_motion() -> void:
+	if not bot_rig:
+		return
+	var reaction := reaction_timer / 0.65
+	var wobble := sin(pulse * 1.4) * 0.025
+	var snap := 0.0
+	if reaction_kind == "agent":
+		snap = sin(reaction * PI) * 0.16
+	bot_rig.position.y = 0.78 + wobble + max(0.0, snap * 0.28)
+	bot_rig.rotation.z = sin(pulse * 0.85) * 0.015
+	bot_rig.scale = Vector3(1.0 + snap * 0.1, 1.0 - snap * 0.13, 1.0)
+
+	if eye_panel:
+		var blink := reaction_kind == "browser" and reaction_timer > 0.26 and int(reaction_timer * 20.0) % 2 == 0
+		eye_panel.scale.y = 0.18 if blink else 1.0
+	if lens_part:
+		lens_part.scale = Vector3.ONE * (1.0 + (sin(reaction_timer * 14.0) * 0.11 if reaction_kind == "browser" else 0.0))
+	if badge_part:
+		badge_part.scale = Vector3.ONE * (1.0 + (sin(reaction_timer * 12.0) * 0.13 if reaction_kind == "agent" else 0.0))
+	if side_part:
+		side_part.scale = Vector3.ONE * (1.0 + (sin(reaction_timer * 10.0) * 0.12 if reaction_kind == "repo" else 0.0))
+
+func _update_lights() -> void:
+	if lamp_light:
+		lamp_light.light_energy = 2.05 + sin(pulse * 2.2) * 0.22 + (reaction_timer * 1.5 if reaction_kind == "agent" else 0.0)
+	if tray_light:
+		tray_light.light_energy = 0.2 + (reaction_timer * 2.3 if reaction_kind == "browser" else 0.0)
+	for trace in trace_nodes:
+		if trace and trace.material_override:
+			trace.material_override.albedo_color = Color("#8fe8ff") if reaction_kind == "repo" and reaction_timer > 0.0 else Color("#385761")
+
+func _update_stats() -> void:
+	if stats_label:
+		var sync := 48 + int(abs(sin(pulse * 1.2)) * 44.0)
+		var heat := 18 + int(abs(sin(pulse * 0.8)) * 12.0)
+		stats_label.text = "SYNC %02d  HEAT %02d" % [sync, heat]
+
+func _on_server_status_changed(status: String) -> void:
+	if status_label:
+		status_label.text = "SERVER / %s" % status.to_upper()
+
+func _on_realtime_message(message: Dictionary) -> void:
+	if message.has("event"):
+		var event: Dictionary = message["event"]
+		latest_intensity = int(event.get("intensity", 1))
+		var kind := str(event.get("kind", "signal"))
+		var label := "%s / %s" % [kind.to_upper(), str(event.get("label", "Signal"))]
+		if bool(message.get("mock", false)):
+			label = "MOCK " + label
+		_trigger_reaction(kind)
+		_add_terminal_line(label)
+		if signal_label:
+			signal_label.text = "LAST / %s" % label
+		return
+	_add_terminal_line("%s / PATCH RECEIVED" % str(message.get("type", "message")).to_upper())
+
+func _trigger_reaction(kind: String) -> void:
+	reaction_kind = kind
+	reaction_timer = 0.65
+
+func _update_video_proof_reactions() -> void:
+	if OS.get_environment("SUPERIOR_VIDEO_PROOF") != "1":
+		return
+	if video_reaction_step == 0 and pulse > 1.1:
+		video_reaction_step = 1
+		_trigger_reaction("browser")
+		realtime_client.send_signal("browser", "BROWSER HAND PULSE", 2)
+	if video_reaction_step == 1 and pulse > 3.1:
+		video_reaction_step = 2
+		_trigger_reaction("repo")
+		realtime_client.send_signal("repo", "REPO SIGNAL STAMP", 2)
+	if video_reaction_step == 2 and pulse > 5.1:
+		video_reaction_step = 3
+		_trigger_reaction("agent")
+		realtime_client.send_signal("agent", "CLAWD SNAP", 3)
+
+func _add_terminal_line(line: String) -> void:
+	if terminal:
+		terminal.append_text("[color=#7fd8ff]>[/color] %s\n" % line)
+		terminal.scroll_to_line(max(0, terminal.get_line_count() - 1))
+
+func _add_crt_pass(root: Control) -> void:
+	var overlay := ColorRect.new()
+	overlay.name = "CRTPixelPass"
+	overlay.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	overlay.set_anchors_preset(Control.PRESET_FULL_RECT)
+	var shader := load("res://shaders/crt_pixel_pass.gdshader")
+	var material := ShaderMaterial.new()
+	material.shader = shader
+	material.set_shader_parameter("scanline_strength", 0.11)
+	material.set_shader_parameter("dither_strength", 0.04)
+	material.set_shader_parameter("low_res_scale", 2.0)
+	material.set_shader_parameter("vignette_strength", 0.12)
+	overlay.material = material
+	root.add_child(overlay)
+
+func _load_clay_asset_manifest() -> void:
+	if not clay_image:
+		return
+	var file := FileAccess.open(CLAY_ATLAS_MANIFEST_PATH, FileAccess.READ)
+	if not file:
+		return
+	var parsed = JSON.parse_string(file.get_as_text())
+	if typeof(parsed) != TYPE_DICTIONARY:
+		return
+	for asset in parsed.get("assets", []):
+		if typeof(asset) != TYPE_DICTIONARY:
+			continue
+		var asset_id := str(asset.get("id", ""))
+		var rect_data = asset.get("atlasRect", {})
+		if asset_id == "" or typeof(rect_data) != TYPE_DICTIONARY:
+			continue
+		var rect := Rect2i(
+			int(rect_data.get("x", 0)),
+			int(rect_data.get("y", 0)),
+			int(rect_data.get("width", 64)),
+			int(rect_data.get("height", 64))
+		)
+		clay_textures[asset_id] = ImageTexture.create_from_image(clay_image.get_region(rect))
+
+func _add_panel(name: String, asset_id: String, size: Vector2, position: Vector3) -> MeshInstance3D:
+	return _add_panel_to(self, name, asset_id, size, position)
+
+func _add_panel_to(parent: Node, name: String, asset_id: String, size: Vector2, position: Vector3) -> MeshInstance3D:
+	var instance := MeshInstance3D.new()
+	var mesh := QuadMesh.new()
+	mesh.size = size
+	instance.name = name
+	instance.mesh = mesh
+	instance.position = position
+	instance.material_override = _texture_material(asset_id)
+	parent.add_child(instance)
+	return instance
+
+func _add_box(parent: Node, name: String, size: Vector3, position: Vector3, color: Color, asset_id: String = "") -> MeshInstance3D:
+	var instance := MeshInstance3D.new()
+	var mesh := BoxMesh.new()
+	mesh.size = size
+	instance.name = name
+	instance.mesh = mesh
+	instance.position = position
+	instance.material_override = _material(color, asset_id)
+	parent.add_child(instance)
+	return instance
+
+func _add_sphere(parent: Node, name: String, radius: float, position: Vector3, color: Color, asset_id: String = "") -> MeshInstance3D:
+	var instance := MeshInstance3D.new()
+	var mesh := SphereMesh.new()
+	mesh.radius = radius
+	mesh.height = radius * 2.0
+	mesh.radial_segments = 12
+	mesh.rings = 6
+	instance.name = name
+	instance.mesh = mesh
+	instance.position = position
+	instance.material_override = _material(color, asset_id)
+	parent.add_child(instance)
+	return instance
+
+func _add_world_label(text: String, position: Vector3, size: int, color: Color) -> void:
+	var label := Label3D.new()
+	label.text = text
+	label.position = position
+	label.font_size = size
+	label.modulate = color
+	label.billboard = BaseMaterial3D.BILLBOARD_ENABLED
+	add_child(label)
+
+func _texture_material(asset_id: String) -> StandardMaterial3D:
+	var material := StandardMaterial3D.new()
+	material.albedo_color = Color.WHITE
+	if clay_textures.has(asset_id):
+		material.albedo_texture = clay_textures[asset_id]
+	material.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
+	material.texture_filter = BaseMaterial3D.TEXTURE_FILTER_NEAREST
+	material.roughness = 0.92
+	return material
+
+func _load_png_image(path: String) -> Image:
+	var image := Image.new()
+	var error := image.load(path)
+	if error != OK:
+		return null
+	return image
+
+func _material(color: Color, asset_id: String = "") -> StandardMaterial3D:
+	var material := StandardMaterial3D.new()
+	material.albedo_color = color
+	if asset_id != "" and clay_textures.has(asset_id):
+		material.albedo_texture = clay_textures[asset_id]
+		material.texture_filter = BaseMaterial3D.TEXTURE_FILTER_NEAREST
+	material.roughness = 0.92
+	return material

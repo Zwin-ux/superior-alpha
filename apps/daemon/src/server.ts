@@ -20,6 +20,9 @@ import {
   SuperiorFunctionError,
   SuperiorFunctionErrorCode,
   SuperiorFunctionRunRequest,
+  SuperiorModelProviderError,
+  SuperiorModelProviderSelectRequest,
+  SuperiorOpenAiKeySaveRequest,
   SuperiorSetupState,
   botCreationShapes,
   botSkillLoadoutOptions,
@@ -49,6 +52,12 @@ import {
 import { readSuperiorFunctionCatalog } from "./functions/catalog.js";
 import { readFunctionRunEvents, readRecentFunctionRuns } from "./functions/runEventsStore.js";
 import { isSuperiorFunctionError, runSuperiorFunction, SuperiorFunctionRunnerOutput } from "./functions/runner.js";
+import {
+  readModelProviderState,
+  saveOpenAiKey,
+  selectModelProvider,
+  startOllamaIfAvailable
+} from "./modelProviderStore.js";
 
 const config = getDaemonConfig();
 
@@ -92,6 +101,11 @@ const server = createServer(async (request, response) => {
 
   if (request.method === "GET" && url.pathname === "/setup-state") {
     sendJson(response, 200, readSetupState());
+    return;
+  }
+
+  if (request.method === "GET" && url.pathname === "/model-provider") {
+    sendJson(response, 200, readModelProviderState(config));
     return;
   }
 
@@ -183,6 +197,21 @@ const server = createServer(async (request, response) => {
 
   if (request.method === "POST" && url.pathname === "/browser-link/start") {
     await handleBrowserPairingStart(request, response);
+    return;
+  }
+
+  if (request.method === "POST" && url.pathname === "/model-provider/select") {
+    await handleModelProviderSelect(request, response);
+    return;
+  }
+
+  if (request.method === "POST" && url.pathname === "/model-provider/openai-key") {
+    await handleModelProviderOpenAiKey(request, response);
+    return;
+  }
+
+  if (request.method === "POST" && url.pathname === "/model-provider/ollama/start") {
+    await handleModelProviderOllamaStart(request, response);
     return;
   }
 
@@ -408,6 +437,92 @@ async function handleBrowserSessionAttach(
   } catch (error) {
     sendBrowserRuntimeError(response, payload.requestId, error);
   }
+}
+
+async function handleModelProviderSelect(request: IncomingMessage, response: ServerResponse): Promise<void> {
+  if (!isTrustedLocalOrigin(request.headers.origin)) {
+    sendJson(response, 403, {
+      type: "superior-model-provider-error",
+      code: "bad_request",
+      message: "Model provider can only be changed from the local Workshop."
+    } satisfies SuperiorModelProviderError);
+    return;
+  }
+
+  let payload: SuperiorModelProviderSelectRequest;
+
+  try {
+    payload = (await readJsonBody(request)) as SuperiorModelProviderSelectRequest;
+  } catch {
+    sendJson(response, 400, {
+      type: "superior-model-provider-error",
+      code: "bad_request",
+      message: "Expected a model provider selection."
+    } satisfies SuperiorModelProviderError);
+    return;
+  }
+
+  if (payload.type !== "superior-model-provider-select" || (payload.provider !== "ollama" && payload.provider !== "openai-byok")) {
+    sendJson(response, 400, {
+      type: "superior-model-provider-error",
+      code: "bad_request",
+      message: "Choose Local Ollama or OpenAI BYOK."
+    } satisfies SuperiorModelProviderError);
+    return;
+  }
+
+  sendJson(response, 200, selectModelProvider(config, payload.provider));
+}
+
+async function handleModelProviderOpenAiKey(request: IncomingMessage, response: ServerResponse): Promise<void> {
+  if (!isTrustedLocalOrigin(request.headers.origin)) {
+    sendJson(response, 403, {
+      type: "superior-model-provider-error",
+      code: "bad_request",
+      message: "BYOK can only be saved from the local Workshop."
+    } satisfies SuperiorModelProviderError);
+    return;
+  }
+
+  let payload: SuperiorOpenAiKeySaveRequest;
+
+  try {
+    payload = (await readJsonBody(request)) as SuperiorOpenAiKeySaveRequest;
+  } catch {
+    sendJson(response, 400, {
+      type: "superior-model-provider-error",
+      code: "bad_request",
+      message: "Expected a BYOK save request."
+    } satisfies SuperiorModelProviderError);
+    return;
+  }
+
+  try {
+    if (payload.type !== "superior-openai-key-save") {
+      throw new Error("Expected a BYOK save request.");
+    }
+
+    sendJson(response, 200, saveOpenAiKey(config, payload.apiKey, payload.model));
+  } catch (error) {
+    sendJson(response, 400, {
+      type: "superior-model-provider-error",
+      code: "bad_request",
+      message: error instanceof Error ? error.message : "Could not save BYOK."
+    } satisfies SuperiorModelProviderError);
+  }
+}
+
+async function handleModelProviderOllamaStart(request: IncomingMessage, response: ServerResponse): Promise<void> {
+  if (!isTrustedLocalOrigin(request.headers.origin)) {
+    sendJson(response, 403, {
+      type: "superior-model-provider-error",
+      code: "bad_request",
+      message: "Ollama can only be started from the local Workshop."
+    } satisfies SuperiorModelProviderError);
+    return;
+  }
+
+  sendJson(response, 200, startOllamaIfAvailable(config));
 }
 
 async function handleBrowserPairingStart(request: IncomingMessage, response: ServerResponse): Promise<void> {
@@ -956,8 +1071,10 @@ function readBotCreationOptions(): BotCreationOptionsResponse {
 function readSetupState(): SuperiorSetupState {
   const bot = readServiceBotIdentity();
   const browserLinkState = readBrowserLinkState();
+  const modelProviderState = readModelProviderState(config);
   const activeBotSaved = hasSavedBotIdentity();
-  const keyReady = Boolean(config.openaiApiKey);
+  const keyReady = modelProviderState.openAiKeyStatus === "ready" || modelProviderState.openAiKeyStatus === "saved";
+  const modelReady = modelProviderState.modelProvider !== "missing";
   const browserReady = browserLinkState.status === "paired";
   const botStatus: SuperiorSetupState["bot"]["status"] = activeBotSaved
     ? bot.starterPresetId
@@ -971,6 +1088,12 @@ function readSetupState(): SuperiorSetupState {
     requiresSetup: !activeBotSaved,
     steps: [
       {
+        step: "account",
+        status: "missing",
+        label: "Account",
+        detail: "email code"
+      },
+      {
         step: "daemon",
         status: "ready",
         label: "Power",
@@ -983,16 +1106,22 @@ function readSetupState(): SuperiorSetupState {
         detail: keyReady ? "key ready" : "key missing"
       },
       {
+        step: "model",
+        status: modelReady ? "ready" : "missing",
+        label: "Model",
+        detail: modelProviderState.detail
+      },
+      {
         step: "browser",
         status: browserReady ? "ready" : "missing",
         label: "Browser",
         detail: browserReady ? "hand fitted" : browserLinkState.status
       },
       {
-        step: "shape",
+        step: "starter",
         status: "ready",
-        label: "Shape",
-        detail: activeBotSaved ? bot.body : "empty bench"
+        label: "Starter",
+        detail: bot.starterPresetId ?? "clawd"
       },
       {
         step: "skills",
@@ -1013,6 +1142,10 @@ function readSetupState(): SuperiorSetupState {
         detail: activeBotSaved ? "active bot saved" : "save active bot"
       }
     ],
+    account: {
+      status: "signed-out",
+      detail: "email code"
+    },
     daemon: {
       status: "ready",
       detail: `SUPERIOR daemon ${config.version}`
@@ -1027,6 +1160,7 @@ function readSetupState(): SuperiorSetupState {
       ...(browserLinkState.extensionId ? { extensionId: browserLinkState.extensionId } : {}),
       ...(browserLinkState.lastSeenAt ? { lastSeenAt: browserLinkState.lastSeenAt } : {})
     },
+    model: modelProviderState,
     bot: {
       status: botStatus,
       identity: bot,

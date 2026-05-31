@@ -28,6 +28,28 @@ The `soul/` shelf came from `clawdbot_codex_soul_brief` and is now the default c
 
 Runtime customized icons can still be generated from `BotIdentity`; these assets set the clean-install face.
 
+## 0.14 Clay Factory Gate
+
+`0.13` is plumbing only. Its tiny generated atlas proves Godot can load assets, but it is not product-quality runtime art.
+
+`0.14` is the first runtime gate for the Godot clay workshop:
+
+- `0.14/asset-manifest.json`: required runtime parts, composition zones, and approval state.
+- `0.14/approved-runtime/generated/`: generated clay factory parts that are allowed into the Godot runtime.
+- `0.14/sheet/superior-clay-factory-contact-sheet.png`: review sheet for every required part.
+- `0.14/sheet/superior-clay-factory-composition-proof.png`: quick still-frame check against `soul/clawdbot-workshop-target.png`.
+- `0.14/sheet/superior-clay-factory-quality-report.json`: machine gate output.
+
+Run these after changing the factory:
+
+```powershell
+corepack pnpm assets:factory-export
+corepack pnpm assets:quality-gate
+corepack pnpm superior:engine-check
+```
+
+No Godot-mapped asset should be marked as a placeholder or plumbing asset in the 0.14 lane.
+
 ## 0.3 Runtime Shelf
 
 - `0.3/workshop-key-art.png`: canonical desktop composition target.

@@ -20,6 +20,8 @@ The current identity rule is `one spore, many shells`: one active bot identity s
 
 Onboarding rule: start from an empty bench. The user chooses a shape first, then fits skills like loadout parts, then saves the spore. Presets are implementation seeds, not the primary user-facing mental model.
 
+Engine reset rule: Godot is the primary product runtime. WPF, Tauri, and web surfaces can prove contracts, installers, or admin flows, but they must not pull the main experience back into dashboard cards. The product shell should feel like a game console OS connected to a server brain.
+
 ## Valve-Inspired Lessons
 
 These notes are inspired by public Valve/Source material, not copied as a style guide.
@@ -39,10 +41,11 @@ Useful lessons:
 - The code should expose durable contracts, not UI moods.
 - The product should teach through feedback: pressed buttons, attached parts, status lights, changed icons, saved identity.
 
-SUPERIOR blends two Valve-feeling modes:
+SUPERIOR blends three game-feeling modes:
 
 - `Source utility`: plain tools, explicit state, understandable object model.
 - `Portal toy lab`: one strong gimmick, playful feedback, personality through response.
+- `Console OS`: boot screen, low-poly room, pixel HUD, in-world terminal, and server state that visibly changes the room.
 
 The result should be practical, not jokey. The bot is fun because it reacts and changes, not because the UI explains that it is fun.
 

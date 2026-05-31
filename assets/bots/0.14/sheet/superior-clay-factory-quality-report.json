@@ -1,0 +1,33 @@
+{
+  "version": "0.14",
+  "passed": true,
+  "generatedAt": "2026-05-31T03:39:40.916Z",
+  "visualTarget": "assets/bots/soul/clawdbot-workshop-target.png",
+  "requiredZones": [
+    "boot",
+    "lamp-sign",
+    "left-rail",
+    "center-bot",
+    "right-tray",
+    "bottom-status"
+  ],
+  "presentZones": [
+    "lamp-sign",
+    "left-rail",
+    "center-bot",
+    "bottom-status",
+    "right-tray",
+    "boot"
+  ],
+  "assetCount": 22,
+  "runtimeApprovedCount": 22,
+  "atlas": {
+    "width": 2048,
+    "height": 2048,
+    "assets": 22
+  },
+  "notes": [
+    "0.14 gate separates runtime-approved clay factory parts from 0.13 plumbing placeholders.",
+    "Composition proof must be compared against the soul target before the pass is accepted as visual product work."
+  ]
+}

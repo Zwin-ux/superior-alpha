@@ -18,6 +18,8 @@ import {
   createSuperiorBrowserActivePageReport,
   createSuperiorBrowserAttachRequest,
   createSuperiorBrowserStartRequest,
+  SuperiorAccountStartEmailCodeRequest,
+  SuperiorModelProviderState,
   getEquippedSkillSlots,
   hasUsablePageText,
   makeBotCssVars,
@@ -285,6 +287,25 @@ describe("shared SUPERIOR contracts", () => {
     expect(request.type).toBe("browser-pairing-complete");
     expect(request.requestId).toMatch(/^browser_pair_/);
     expect(request.extensionId).toBe("extension_test");
+  });
+
+  it("defines account and model-provider setup contracts", () => {
+    const accountRequest: SuperiorAccountStartEmailCodeRequest = {
+      type: "superior-account-start-email-code",
+      email: "alpha@example.com"
+    };
+    const modelState: SuperiorModelProviderState = {
+      type: "superior-model-provider-state",
+      modelProvider: "ollama",
+      ollamaStatus: "missing",
+      openAiKeyStatus: "missing",
+      detail: "install or start Ollama",
+      createdAt: new Date(0).toISOString()
+    };
+
+    expect(accountRequest.type).toBe("superior-account-start-email-code");
+    expect(modelState.modelProvider).toBe("ollama");
+    expect(modelState.openAiKeyStatus).toBe("missing");
   });
 
   it("maps bot identity to clay CSS variables", () => {

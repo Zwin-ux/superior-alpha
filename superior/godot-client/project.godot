@@ -1,0 +1,25 @@
+; Engine configuration file.
+; Open this folder with Godot 4.x.
+
+config_version=5
+
+[application]
+
+config/name="SUPERIOR Alpha Engine"
+run/main_scene="res://scenes/Boot.tscn"
+config/features=PackedStringArray("4.3", "Forward Plus")
+config/description="SUPERIOR Alpha vertical slice: boot console, pixel HUD, low-poly signal room, realtime/mock server events."
+
+[display]
+
+window/size/viewport_width=1280
+window/size/viewport_height=720
+window/stretch/mode="canvas_items"
+window/stretch/aspect="keep"
+window/size/mode=0
+
+[rendering]
+
+renderer/rendering_method="forward_plus"
+textures/canvas_textures/default_texture_filter=0
+anti_aliasing/quality/msaa_3d=0
