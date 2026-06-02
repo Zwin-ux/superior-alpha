@@ -26,6 +26,8 @@ var workshop_menu_lights: Array[MeshInstance3D] = []
 var workshop_tray_slots: Array[MeshInstance3D] = []
 var workshop_tray_lights: Array[MeshInstance3D] = []
 var trace_nodes: Array[MeshInstance3D] = []
+var prop_nodes: Dictionary = {}
+var click_targets: Array[Area3D] = []
 var clay_textures: Dictionary = {}
 var reaction_kind := ""
 var reaction_timer := 0.0
@@ -62,6 +64,8 @@ func _process(delta: float) -> void:
 	_update_stats()
 
 func _input(event: InputEvent) -> void:
+	if event is InputEventMouseButton and event.pressed and event.button_index == MOUSE_BUTTON_LEFT:
+		_handle_scene_click(event.position)
 	if event is InputEventKey and event.pressed and not event.echo:
 		if event.keycode == KEY_1:
 			_trigger_reaction("browser")
@@ -111,31 +115,31 @@ func _build_room() -> void:
 	_build_props()
 
 func _build_left_rail() -> void:
-	_add_panel("LauncherRail", "scene.left-rail", Vector2(1.58, 3.34), Vector3(-3.06, 1.18, -0.2))
-	var labels := ["CONTINUE", "NEW BOT", "CUSTOMIZE", "SKILLS", "BROWSER", "OPTIONS", "QUIT"]
+	_add_panel("LauncherRail", "scene.left-rail", Vector2(1.5, 2.25), Vector3(-3.06, 1.58, -0.2))
+	var labels := ["HOME", "BUILD", "LOADOUT", "BROWSER"]
 	for index in range(labels.size()):
-		var y := 2.34 - float(index) * 0.39
+		var y := 2.28 - float(index) * 0.44
 		var slab := _add_panel("MenuSlab%s" % index, "scene.menu-slab.default", Vector2(1.1, 0.38), Vector3(-3.06, y, 0.06))
 		var light := _add_sphere(self, "MenuLight%s" % index, 0.035, Vector3(-3.52, y - 0.01, 0.22), Color("#3a3128"))
 		workshop_menu_slabs.append(slab)
 		workshop_menu_lights.append(light)
 		_add_world_label(labels[index], Vector3(-3.0, y - 0.025, 0.16), 17, Color("#23170f"))
+	_add_sphere(self, "TinyOptionsBead", 0.055, Vector3(-3.47, 0.54, 0.18), Color("#5b4631"))
+	_add_sphere(self, "TinyQuitBead", 0.055, Vector3(-3.2, 0.54, 0.18), Color("#8d4b3d"))
 
 func _build_parts_tray() -> void:
-	_add_panel("PartsTray", "scene.right-tray", Vector2(1.78, 3.24), Vector3(2.56, 1.32, -0.12))
-	_add_world_label("CLAY PARTS", Vector3(2.56, 2.62, 0.3), 20, Color("#23170f"))
+	_add_panel("PartsTray", "scene.right-tray", Vector2(1.68, 2.16), Vector3(2.56, 1.64, -0.12))
+	_add_world_label("PARTS RACK", Vector3(2.56, 2.52, 0.3), 19, Color("#23170f"))
 	var rows := [
-		["EYE", "PIXEL"],
-		["BADGE", "X-RAY"],
+		["EYE", "X-RAY"],
 		["SIDE", "REPO"],
-		["CROWN", "CITE"],
-		["CHARM", "WATCH"]
+		["BADGE", "STAMP"]
 	]
 	for index in range(rows.size()):
-		var y := 2.12 - float(index) * 0.46
-		var asset_id := "scene.tray-slot.equipped" if index < 3 else "scene.tray-slot.empty"
+		var y := 2.14 - float(index) * 0.48
+		var asset_id := "scene.tray-slot.equipped"
 		var slot := _add_panel("TraySlot%s" % index, asset_id, Vector2(1.34, 0.36), Vector3(2.58, y, 0.16))
-		var light := _add_sphere(self, "TrayLight%s" % index, 0.034, Vector3(2.05, y - 0.02, 0.32), Color("#72d968") if index < 3 else Color("#3a3128"))
+		var light := _add_sphere(self, "TrayLight%s" % index, 0.034, Vector3(2.05, y - 0.02, 0.32), Color("#72d968"))
 		workshop_tray_slots.append(slot)
 		workshop_tray_lights.append(light)
 		_add_world_label(rows[index][0], Vector3(2.46, y - 0.02, 0.28), 16, Color("#23170f"))
@@ -177,10 +181,18 @@ func _build_props() -> void:
 	_add_box(self, "BackShelf", Vector3(2.0, 0.12, 0.2), Vector3(3.2, 2.45, -1.32), Color("#65402f"))
 	_add_box(self, "ShelfBookA", Vector3(0.22, 0.5, 0.16), Vector3(3.0, 2.72, -1.2), Color("#735a43"))
 	_add_box(self, "ShelfBookB", Vector3(0.25, 0.62, 0.16), Vector3(3.32, 2.78, -1.2), Color("#4f6848"))
-	_add_sphere(self, "ClayCup", 0.24, Vector3(-4.42, -1.15, 1.02), Color("#6f7b58"))
-	_add_sphere(self, "ClayLump", 0.14, Vector3(4.36, -1.23, 1.0), Color("#7b5d78"))
-	_add_box(self, "ToolHandle", Vector3(0.18, 0.18, 0.88), Vector3(3.0, -1.22, 1.0), Color("#9a5b39"))
-	_add_box(self, "ToolBlade", Vector3(0.16, 0.08, 0.56), Vector3(3.42, -1.22, 1.0), Color("#8b8981"))
+	prop_nodes["repo_stamp"] = _add_box(self, "RepoStampPad", Vector3(0.58, 0.16, 0.44), Vector3(-1.72, -1.16, 1.0), Color("#8f5a3d"))
+	prop_nodes["repo_stamp_handle"] = _add_box(self, "RepoStampHandle", Vector3(0.18, 0.38, 0.18), Vector3(-1.72, -0.9, 1.0), Color("#c39a66"))
+	prop_nodes["browser_crank"] = _add_sphere(self, "BrowserCrankKnob", 0.2, Vector3(1.66, -1.05, 1.0), Color("#6f7b58"))
+	prop_nodes["browser_base"] = _add_box(self, "BrowserCrankBase", Vector3(0.72, 0.12, 0.42), Vector3(1.66, -1.24, 1.0), Color("#4f6848"))
+	prop_nodes["care_bell"] = _add_sphere(self, "CareBell", 0.2, Vector3(0.0, -1.08, 1.08), Color("#d8a849"))
+	prop_nodes["signal_fruit"] = _add_sphere(self, "SignalFruit", 0.16, Vector3(0.66, -1.22, 1.16), Color("#a95442"))
+	_add_world_label("STAMP", Vector3(-1.98, -0.74, 1.22), 13, Color("#f8e6b2"))
+	_add_world_label("CRANK", Vector3(1.38, -0.74, 1.22), 13, Color("#f8e6b2"))
+	_add_world_label("BELL", Vector3(-0.18, -0.74, 1.28), 13, Color("#f8e6b2"))
+	_add_click_area("ClickRepoStamp", Vector3(-1.72, -1.0, 1.0), Vector3(0.9, 0.7, 0.7), "repo")
+	_add_click_area("ClickBrowserCrank", Vector3(1.66, -1.02, 1.0), Vector3(0.9, 0.7, 0.7), "browser")
+	_add_click_area("ClickCareBell", Vector3(0.0, -1.0, 1.08), Vector3(0.62, 0.62, 0.62), "care")
 
 func _build_hud() -> void:
 	var hud := CanvasLayer.new()
@@ -225,7 +237,7 @@ func _build_hud() -> void:
 
 	signal_label = Label.new()
 	signal_label.position = Vector2(782, 620)
-	signal_label.text = "BROWSER HAND   REPO SIGNAL   CLAWD READY" if showcase_mode else "1 BROWSER   2 REPO   3 CLAWD"
+	signal_label.text = "CRANK   STAMP   BELL" if showcase_mode else "CLICK CRANK / STAMP / BELL"
 	signal_label.add_theme_font_size_override("font_size", 18)
 	root.add_child(signal_label)
 
@@ -266,6 +278,7 @@ func _update_lights() -> void:
 		if trace and trace.material_override:
 			trace.material_override.albedo_color = Color("#8fe8ff") if reaction_kind == "repo" and reaction_timer > 0.0 else Color("#385761")
 	_update_menu_animation()
+	_update_prop_animation()
 
 func _update_menu_animation() -> void:
 	var focus_pulse := 0.5 + absf(sin(pulse * 4.0)) * 0.5
@@ -280,14 +293,31 @@ func _update_menu_animation() -> void:
 			light.scale = Vector3.ONE * (1.25 if active else 1.0)
 
 	for index in range(workshop_tray_slots.size()):
-		var equipped := index < 3
-		var reacting := (reaction_kind == "browser" and index == 0) or (reaction_kind == "agent" and index == 1) or (reaction_kind == "repo" and index == 2)
+		var reacting := (reaction_kind == "browser" and index == 0) or (reaction_kind == "repo" and index == 1) or ((reaction_kind == "agent" or reaction_kind == "care") and index == 2)
 		var slot := workshop_tray_slots[index]
 		var light := workshop_tray_lights[index]
 		if slot:
 			slot.scale = Vector3(1.06, 1.06, 1.0) if reacting and reaction_timer > 0.0 else Vector3.ONE
 		if light and light.material_override:
-			light.material_override.albedo_color = Color("#8fe8ff") if reacting and reaction_timer > 0.0 else Color("#72d968") if equipped else Color("#3a3128")
+			light.material_override.albedo_color = Color("#8fe8ff") if reacting and reaction_timer > 0.0 else Color("#72d968")
+
+func _update_prop_animation() -> void:
+	var press := sin((reaction_timer / 0.65) * PI)
+	if prop_nodes.has("browser_crank"):
+		var crank: MeshInstance3D = prop_nodes["browser_crank"]
+		crank.rotation.z = pulse * 1.2 + (press * 2.6 if reaction_kind == "browser" else 0.0)
+		crank.scale = Vector3.ONE * (1.0 + press * 0.22 if reaction_kind == "browser" else 1.0)
+	if prop_nodes.has("repo_stamp_handle"):
+		var stamp: MeshInstance3D = prop_nodes["repo_stamp_handle"]
+		stamp.position.y = -0.9 - (press * 0.2 if reaction_kind == "repo" else 0.0)
+		stamp.rotation.z = sin(pulse * 0.8) * 0.04
+	if prop_nodes.has("care_bell"):
+		var bell: MeshInstance3D = prop_nodes["care_bell"]
+		bell.position.y = -1.08 + (press * 0.2 if reaction_kind == "care" else sin(pulse * 1.8) * 0.015)
+		bell.rotation.z = (sin(pulse * 12.0) * 0.18 if reaction_kind == "care" and reaction_timer > 0.0 else 0.0)
+	if prop_nodes.has("signal_fruit"):
+		var fruit: MeshInstance3D = prop_nodes["signal_fruit"]
+		fruit.position.y = -1.22 + sin(pulse * 2.2) * 0.025
 
 func _update_stats() -> void:
 	if stats_label:
@@ -323,11 +353,13 @@ func _trigger_reaction(kind: String) -> void:
 	reaction_timer = 0.65
 	match kind:
 		"browser":
-			menu_focus_index = 4
-		"repo":
 			menu_focus_index = 3
-		"agent":
+		"repo":
 			menu_focus_index = 2
+		"agent":
+			menu_focus_index = 1
+		"care":
+			menu_focus_index = 0
 		_:
 			menu_focus_index = 0
 	if not sfx_player:
@@ -339,6 +371,8 @@ func _trigger_reaction(kind: String) -> void:
 			sfx_player.play_sfx("repo", 0.82)
 		"agent":
 			sfx_player.play_sfx("attach", 0.82)
+		"care":
+			sfx_player.play_sfx("play", 0.78)
 		"system":
 			sfx_player.play_sfx("step", 0.45)
 		"market":
@@ -362,8 +396,30 @@ func _update_video_proof_reactions() -> void:
 		realtime_client.send_signal("repo", "REPO SIGNAL STAMP", 2)
 	if video_reaction_step == 2 and pulse > beat_3:
 		video_reaction_step = 3
-		_trigger_reaction("agent")
+		_trigger_reaction("care")
 		realtime_client.send_signal("agent", "CLAWD SNAP", 3)
+
+func _handle_scene_click(screen_position: Vector2) -> void:
+	if not camera:
+		return
+	var ray_origin := camera.project_ray_origin(screen_position)
+	var ray_end := ray_origin + camera.project_ray_normal(screen_position) * 100.0
+	var query := PhysicsRayQueryParameters3D.create(ray_origin, ray_end)
+	query.collide_with_areas = true
+	query.collide_with_bodies = false
+	var hit := get_world_3d().direct_space_state.intersect_ray(query)
+	if not hit.has("collider"):
+		return
+	var collider = hit["collider"]
+	if collider and collider.has_meta("kind"):
+		var kind := str(collider.get_meta("kind"))
+		_trigger_reaction(kind)
+		if kind == "browser":
+			realtime_client.send_signal("browser", "BROWSER HAND PULSE", 2)
+		elif kind == "repo":
+			realtime_client.send_signal("repo", "REPO SIGNAL STAMP", 2)
+		elif kind == "care":
+			realtime_client.send_signal("agent", "CLAWD BELL", 2)
 
 func _add_terminal_line(line: String) -> void:
 	if terminal:
@@ -447,6 +503,21 @@ func _add_sphere(parent: Node, name: String, radius: float, position: Vector3, c
 	instance.material_override = _material(color, asset_id)
 	parent.add_child(instance)
 	return instance
+
+func _add_click_area(name: String, position: Vector3, size: Vector3, kind: String) -> Area3D:
+	var area := Area3D.new()
+	area.name = name
+	area.position = position
+	area.input_ray_pickable = true
+	area.set_meta("kind", kind)
+	var shape := CollisionShape3D.new()
+	var box := BoxShape3D.new()
+	box.size = size
+	shape.shape = box
+	area.add_child(shape)
+	add_child(area)
+	click_targets.append(area)
+	return area
 
 func _add_world_label(text: String, position: Vector3, size: int, color: Color) -> void:
 	var label := Label3D.new()

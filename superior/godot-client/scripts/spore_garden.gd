@@ -47,6 +47,8 @@ var antenna_left: MeshInstance3D
 var antenna_right: MeshInstance3D
 var race_markers: Array[MeshInstance3D] = []
 var race_labels: Array[Label3D] = []
+var garden_props: Dictionary = {}
+var click_targets: Array[Area3D] = []
 var status_label: Label
 var race_label: Label
 var mood_label: Label
@@ -80,6 +82,8 @@ func _process(delta: float) -> void:
 	_update_video_proof()
 
 func _input(event: InputEvent) -> void:
+	if event is InputEventMouseButton and event.pressed and event.button_index == MOUSE_BUTTON_LEFT:
+		_handle_scene_click(event.position)
 	if event is InputEventKey and event.pressed and not event.echo:
 		if event.keycode == KEY_1:
 			_trigger_reaction("play")
@@ -96,9 +100,9 @@ func _input(event: InputEvent) -> void:
 
 func _build_garden() -> void:
 	camera = Camera3D.new()
-	camera.position = Vector3(0.0, 2.46, 5.8)
-	camera.rotation_degrees = Vector3(-14.0, 0.0, 0.0)
-	camera.fov = 54.0
+	camera.position = Vector3(0.0, 3.16, 6.65)
+	camera.rotation_degrees = Vector3(-20.0, 0.0, 0.0)
+	camera.fov = 58.0
 	add_child(camera)
 
 	var sun := DirectionalLight3D.new()
@@ -113,12 +117,19 @@ func _build_garden() -> void:
 	add_child(lamp)
 
 	_add_panel("GardenWall", "scene.wall", Vector2(12.8, 5.2), Vector3(0, 1.82, -2.5))
-	_add_panel("GardenTable", "scene.table", Vector2(13.8, 1.28), Vector3(0, -0.95, 0.04))
-	_add_box(self, "GardenSoil", Vector3(4.6, 0.28, 2.1), Vector3(0.0, -0.2, 0.58), Color("#69452f"))
+	_add_panel("GardenTable", "scene.table", Vector2(13.8, 1.28), Vector3(0, -1.04, 0.04))
+	garden_props["island"] = _add_sphere(self, "GardenClayIsland", 1.0, Vector3(0.0, -0.42, 0.52), Color("#7a5a3a"))
+	garden_props["island"].scale = Vector3(3.35, 0.42, 1.58)
+	_add_box(self, "GardenSoil", Vector3(4.9, 0.18, 2.22), Vector3(0.0, -0.12, 0.58), Color("#69452f"))
+	garden_props["pond"] = _add_sphere(self, "GardenPond", 0.48, Vector3(-1.55, 0.02, 0.72), Color("#4d8f8c"))
+	garden_props["pond"].scale = Vector3(1.34, 0.12, 0.72)
+	_add_box(self, "PondBridgeA", Vector3(1.25, 0.08, 0.13), Vector3(-1.55, 0.16, 0.72), Color("#c39a66"))
+	_add_box(self, "PondBridgeB", Vector3(0.12, 0.1, 0.62), Vector3(-1.98, 0.18, 0.72), Color("#8f5a3d"))
+	_add_box(self, "PondBridgeC", Vector3(0.12, 0.1, 0.62), Vector3(-1.12, 0.18, 0.72), Color("#8f5a3d"))
 	_add_panel("GardenLamp", "scene.lamp", Vector2(1.5, 1.08), Vector3(-0.08, 2.95, -1.54))
 	_add_panel("GardenSign", "scene.menu-slab.default", Vector2(3.25, 0.58), Vector3(0.0, 2.36, -1.45))
 	_add_world_label("SPORE GARDEN", Vector3(-0.74, 2.34, -0.94), 28, Color("#23170f"))
-	_add_world_label("RACE HOME", Vector3(-0.31, 2.14, -0.94), 14, Color("#4c3524"))
+	_add_world_label("CLAY ISLAND", Vector3(-0.31, 2.14, -0.94), 14, Color("#4c3524"))
 
 	_build_race_stones()
 	_build_spore()
@@ -128,15 +139,15 @@ func _build_garden() -> void:
 func _build_race_stones() -> void:
 	for index in range(RACES.size()):
 		var race: Dictionary = RACES[index]
-		var x := -1.52 + float(index) * 1.52
-		var stone := _add_box(self, "RaceStone%s" % index, Vector3(0.9, 0.18, 0.54), Vector3(x, 0.02, 0.22), Color("#c5a879"))
+		var x := -1.12 + float(index) * 1.12
+		var stone := _add_box(self, "RaceStone%s" % index, Vector3(0.72, 0.16, 0.44), Vector3(x, 0.02, -0.1), Color("#c5a879"))
 		race_markers.append(stone)
-		_add_sphere(self, "RaceHead%s" % index, 0.24, Vector3(x, 0.34, 0.2), race["color"])
+		_add_sphere(self, "RaceHead%s" % index, 0.19, Vector3(x, 0.28, -0.1), race["color"])
 		if index == 1:
-			_add_sphere(self, "RaceLens%s" % index, 0.1, Vector3(x, 0.38, 0.42), Color("#8fe8ff"))
+			_add_sphere(self, "RaceLens%s" % index, 0.08, Vector3(x, 0.32, 0.08), Color("#8fe8ff"))
 		if index == 2:
-			_add_box(self, "RaceShield%s" % index, Vector3(0.24, 0.18, 0.08), Vector3(x + 0.18, 0.35, 0.41), Color("#ffe0a3"))
-		var label := _add_world_label(str(race["short"]), Vector3(x - 0.32, -0.03, 0.55), 14, Color("#23170f"))
+			_add_box(self, "RaceShield%s" % index, Vector3(0.2, 0.14, 0.08), Vector3(x + 0.14, 0.3, 0.08), Color("#ffe0a3"))
+		var label := _add_world_label(str(race["short"]), Vector3(x - 0.28, -0.04, 0.18), 12, Color("#23170f"))
 		race_labels.append(label)
 
 func _build_spore() -> void:
@@ -154,19 +165,29 @@ func _build_spore() -> void:
 	antenna_right = _add_box(spore_rig, "BuilderAntennaRight", Vector3(0.07, 0.42, 0.07), Vector3(0.23, 1.08, 0.18), Color("#42502f"))
 
 func _build_garden_props() -> void:
-	for index in range(8):
-		var x := -2.18 + float(index) * 0.62
-		var z := 0.0 + sin(float(index)) * 0.26
-		_add_sphere(self, "ClayPebble%s" % index, 0.08 + float(index % 3) * 0.015, Vector3(x, -0.02, z + 0.78), Color("#8b6a4a"))
-	_add_sphere(self, "GardenPlantPot", 0.22, Vector3(-2.55, -0.28, 0.72), Color("#6f7b58"))
-	_add_box(self, "GardenLeafA", Vector3(0.08, 0.52, 0.08), Vector3(-2.58, 0.1, 0.72), Color("#456d43"))
-	_add_box(self, "GardenLeafB", Vector3(0.08, 0.42, 0.08), Vector3(-2.42, 0.04, 0.73), Color("#4f7a48"))
-	_add_box(self, "ToyTool", Vector3(0.16, 0.12, 0.72), Vector3(2.45, -0.22, 0.78), Color("#9a5b39"))
-	_add_box(self, "ToyToolTip", Vector3(0.14, 0.07, 0.32), Vector3(2.74, -0.21, 0.78), Color("#8b8981"))
+	for index in range(11):
+		var x := -2.64 + float(index) * 0.54
+		var z := 0.16 + sin(float(index)) * 0.26
+		_add_sphere(self, "ClayPebble%s" % index, 0.065 + float(index % 3) * 0.015, Vector3(x, 0.02, z + 0.78), Color("#8b6a4a"))
+	garden_props["toy_ball"] = _add_sphere(self, "GardenToyBall", 0.24, Vector3(-0.92, 0.11, 1.35), Color("#d8a849"))
+	garden_props["fruit"] = _add_sphere(self, "GardenFruit", 0.18, Vector3(1.12, 0.18, 1.18), Color("#a95442"))
+	garden_props["fruit_leaf"] = _add_box(self, "GardenFruitLeaf", Vector3(0.08, 0.18, 0.08), Vector3(1.2, 0.34, 1.16), Color("#456d43"))
+	garden_props["plant_pot"] = _add_sphere(self, "GardenPlantPot", 0.22, Vector3(-2.52, -0.02, 0.72), Color("#6f7b58"))
+	_add_box(self, "GardenLeafA", Vector3(0.08, 0.52, 0.08), Vector3(-2.58, 0.36, 0.72), Color("#456d43"))
+	_add_box(self, "GardenLeafB", Vector3(0.08, 0.42, 0.08), Vector3(-2.42, 0.3, 0.73), Color("#4f7a48"))
+	garden_props["pinwheel"] = _add_box(self, "SignalPinwheel", Vector3(0.12, 0.62, 0.12), Vector3(2.06, 0.32, 0.42), Color("#8fe8ff"))
+	_add_box(self, "SignalPinwheelStem", Vector3(0.05, 0.6, 0.05), Vector3(2.06, 0.06, 0.42), Color("#4f6848"))
+	_add_world_label("PLAY", Vector3(-1.12, 0.44, 1.54), 13, Color("#f8e6b2"))
+	_add_world_label("FEED", Vector3(0.94, 0.48, 1.4), 13, Color("#f8e6b2"))
+	_add_world_label("SIGNAL", Vector3(1.72, 0.7, 0.68), 13, Color("#f8e6b2"))
+	_add_click_area("ClickToyBall", Vector3(-0.92, 0.18, 1.35), Vector3(0.72, 0.72, 0.72), "play")
+	_add_click_area("ClickFruit", Vector3(1.12, 0.2, 1.18), Vector3(0.64, 0.64, 0.64), "feed")
+	_add_click_area("ClickSignalPond", Vector3(1.98, 0.3, 0.46), Vector3(0.72, 0.85, 0.72), "signal")
 
 func _build_gate() -> void:
 	_add_panel("WorkshopGatePlate", "scene.status-pill", Vector2(1.5, 0.42), Vector3(2.45, 0.42, 0.36))
 	_add_world_label("ENTER WORKSHOP", Vector3(2.12, 0.41, 0.62), 14, Color("#d7c999"))
+	_add_click_area("ClickWorkshopGate", Vector3(2.45, 0.42, 0.36), Vector3(1.65, 0.58, 0.55), "gate")
 
 func _build_hud() -> void:
 	var hud := CanvasLayer.new()
@@ -180,7 +201,7 @@ func _build_hud() -> void:
 	race_label = _add_hud_label(root, "RACE / BUILDER", Vector2(26, 54), Vector2(340, 26), 16, Color("#d7c999"))
 	mood_label = _add_hud_label(root, "MOOD / CURIOUS", Vector2(26, 82), Vector2(360, 26), 16, Color("#d7c999"))
 	equipped_label = _add_hud_label(root, "PART / EMPTY", Vector2(26, 110), Vector2(340, 26), 16, Color("#d7c999"))
-	var action_text := "CARE   EQUIP   SIGNAL   WORKSHOP READY" if showcase_mode else "1 PLAY   2 EQUIP   3 SIGNAL   ENTER WORKSHOP"
+	var action_text := "PLAY   FEED   SIGNAL   GATE" if showcase_mode else "CLICK TOY / FRUIT / SIGNAL / GATE"
 	action_label = _add_hud_label(root, action_text, Vector2(716, 646), Vector2(520, 30), 16, Color("#f8e6b2"))
 	_add_crt_pass(root)
 
@@ -226,6 +247,8 @@ func _trigger_reaction(kind: String) -> void:
 		match kind:
 			"play":
 				sfx_player.play_sfx("play", 0.82)
+			"feed":
+				sfx_player.play_sfx("equip", 0.72)
 			"equip":
 				sfx_player.play_sfx("equip", 0.9)
 			"signal":
@@ -235,6 +258,8 @@ func _trigger_reaction(kind: String) -> void:
 	if mood_label:
 		if kind == "play":
 			mood_label.text = "MOOD / HAPPY HOP"
+		elif kind == "feed":
+			mood_label.text = "MOOD / FED"
 		elif kind == "equip":
 			mood_label.text = "MOOD / PART SNAP"
 		elif kind == "signal":
@@ -250,11 +275,21 @@ func _update_motion() -> void:
 	var snap := 0.0
 	if reaction_kind == "play":
 		hop = sin(reaction * PI) * 0.42
+	if reaction_kind == "feed":
+		hop = sin(reaction * PI) * 0.28
 	if reaction_kind == "equip":
 		snap = sin(reaction * PI) * 0.14
 	if reaction_kind == "signal":
 		snap = sin(reaction * PI * 2.0) * 0.09
+	var wander_x := sin(pulse * 0.42) * 0.28
+	var wander_z := cos(pulse * 0.31) * 0.12
+	if reaction_kind == "play" and reaction_timer > 0.0:
+		wander_x -= sin(reaction * PI) * 0.36
+	if reaction_kind == "feed" and reaction_timer > 0.0:
+		wander_x += sin(reaction * PI) * 0.34
+	spore_rig.position.x = wander_x
 	spore_rig.position.y = 0.47 + sin(pulse * 1.35) * 0.025 + hop
+	spore_rig.position.z = 0.82 + wander_z
 	spore_rig.rotation.y = sin(pulse * 0.7) * 0.08 + (sin(reaction * PI) * 0.15 if reaction_kind == "signal" else 0.0)
 	spore_rig.scale = Vector3(1.0 + snap, 1.0 - snap * 0.8, 1.0)
 	if eye_panel:
@@ -263,6 +298,23 @@ func _update_motion() -> void:
 	if skill_part and skill_part.visible:
 		var pulse_scale := 1.0 + (sin(reaction_timer * 13.0) * 0.12 if reaction_kind == "equip" or reaction_kind == "signal" else 0.0)
 		skill_part.scale = Vector3.ONE * pulse_scale
+	_update_prop_motion()
+
+func _update_prop_motion() -> void:
+	var press := sin((reaction_timer / 0.72) * PI)
+	if garden_props.has("toy_ball"):
+		var ball: MeshInstance3D = garden_props["toy_ball"]
+		ball.rotation.z = pulse * 1.5 + (press * 2.0 if reaction_kind == "play" else 0.0)
+		ball.position.x = -0.92 - (press * 0.22 if reaction_kind == "play" else 0.0)
+	if garden_props.has("fruit"):
+		var fruit: MeshInstance3D = garden_props["fruit"]
+		fruit.position.y = 0.18 + sin(pulse * 2.0) * 0.025 + (press * 0.12 if reaction_kind == "feed" else 0.0)
+	if garden_props.has("pond") and garden_props["pond"].material_override:
+		var pond: MeshInstance3D = garden_props["pond"]
+		pond.material_override.albedo_color = Color("#8fe8ff") if reaction_kind == "signal" and reaction_timer > 0.0 else Color("#4d8f8c")
+	if garden_props.has("pinwheel"):
+		var pinwheel: MeshInstance3D = garden_props["pinwheel"]
+		pinwheel.rotation.z = pulse * 0.8 + (press * 5.0 if reaction_kind == "signal" else 0.0)
 
 func _update_video_proof() -> void:
 	if OS.get_environment("SUPERIOR_VIDEO_PROOF") != "1":
@@ -273,6 +325,7 @@ func _update_video_proof() -> void:
 	var beat_4 := 3.72 if showcase_mode else 4.45
 	var beat_5 := 5.05 if showcase_mode else 6.05
 	var beat_6 := 6.25 if showcase_mode else 7.75
+	var beat_7 := 6.9 if showcase_mode else 6.9
 	if video_step == 0 and pulse > beat_1:
 		video_step = 1
 		_select_race(0)
@@ -289,10 +342,33 @@ func _update_video_proof() -> void:
 		_equip_skill()
 	if video_step == 4 and pulse > beat_5:
 		video_step = 5
-		_trigger_reaction("signal")
+		_trigger_reaction("feed")
 	if video_step == 5 and pulse > beat_6:
 		video_step = 6
+		_trigger_reaction("signal")
+	if video_step == 6 and pulse > beat_7:
+		video_step = 7
 		get_tree().change_scene_to_file("res://scenes/ClayWorkshop.tscn")
+
+func _handle_scene_click(screen_position: Vector2) -> void:
+	if not camera:
+		return
+	var ray_origin := camera.project_ray_origin(screen_position)
+	var ray_end := ray_origin + camera.project_ray_normal(screen_position) * 100.0
+	var query := PhysicsRayQueryParameters3D.create(ray_origin, ray_end)
+	query.collide_with_areas = true
+	query.collide_with_bodies = false
+	var hit := get_world_3d().direct_space_state.intersect_ray(query)
+	if not hit.has("collider"):
+		return
+	var collider = hit["collider"]
+	if not collider or not collider.has_meta("kind"):
+		return
+	var kind := str(collider.get_meta("kind"))
+	if kind == "gate":
+		get_tree().change_scene_to_file("res://scenes/ClayWorkshop.tscn")
+	else:
+		_trigger_reaction(kind)
 
 func _load_clay_asset_manifest() -> void:
 	if not clay_image:
@@ -356,6 +432,21 @@ func _add_sphere(parent: Node, name: String, radius: float, position: Vector3, c
 	instance.material_override = _material(color, asset_id)
 	parent.add_child(instance)
 	return instance
+
+func _add_click_area(name: String, position: Vector3, size: Vector3, kind: String) -> Area3D:
+	var area := Area3D.new()
+	area.name = name
+	area.position = position
+	area.input_ray_pickable = true
+	area.set_meta("kind", kind)
+	var shape := CollisionShape3D.new()
+	var box := BoxShape3D.new()
+	box.size = size
+	shape.shape = box
+	area.add_child(shape)
+	add_child(area)
+	click_targets.append(area)
+	return area
 
 func _add_world_label(text: String, position: Vector3, size: int, color: Color) -> Label3D:
 	var label := Label3D.new()

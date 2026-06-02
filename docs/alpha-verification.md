@@ -17,13 +17,13 @@ Last checked: 2026-06-02
 - Godot proof recorder now uses Godot `--write-movie`, not desktop-region capture, so it cannot pass by recording the wrong foreground window.
 - Godot production showcase recorder passes: `corepack pnpm video:showcase`.
 - Production showcase uses `SUPERIOR_SHOWCASE=1` for a 22-second product-facing capture: SUPERIOR boot, spore wake, body fit, eye fit, role stamp, Chrome icon match, Article X-Ray skill proof, spore reaction, Spore Garden, Workshop reactions, generated in-engine sound effects, and physical menu/slot feedback.
-- Latest 0.18 production showcase MP4: `.clawdbot/video-proof/2026-06-02T13-35-26-998Z-godot-showcase/SUPERIOR-godot-showcase-2026-06-02T13-35-26-998Z.mp4`.
-- Latest 0.18 production showcase poster: `.clawdbot/video-proof/2026-06-02T13-35-26-998Z-godot-showcase/SUPERIOR-godot-showcase-2026-06-02T13-35-26-998Z.png`.
-- Latest 0.18 production showcase contact sheet: `.clawdbot/video-proof/2026-06-02T13-35-26-998Z-godot-showcase/review-frames/contact-sheet-1s.png`.
+- Latest 0.18 production showcase MP4: `.clawdbot/video-proof/2026-06-02T14-18-28-354Z-godot-showcase/SUPERIOR-godot-showcase-2026-06-02T14-18-28-354Z.mp4`.
+- Latest 0.18 production showcase poster: `.clawdbot/video-proof/2026-06-02T14-18-28-354Z-godot-showcase/SUPERIOR-godot-showcase-2026-06-02T14-18-28-354Z.png`.
+- Latest 0.18 production showcase contact sheet: `.clawdbot/video-proof/2026-06-02T14-18-28-354Z-godot-showcase/review-frames/contact-sheet-1s.png`.
 - Latest production showcase contains `h264` video and `aac` audio streams.
-- Latest 0.18 Godot proof MP4: `.clawdbot/video-proof/2026-06-02T13-58-17-336Z-godot-engine/SUPERIOR-godot-engine-2026-06-02T13-58-17-336Z.mp4`.
-- Latest 0.18 Godot proof poster: `.clawdbot/video-proof/2026-06-02T13-58-17-336Z-godot-engine/SUPERIOR-godot-engine-2026-06-02T13-58-17-336Z.png`.
-- Latest 0.18 Godot onboarding contact sheet: `.clawdbot/video-proof/2026-06-02T13-58-17-336Z-godot-engine/review-frames/contact-sheet-1s.png`.
+- Latest 0.18 Godot proof MP4: `.clawdbot/video-proof/2026-06-02T14-17-37-454Z-godot-engine/SUPERIOR-godot-engine-2026-06-02T14-17-37-454Z.mp4`.
+- Latest 0.18 Godot proof poster: `.clawdbot/video-proof/2026-06-02T14-17-37-454Z-godot-engine/SUPERIOR-godot-engine-2026-06-02T14-17-37-454Z.png`.
+- Latest 0.18 Godot onboarding contact sheet: `.clawdbot/video-proof/2026-06-02T14-17-37-454Z-godot-engine/review-frames/contact-sheet-1s.png`.
 - 0.18 Spore Birth planning gate passes: `node C:\Users\mzwin\.codex\skills\superior-spore-birth-gate\scripts\check_spore_birth_gate.mjs C:\Users\mzwin\Documents\Buddy\clawdbot --planning` reports `39` pass, `0` fail.
 - 0.18 Spore Birth implementation gate passes: `node C:\Users\mzwin\.codex\skills\superior-spore-birth-gate\scripts\check_spore_birth_gate.mjs C:\Users\mzwin\Documents\Buddy\clawdbot --implementation` reports `66` pass, `0` fail.
 - Godot Clay Quality Pass packet is the next accepted visual plan: `docs/agent-packets/godot-clay-quality-pass.md`.
@@ -192,9 +192,9 @@ Last checked: 2026-06-02
   - Browser hand is a device-pairing dock with Chrome detected, extension ready, icon match, and bind-to-spore feedback.
   - Bottom hardware status indicators stay quiet until Browser and Stamp, then progress toward Browser Linked and Workshop Open.
 - Latest 0.18 spore ownership fixture report: `.clawdbot/verification/spore-ownership-fixture-1780407320488.json`.
-- Latest 0.18 Godot proof MP4: `.clawdbot/video-proof/2026-06-02T13-58-17-336Z-godot-engine/SUPERIOR-godot-engine-2026-06-02T13-58-17-336Z.mp4`.
-- Latest 0.18 Godot proof poster: `.clawdbot/video-proof/2026-06-02T13-58-17-336Z-godot-engine/SUPERIOR-godot-engine-2026-06-02T13-58-17-336Z.png`.
-- Latest 0.18 Godot proof contact sheet: `.clawdbot/video-proof/2026-06-02T13-58-17-336Z-godot-engine/review-frames/contact-sheet-1s.png`.
+- Latest 0.18 Godot proof MP4: `.clawdbot/video-proof/2026-06-02T14-17-37-454Z-godot-engine/SUPERIOR-godot-engine-2026-06-02T14-17-37-454Z.mp4`.
+- Latest 0.18 Godot proof poster: `.clawdbot/video-proof/2026-06-02T14-17-37-454Z-godot-engine/SUPERIOR-godot-engine-2026-06-02T14-17-37-454Z.png`.
+- Latest 0.18 Godot proof contact sheet: `.clawdbot/video-proof/2026-06-02T14-17-37-454Z-godot-engine/review-frames/contact-sheet-1s.png`.
 
 ## Environment Gate
 

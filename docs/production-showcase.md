@@ -32,10 +32,10 @@ This records the Godot runtime for about 22 seconds with `SUPERIOR_SHOWCASE=1`, 
 
 ## Latest 0.18 Artifact
 
-- MP4: `.clawdbot/video-proof/2026-06-02T13-35-26-998Z-godot-showcase/SUPERIOR-godot-showcase-2026-06-02T13-35-26-998Z.mp4`
-- Poster: `.clawdbot/video-proof/2026-06-02T13-35-26-998Z-godot-showcase/SUPERIOR-godot-showcase-2026-06-02T13-35-26-998Z.png`
-- Contact sheet: `.clawdbot/video-proof/2026-06-02T13-35-26-998Z-godot-showcase/review-frames/contact-sheet-1s.png`
-- Engineering proof: `.clawdbot/video-proof/2026-06-02T13-58-17-336Z-godot-engine/SUPERIOR-godot-engine-2026-06-02T13-58-17-336Z.mp4`
+- MP4: `.clawdbot/video-proof/2026-06-02T14-18-28-354Z-godot-showcase/SUPERIOR-godot-showcase-2026-06-02T14-18-28-354Z.mp4`
+- Poster: `.clawdbot/video-proof/2026-06-02T14-18-28-354Z-godot-showcase/SUPERIOR-godot-showcase-2026-06-02T14-18-28-354Z.png`
+- Contact sheet: `.clawdbot/video-proof/2026-06-02T14-18-28-354Z-godot-showcase/review-frames/contact-sheet-1s.png`
+- Engineering proof: `.clawdbot/video-proof/2026-06-02T14-17-37-454Z-godot-engine/SUPERIOR-godot-engine-2026-06-02T14-17-37-454Z.mp4`
 
 QA read: the loop is understandable without narration: SUPERIOR boots, Clawd wakes, the body and eye attach, Chrome matches the spore icon, Article X-Ray runs, the spore reacts, and the home opens. The Browser dock is visually close to the spore in the proof frame, but the ownership read is still clear at 1280x720 and in the contact sheet.
 

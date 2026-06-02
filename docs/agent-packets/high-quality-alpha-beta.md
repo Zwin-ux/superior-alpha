@@ -149,11 +149,11 @@ Gate results:
 - Planning gate: `39` pass, `0` fail.
 - Implementation gate: `66` pass, `0` fail.
 - Spore ownership fixture: `.clawdbot/verification/spore-ownership-fixture-1780407320488.json`.
-- Showcase MP4: `.clawdbot/video-proof/2026-06-02T13-35-26-998Z-godot-showcase/SUPERIOR-godot-showcase-2026-06-02T13-35-26-998Z.mp4`.
-- Showcase poster: `.clawdbot/video-proof/2026-06-02T13-35-26-998Z-godot-showcase/SUPERIOR-godot-showcase-2026-06-02T13-35-26-998Z.png`.
-- Showcase contact sheet: `.clawdbot/video-proof/2026-06-02T13-35-26-998Z-godot-showcase/review-frames/contact-sheet-1s.png`.
-- Godot engineering proof MP4: `.clawdbot/video-proof/2026-06-02T13-58-17-336Z-godot-engine/SUPERIOR-godot-engine-2026-06-02T13-58-17-336Z.mp4`.
-- Godot engineering proof contact sheet: `.clawdbot/video-proof/2026-06-02T13-58-17-336Z-godot-engine/review-frames/contact-sheet-1s.png`.
+- Showcase MP4: `.clawdbot/video-proof/2026-06-02T14-18-28-354Z-godot-showcase/SUPERIOR-godot-showcase-2026-06-02T14-18-28-354Z.mp4`.
+- Showcase poster: `.clawdbot/video-proof/2026-06-02T14-18-28-354Z-godot-showcase/SUPERIOR-godot-showcase-2026-06-02T14-18-28-354Z.png`.
+- Showcase contact sheet: `.clawdbot/video-proof/2026-06-02T14-18-28-354Z-godot-showcase/review-frames/contact-sheet-1s.png`.
+- Godot engineering proof MP4: `.clawdbot/video-proof/2026-06-02T14-17-37-454Z-godot-engine/SUPERIOR-godot-engine-2026-06-02T14-17-37-454Z.mp4`.
+- Godot engineering proof contact sheet: `.clawdbot/video-proof/2026-06-02T14-17-37-454Z-godot-engine/review-frames/contact-sheet-1s.png`.
 
 Current caveats:
 
@@ -274,7 +274,7 @@ Beta means a stranger can do this without help:
 The next real-world action is not more ideation. Show the current 22-second showcase MP4 to three people without explaining it first:
 
 ```text
-.clawdbot/video-proof/2026-06-02T13-35-26-998Z-godot-showcase/SUPERIOR-godot-showcase-2026-06-02T13-35-26-998Z.mp4
+.clawdbot/video-proof/2026-06-02T14-18-28-354Z-godot-showcase/SUPERIOR-godot-showcase-2026-06-02T14-18-28-354Z.mp4
 ```
 
 Ask only:

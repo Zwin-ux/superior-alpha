@@ -15,6 +15,7 @@ Current planning mirrors:
 - [Windows Native](agent-packets/windows-native.md)
 - [High Quality Alpha/Beta Gate](agent-packets/high-quality-alpha-beta.md)
 - [Design Shotgun: Spore Onboarding - 0.16 Spore Birth Onboarding](agent-packets/design-shotgun-spore-onboarding.md)
+- [Design Shotgun: Workshop Toybox + Spore Garden Island](agent-packets/design-shotgun-workshop-garden.md)
 - [Spore Ownership Demo](agent-packets/spore-ownership-demo.md)
 - [Godot Engine](agent-packets/godot-engine.md)
 - [Godot Clay Quality Pass](agent-packets/godot-clay-quality-pass.md)
