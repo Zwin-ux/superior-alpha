@@ -49,6 +49,8 @@ var race_markers: Array[MeshInstance3D] = []
 var race_labels: Array[Label3D] = []
 var garden_props: Dictionary = {}
 var click_targets: Array[Area3D] = []
+var firefly_nodes: Array[MeshInstance3D] = []
+var firefly_bases: Array[Vector3] = []
 var status_label: Label
 var race_label: Label
 var mood_label: Label
@@ -134,6 +136,7 @@ func _build_garden() -> void:
 	_build_race_stones()
 	_build_spore()
 	_build_garden_props()
+	_build_ambient_life()
 	_build_gate()
 
 func _build_race_stones() -> void:
@@ -149,6 +152,7 @@ func _build_race_stones() -> void:
 			_add_box(self, "RaceShield%s" % index, Vector3(0.2, 0.14, 0.08), Vector3(x + 0.14, 0.3, 0.08), Color("#ffe0a3"))
 		var label := _add_world_label(str(race["short"]), Vector3(x - 0.28, -0.04, 0.18), 12, Color("#23170f"))
 		race_labels.append(label)
+		_add_click_area("ClickRaceStone%s" % index, Vector3(x, 0.18, -0.1), Vector3(0.8, 0.72, 0.7), "race:%s" % index)
 
 func _build_spore() -> void:
 	spore_rig = Node3D.new()
@@ -165,7 +169,7 @@ func _build_spore() -> void:
 	antenna_right = _add_box(spore_rig, "BuilderAntennaRight", Vector3(0.07, 0.42, 0.07), Vector3(0.23, 1.08, 0.18), Color("#42502f"))
 
 func _build_garden_props() -> void:
-	for index in range(11):
+	for index in range(6):
 		var x := -2.64 + float(index) * 0.54
 		var z := 0.16 + sin(float(index)) * 0.26
 		_add_sphere(self, "ClayPebble%s" % index, 0.065 + float(index % 3) * 0.015, Vector3(x, 0.02, z + 0.78), Color("#8b6a4a"))
@@ -184,6 +188,19 @@ func _build_garden_props() -> void:
 	_add_click_area("ClickFruit", Vector3(1.12, 0.2, 1.18), Vector3(0.64, 0.64, 0.64), "feed")
 	_add_click_area("ClickSignalPond", Vector3(1.98, 0.3, 0.46), Vector3(0.72, 0.85, 0.72), "signal")
 
+func _build_ambient_life() -> void:
+	var bases := [
+		Vector3(-2.2, 1.36, 0.18),
+		Vector3(-1.18, 1.62, 1.36),
+		Vector3(-0.18, 1.82, -0.12),
+		Vector3(1.02, 1.46, 1.52),
+		Vector3(2.02, 1.18, 0.32)
+	]
+	for index in range(bases.size()):
+		var mote := _add_sphere(self, "GardenFirefly%s" % index, 0.05, bases[index], Color("#ffe7a2"))
+		firefly_nodes.append(mote)
+		firefly_bases.append(bases[index])
+
 func _build_gate() -> void:
 	_add_panel("WorkshopGatePlate", "scene.status-pill", Vector2(1.5, 0.42), Vector3(2.45, 0.42, 0.36))
 	_add_world_label("ENTER WORKSHOP", Vector3(2.12, 0.41, 0.62), 14, Color("#d7c999"))
@@ -199,10 +216,11 @@ func _build_hud() -> void:
 
 	status_label = _add_hud_label(root, "SPORE GARDEN", Vector2(26, 20), Vector2(300, 30), 20, Color("#f8e6b2"))
 	race_label = _add_hud_label(root, "RACE / BUILDER", Vector2(26, 54), Vector2(340, 26), 16, Color("#d7c999"))
-	mood_label = _add_hud_label(root, "MOOD / CURIOUS", Vector2(26, 82), Vector2(360, 26), 16, Color("#d7c999"))
+	race_label.visible = false
+	mood_label = _add_hud_label(root, "BUILDER / CURIOUS", Vector2(26, 54), Vector2(360, 26), 16, Color("#d7c999"))
 	equipped_label = _add_hud_label(root, "PART / EMPTY", Vector2(26, 110), Vector2(340, 26), 16, Color("#d7c999"))
-	var action_text := "PLAY   FEED   SIGNAL   GATE" if showcase_mode else "CLICK TOY / FRUIT / SIGNAL / GATE"
-	action_label = _add_hud_label(root, action_text, Vector2(716, 646), Vector2(520, 30), 16, Color("#f8e6b2"))
+	equipped_label.visible = false
+	action_label = _add_hud_label(root, "RACES   PLAY   FEED   GATE", Vector2(760, 646), Vector2(420, 26), 14, Color("#f8e6b2"))
 	_add_crt_pass(root)
 
 func _build_sfx() -> void:
@@ -229,7 +247,7 @@ func _select_race(index: int) -> void:
 	if race_label:
 		race_label.text = "RACE / %s" % str(race["short"])
 	if mood_label:
-		mood_label.text = "MOOD / %s" % str(race["line"]).to_upper()
+		mood_label.text = "%s / %s" % [str(race["short"]), str(race["line"]).to_upper()]
 	_trigger_reaction("race")
 
 func _equip_skill() -> void:
@@ -257,15 +275,15 @@ func _trigger_reaction(kind: String) -> void:
 				sfx_player.play_sfx("select", 0.56)
 	if mood_label:
 		if kind == "play":
-			mood_label.text = "MOOD / HAPPY HOP"
+			mood_label.text = "%s / HAPPY HOP" % str(RACES[selected_race_index]["short"])
 		elif kind == "feed":
-			mood_label.text = "MOOD / FED"
+			mood_label.text = "%s / FED" % str(RACES[selected_race_index]["short"])
 		elif kind == "equip":
-			mood_label.text = "MOOD / PART SNAP"
+			mood_label.text = "%s / PART SNAP" % str(RACES[selected_race_index]["short"])
 		elif kind == "signal":
-			mood_label.text = "MOOD / SIGNAL CAUGHT"
+			mood_label.text = "%s / SIGNAL CAUGHT" % str(RACES[selected_race_index]["short"])
 		elif kind == "race":
-			mood_label.text = "MOOD / RACE SET"
+			mood_label.text = "%s / RACE SET" % str(RACES[selected_race_index]["short"])
 
 func _update_motion() -> void:
 	if not spore_rig:
@@ -292,6 +310,10 @@ func _update_motion() -> void:
 	spore_rig.position.z = 0.82 + wander_z
 	spore_rig.rotation.y = sin(pulse * 0.7) * 0.08 + (sin(reaction * PI) * 0.15 if reaction_kind == "signal" else 0.0)
 	spore_rig.scale = Vector3(1.0 + snap, 1.0 - snap * 0.8, 1.0)
+	if camera:
+		camera.position.x = sin(pulse * 0.2) * 0.14
+		camera.position.y = 3.16 + cos(pulse * 0.24) * 0.04
+		camera.rotation_degrees.x = -20.0 + sin(pulse * 0.18) * 0.8
 	if eye_panel:
 		var blink := int(pulse * 2.0) % 7 == 0 or (reaction_kind == "play" and reaction_timer > 0.28)
 		eye_panel.scale.y = 0.25 if blink else 1.0
@@ -315,6 +337,15 @@ func _update_prop_motion() -> void:
 	if garden_props.has("pinwheel"):
 		var pinwheel: MeshInstance3D = garden_props["pinwheel"]
 		pinwheel.rotation.z = pulse * 0.8 + (press * 5.0 if reaction_kind == "signal" else 0.0)
+	for index in range(firefly_nodes.size()):
+		var mote := firefly_nodes[index]
+		var base := firefly_bases[index]
+		mote.position.x = base.x + sin(pulse * (0.72 + float(index) * 0.12)) * 0.22
+		mote.position.y = base.y + cos(pulse * (1.15 + float(index) * 0.1)) * 0.12
+		mote.position.z = base.z + sin(pulse * (0.56 + float(index) * 0.08)) * 0.18
+		mote.scale = Vector3.ONE * (0.85 + absf(sin(pulse * 2.2 + float(index))) * 0.45)
+		if mote.material_override:
+			mote.material_override.albedo_color = Color("#fff3b6").lerp(Color("#8fe8ff"), absf(sin(pulse * 1.4 + float(index) * 0.8)) * 0.35)
 
 func _update_video_proof() -> void:
 	if OS.get_environment("SUPERIOR_VIDEO_PROOF") != "1":
@@ -367,6 +398,9 @@ func _handle_scene_click(screen_position: Vector2) -> void:
 	var kind := str(collider.get_meta("kind"))
 	if kind == "gate":
 		get_tree().change_scene_to_file("res://scenes/ClayWorkshop.tscn")
+	elif kind.begins_with("race:"):
+		var race_index := int(kind.split(":")[1])
+		_select_race(race_index)
 	else:
 		_trigger_reaction(kind)
 

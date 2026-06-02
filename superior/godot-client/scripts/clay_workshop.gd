@@ -221,24 +221,25 @@ func _build_hud() -> void:
 	stats_label = Label.new()
 	stats_label.text = "SYNC 00  HEAT 00"
 	stats_label.add_theme_font_size_override("font_size", 12)
+	stats_label.visible = false
 	top_row.add_child(stats_label)
 
 	var terminal_panel := PanelContainer.new()
-	terminal_panel.position = Vector2(24, 622)
-	terminal_panel.custom_minimum_size = Vector2(370, 74)
+	terminal_panel.position = Vector2(24, 640)
+	terminal_panel.custom_minimum_size = Vector2(300, 54)
 	root.add_child(terminal_panel)
 
 	terminal = RichTextLabel.new()
-	terminal.custom_minimum_size = Vector2(346, 48)
+	terminal.custom_minimum_size = Vector2(278, 32)
 	terminal.bbcode_enabled = true
 	terminal.scroll_active = false
-	terminal.add_theme_font_size_override("normal_font_size", 13)
+	terminal.add_theme_font_size_override("normal_font_size", 12)
 	terminal_panel.add_child(terminal)
 
 	signal_label = Label.new()
 	signal_label.position = Vector2(782, 620)
-	signal_label.text = "CRANK   STAMP   BELL" if showcase_mode else "CLICK CRANK / STAMP / BELL"
-	signal_label.add_theme_font_size_override("font_size", 18)
+	signal_label.text = "CRANK   STAMP   BELL"
+	signal_label.add_theme_font_size_override("font_size", 14)
 	root.add_child(signal_label)
 
 	_add_crt_pass(root)
@@ -258,6 +259,10 @@ func _update_bot_motion() -> void:
 	bot_rig.position.y = 0.78 + wobble + max(0.0, snap * 0.28)
 	bot_rig.rotation.z = sin(pulse * 0.85) * 0.015
 	bot_rig.scale = Vector3(1.0 + snap * 0.1, 1.0 - snap * 0.13, 1.0)
+	if camera:
+		camera.position.x = sin(pulse * 0.2) * 0.08
+		camera.position.y = 2.34 + cos(pulse * 0.24) * 0.03
+		camera.rotation_degrees.x = -13.0 + sin(pulse * 0.2) * 0.6
 
 	if eye_panel:
 		var blink := reaction_kind == "browser" and reaction_timer > 0.26 and int(reaction_timer * 20.0) % 2 == 0
@@ -320,7 +325,7 @@ func _update_prop_animation() -> void:
 		fruit.position.y = -1.22 + sin(pulse * 2.2) * 0.025
 
 func _update_stats() -> void:
-	if stats_label:
+	if stats_label and stats_label.visible:
 		var sync := 48 + int(abs(sin(pulse * 1.2)) * 44.0)
 		var heat := 18 + int(abs(sin(pulse * 0.8)) * 12.0)
 		stats_label.text = "SYNC %02d  HEAT %02d" % [sync, heat]
@@ -411,7 +416,7 @@ func _handle_scene_click(screen_position: Vector2) -> void:
 	if not hit.has("collider"):
 		return
 	var collider = hit["collider"]
-	if collider and collider.has_meta("kind"):
+	if collider != null and collider.has_meta("kind"):
 		var kind := str(collider.get_meta("kind"))
 		_trigger_reaction(kind)
 		if kind == "browser":
