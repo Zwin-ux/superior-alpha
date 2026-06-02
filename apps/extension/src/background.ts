@@ -60,12 +60,32 @@ chrome.contextMenus.onClicked.addListener((info, tab) => {
   void handleContextMenuClick(info, tab);
 });
 
-chrome.runtime.onMessage.addListener((message: unknown) => {
+chrome.runtime.onMessage.addListener((message: unknown, _sender, sendResponse) => {
   const candidate = message as { type?: string; bot?: BotIdentity };
 
   if (candidate.type === "superior-set-action-icon" && candidate.bot) {
     void refreshActionIcon(candidate.bot);
   }
+
+  if (candidate.type === "superior-sync-bot-identity") {
+    void syncBotIdentityFromDaemon({ force: true })
+      .then((bot) => {
+        sendResponse({
+          type: "superior-bot-identity-synced",
+          bot
+        });
+      })
+      .catch((error: unknown) => {
+        sendResponse({
+          type: "superior-bot-identity-sync-error",
+          message: error instanceof Error ? error.message : "Bot identity sync failed."
+        });
+      });
+
+    return true;
+  }
+
+  return false;
 });
 
 chrome.tabs.onActivated.addListener((activeInfo) => {
@@ -75,6 +95,7 @@ chrome.tabs.onActivated.addListener((activeInfo) => {
 
 chrome.tabs.onUpdated.addListener((tabId, changeInfo, tab) => {
   if (changeInfo.status === "complete" && tab.active) {
+    void syncBotIdentityFromDaemon();
     void reportTabById(tabId);
   }
 });

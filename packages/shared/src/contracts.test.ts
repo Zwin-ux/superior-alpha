@@ -19,14 +19,20 @@ import {
   createSuperiorBrowserAttachRequest,
   createSuperiorBrowserStartRequest,
   SuperiorAccountStartEmailCodeRequest,
+  SuperiorAccountStartOAuthRequest,
   SuperiorModelProviderState,
   getEquippedSkillSlots,
   hasUsablePageText,
   makeBotCssVars,
+  premadeSkillPartOptions,
+  premadeSkillPartsBySlot,
+  sporeRaceCatalog,
+  sporeRaceIds,
   runnableSkillShelf,
   runnableSkillIds,
   skillCatalog,
   skillLabels,
+  skillSlots,
   skillSlotLabels,
   updateBotIdentity
 } from "./index.js";
@@ -49,6 +55,7 @@ describe("shared SUPERIOR contracts", () => {
     expect(hermes.body).toBe("scanner");
     expect(hermes.color).toBe("skyBlue");
     expect(hermes.eye).toBe("lens");
+    expect(hermes.race).toBe("scout");
     expect(hermes.skills).toEqual(["page-explainer", "article-xray"]);
     expect(hermes.starterPresetId).toBe("hermes");
     expect(hermes.createdAt).toBe(new Date(0).toISOString());
@@ -71,6 +78,7 @@ describe("shared SUPERIOR contracts", () => {
     expect(scanner.body).toBe("scanner");
     expect(scanner.color).toBe("skyBlue");
     expect(scanner.eye).toBe("lens");
+    expect(scanner.race).toBe("scout");
     expect(scanner.skills).toEqual(["page-explainer"]);
     expect(scanner.starterPresetId).toBe("hermes");
   });
@@ -82,6 +90,42 @@ describe("shared SUPERIOR contracts", () => {
       expect(preset.skills.length).toBeGreaterThan(0);
       expect(preset.skills.every((skillId) => runnableIds.has(skillId))).toBe(true);
     }
+  });
+
+  it("sets up small premade skill parts for every body slot", () => {
+    expect(Object.keys(premadeSkillPartsBySlot)).toEqual([...skillSlots]);
+
+    for (const slot of skillSlots) {
+      const options = premadeSkillPartsBySlot[slot];
+
+      expect(options.length).toBeGreaterThanOrEqual(2);
+      expect(options.length).toBeLessThanOrEqual(3);
+      expect(options.every((option) => option.slot === slot)).toBe(true);
+      expect(options.every((option) => option.fits.length > 0)).toBe(true);
+    }
+
+    expect(premadeSkillPartOptions.map((option) => `${option.slot}:${option.shortLabel}:${option.state}`)).toEqual([
+      "eye:X-Ray:runnable",
+      "eye:Feed:preview",
+      "crown:Cite:preview",
+      "crown:Transcript:stowed",
+      "side:Repo:runnable",
+      "side:Scout:stowed",
+      "badge:Explain:runnable",
+      "badge:Dark:preview",
+      "charm:Price:preview",
+      "charm:Sentinel:stowed"
+    ]);
+  });
+
+  it("exposes exactly three alpha races as role classes", () => {
+    expect(sporeRaceIds).toEqual(["builder", "scout", "sentinel"]);
+    expect(sporeRaceCatalog.map((race) => `${race.id}:${race.silhouette}`)).toEqual([
+      "builder:gremlin",
+      "scout:scanner",
+      "sentinel:sentinel"
+    ]);
+    expect(botCreationShapes.map((shape) => shape.race)).toEqual(["builder", "builder", "scout", "sentinel", "builder"]);
   });
 
   it("creates a portable spore without raw secrets", () => {
@@ -101,6 +145,7 @@ describe("shared SUPERIOR contracts", () => {
     expect(spore.schemaVersion).toBe("0.1");
     expect(spore.name).toBe("Desk Clawd");
     expect(spore.species).toBe("clawd");
+    expect(spore.race).toBe("builder");
     expect(spore.appearance.body).toBe("orb");
     expect(spore.appearance.avatarAsset).toContain("clawd-avatar");
     expect(spore.pairings.browser?.status).toBe("ready");
@@ -294,6 +339,11 @@ describe("shared SUPERIOR contracts", () => {
       type: "superior-account-start-email-code",
       email: "alpha@example.com"
     };
+    const oauthRequest: SuperiorAccountStartOAuthRequest = {
+      type: "superior-account-start-oauth",
+      provider: "x",
+      redirectTo: "superior://auth/callback"
+    };
     const modelState: SuperiorModelProviderState = {
       type: "superior-model-provider-state",
       modelProvider: "ollama",
@@ -304,6 +354,8 @@ describe("shared SUPERIOR contracts", () => {
     };
 
     expect(accountRequest.type).toBe("superior-account-start-email-code");
+    expect(oauthRequest.provider).toBe("x");
+    expect(oauthRequest.redirectTo).toContain("superior://");
     expect(modelState.modelProvider).toBe("ollama");
     expect(modelState.openAiKeyStatus).toBe("missing");
   });
@@ -323,6 +375,7 @@ describe("shared SUPERIOR contracts", () => {
     expect(bot.iconVariant.color).toBe("lavender");
     expect(bot.iconVariant.eye).toBe("glow");
     expect(bot.starterPresetId).toBe("clawd");
+    expect(bot.race).toBe("builder");
   });
 
   it("renders tiny icon pieces from equipped skill slots", () => {

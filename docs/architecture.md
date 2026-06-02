@@ -93,7 +93,7 @@ The shared package should own the bot identity model so each surface renders the
 
 Current identity rule: one spore, many shells. Windows, Chrome, macOS, web, CLI, and mobile can have native presentations, but they should reuse the same Clawd/Hermes identity instead of inventing separate bots.
 
-Creation options are platform-agnostic. `GET /bot-creation-options` exposes the starter shapes and runnable skill loadout parts so every shell can start from the same empty-bench flow: choose shape, equip skills, save one active bot.
+Creation options are platform-agnostic. `GET /bot-creation-options` exposes starter shapes, alpha races, runnable skill loadout parts, and the small premade part shelf so every shell can start from the same empty-bench flow: choose shape, equip skills, save one active bot.
 
 The shared package should also own the `Superior` skill catalog:
 

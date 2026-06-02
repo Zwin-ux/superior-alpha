@@ -27,7 +27,10 @@ import {
   botCreationShapes,
   botSkillLoadoutOptions,
   botStarterPresets,
-  createSuperiorFunctionRunRequest
+  createSuperiorFunctionRunRequest,
+  premadeSkillPartOptions,
+  sporeRaceCatalog,
+  superiorAccountOAuthProviders
 } from "@clawdbot/shared";
 import {
   completeBrowserPairing,
@@ -1063,7 +1066,12 @@ function readBotCreationOptions(): BotCreationOptionsResponse {
   return {
     type: "bot-creation-options",
     shapes: botCreationShapes.map((shape) => ({ ...shape })),
+    races: sporeRaceCatalog.map((race) => ({ ...race })),
     skills: botSkillLoadoutOptions.map((skill) => ({ ...skill })),
+    premadeSkillParts: premadeSkillPartOptions.map((skill) => ({
+      ...skill,
+      fits: [...skill.fits]
+    })),
     createdAt: new Date().toISOString()
   };
 }
@@ -1091,7 +1099,7 @@ function readSetupState(): SuperiorSetupState {
         step: "account",
         status: "missing",
         label: "Account",
-        detail: "email code"
+        detail: "Google / X / email code"
       },
       {
         step: "daemon",
@@ -1144,7 +1152,14 @@ function readSetupState(): SuperiorSetupState {
     ],
     account: {
       status: "signed-out",
-      detail: "email code"
+      connectedProviders: [],
+      providers: superiorAccountOAuthProviders.map((provider) => ({
+        provider,
+        label: provider === "google" ? "Google" : "X",
+        status: "available",
+        detail: provider === "google" ? "Supabase Google OAuth" : "Supabase X OAuth 2.0"
+      })),
+      detail: "Google / X / email code"
     },
     daemon: {
       status: "ready",

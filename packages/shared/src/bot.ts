@@ -45,6 +45,8 @@ export const botStarterPresetIds = ["clawd", "hermes", "mote"] as const;
 export type BotStarterPresetId = (typeof botStarterPresetIds)[number];
 export const botCreationShapeIds = ["orb", "gremlin", "scanner", "sentinel", "core"] as const;
 export type BotCreationShapeId = (typeof botCreationShapeIds)[number];
+export const sporeRaceIds = ["builder", "scout", "sentinel"] as const;
+export type SporeRaceId = (typeof sporeRaceIds)[number];
 
 export const skillSlotLabels: Record<SkillSlot, string> = {
   eye: "Eye",
@@ -299,6 +301,7 @@ export interface BotIdentity {
   body: BotBody;
   color: BotColorId;
   eye: BotEye;
+  race?: SporeRaceId;
   skills: SkillId[];
   rules: BotRule[];
   browserLinkState: BrowserLinkState;
@@ -312,11 +315,21 @@ export interface BotStarterPreset {
   id: BotStarterPresetId;
   name: string;
   role: string;
+  race: SporeRaceId;
   body: BotBody;
   color: BotColorId;
   eye: BotEye;
   skills: SkillId[];
   slotNotes: Partial<Record<SkillSlot, string>>;
+}
+
+export interface SporeRaceDefinition {
+  id: SporeRaceId;
+  label: string;
+  role: string;
+  silhouette: BotBody;
+  behavior: string;
+  gardenPrompt: string;
 }
 
 export interface BotCreationShapeDefinition {
@@ -327,6 +340,7 @@ export interface BotCreationShapeDefinition {
   defaultEye: BotEye;
   starterPresetId: BotStarterPresetId;
   starterName: string;
+  race: SporeRaceId;
   role: string;
   benchPrompt: string;
 }
@@ -337,6 +351,20 @@ export interface BotSkillLoadoutOption {
   label: string;
   effect: string;
   attachment: string;
+}
+
+export type PremadeSkillPartState = "runnable" | "stowed" | "preview";
+
+export interface PremadeSkillPartOption {
+  id: string;
+  skillId: SkillId;
+  slot: SkillSlot;
+  label: string;
+  shortLabel: string;
+  effect: string;
+  attachment: string;
+  state: PremadeSkillPartState;
+  fits: SporeRaceId[];
 }
 
 export type BotSpecies = "clawd" | "hermes";
@@ -352,6 +380,7 @@ export interface BotSpore {
   id: string;
   name: string;
   species: BotSpecies;
+  race: SporeRaceId;
   appearance: {
     body: BotBody;
     color: BotColorId;
@@ -601,6 +630,7 @@ export const botStarterPresets: readonly BotStarterPreset[] = [
     id: "clawd",
     name: "Clawd",
     role: "Starter builder",
+    race: "builder",
     body: "orb",
     color: "lavender",
     eye: "glow",
@@ -615,6 +645,7 @@ export const botStarterPresets: readonly BotStarterPreset[] = [
     id: "hermes",
     name: "Hermes",
     role: "Browser courier",
+    race: "scout",
     body: "scanner",
     color: "skyBlue",
     eye: "lens",
@@ -628,6 +659,7 @@ export const botStarterPresets: readonly BotStarterPreset[] = [
     id: "mote",
     name: "Mote",
     role: "Soft helper",
+    race: "builder",
     body: "orb",
     color: "lavender",
     eye: "glow",
@@ -635,6 +667,33 @@ export const botStarterPresets: readonly BotStarterPreset[] = [
     slotNotes: {
       badge: "explain tab"
     }
+  }
+];
+
+export const sporeRaceCatalog: readonly SporeRaceDefinition[] = [
+  {
+    id: "builder",
+    label: "Builder",
+    role: "project work",
+    silhouette: "gremlin",
+    behavior: "snaps tools onto the bench and reacts to repo signals",
+    gardenPrompt: "tool antenna, clay gear, eager hop"
+  },
+  {
+    id: "scout",
+    label: "Scout",
+    role: "browser signals",
+    silhouette: "scanner",
+    behavior: "tracks pages, points the lens, and pulses on browser hand events",
+    gardenPrompt: "wide lens, quick glance, signal sweep"
+  },
+  {
+    id: "sentinel",
+    label: "Sentinel",
+    role: "checks and alerts",
+    silhouette: "sentinel",
+    behavior: "guards the spore gate and stamps warning pulses",
+    gardenPrompt: "shield plate, alert blink, planted stance"
   }
 ];
 
@@ -647,6 +706,7 @@ export const botCreationShapes: readonly BotCreationShapeDefinition[] = [
     defaultEye: "glow",
     starterPresetId: "clawd",
     starterName: "Clawd",
+    race: "builder",
     role: "Soft starter",
     benchPrompt: "round clay, steady light"
   },
@@ -658,6 +718,7 @@ export const botCreationShapes: readonly BotCreationShapeDefinition[] = [
     defaultEye: "pixel",
     starterPresetId: "clawd",
     starterName: "Clawd",
+    race: "builder",
     role: "Workshop tinkerer",
     benchPrompt: "scrappy clay, tool hand"
   },
@@ -669,6 +730,7 @@ export const botCreationShapes: readonly BotCreationShapeDefinition[] = [
     defaultEye: "lens",
     starterPresetId: "hermes",
     starterName: "Hermes",
+    race: "scout",
     role: "Browser courier",
     benchPrompt: "wide lens, page hand"
   },
@@ -680,6 +742,7 @@ export const botCreationShapes: readonly BotCreationShapeDefinition[] = [
     defaultEye: "dot",
     starterPresetId: "clawd",
     starterName: "Ward",
+    race: "sentinel",
     role: "Guard shape",
     benchPrompt: "helmet clay, shield mark"
   },
@@ -691,6 +754,7 @@ export const botCreationShapes: readonly BotCreationShapeDefinition[] = [
     defaultEye: "dot",
     starterPresetId: "mote",
     starterName: "Mote",
+    race: "builder",
     role: "Plain helper",
     benchPrompt: "blank clay, simple eyes"
   }
@@ -703,6 +767,51 @@ export const botSkillLoadoutOptions: readonly BotSkillLoadoutOption[] = runnable
   effect: skill.effect,
   attachment: skill.attachment
 }));
+
+export const premadeSkillPartsBySlot: Record<SkillSlot, readonly PremadeSkillPartOption[]> = {
+  eye: [
+    createPremadeSkillPart("article-xray", "runnable", ["builder", "scout", "sentinel"]),
+    createPremadeSkillPart("feed-xray", "preview", ["scout"])
+  ],
+  crown: [
+    createPremadeSkillPart("citation-checker", "preview", ["sentinel", "scout"]),
+    createPremadeSkillPart("transcript-lens", "stowed", ["scout"])
+  ],
+  side: [
+    createPremadeSkillPart("repo-reader", "runnable", ["builder"]),
+    createPremadeSkillPart("market-lane-scout", "stowed", ["scout", "builder"])
+  ],
+  badge: [
+    createPremadeSkillPart("page-explainer", "runnable", ["builder", "scout", "sentinel"]),
+    createPremadeSkillPart("dark-pattern-scanner", "preview", ["sentinel"])
+  ],
+  charm: [
+    createPremadeSkillPart("price-watch", "preview", ["scout", "sentinel"]),
+    createPremadeSkillPart("change-sentinel", "stowed", ["sentinel"])
+  ]
+};
+
+export const premadeSkillPartOptions = skillSlots.flatMap((slot) => premadeSkillPartsBySlot[slot]);
+
+function createPremadeSkillPart(
+  skillId: SkillId,
+  state: PremadeSkillPartState,
+  fits: SporeRaceId[]
+): PremadeSkillPartOption {
+  const skill = skillCatalog[skillId];
+
+  return {
+    id: `${skill.slot}.${skill.id}`,
+    skillId,
+    slot: skill.slot,
+    label: skill.label,
+    shortLabel: skill.shortLabel,
+    effect: skill.effect,
+    attachment: skill.attachment,
+    state,
+    fits
+  };
+}
 
 export function sanitizeSkillIds(skills: SkillId[]): SkillId[] {
   const runnableIds = new Set<SkillId>(runnableSkillIds);
@@ -727,6 +836,7 @@ export const DEFAULT_BOT_IDENTITY: BotIdentity = {
   eye: "glow",
   skills: [...defaultSkillLoadout],
   starterPresetId: "clawd",
+  race: "builder",
   rules: [
     {
       id: "concise",
@@ -790,6 +900,7 @@ export function createBotIdentityFromStarterPreset(
       color: preset.color,
       eye: preset.eye,
       skills: [...preset.skills],
+      race: preset.race,
       starterPresetId: preset.id,
       createdAt,
       updatedAt: createdAt,
@@ -805,7 +916,8 @@ export function createBotIdentityFromStarterPreset(
       color: preset.color,
       eye: preset.eye,
       name: options.name ?? preset.name,
-      skills: [...preset.skills]
+      skills: [...preset.skills],
+      race: preset.race
     }
   );
 }
@@ -831,6 +943,7 @@ export function createBotIdentityFromShape(
       color: shape.defaultColor,
       eye: shape.defaultEye,
       skills: sanitizeSkillIds(options.skills ?? defaultSkillLoadout),
+      race: shape.race,
       starterPresetId: shape.starterPresetId,
       createdAt,
       updatedAt: createdAt,
@@ -846,7 +959,8 @@ export function createBotIdentityFromShape(
       color: shape.defaultColor,
       eye: shape.defaultEye,
       name: options.name ?? shape.starterName,
-      skills: options.skills ?? defaultSkillLoadout
+      skills: options.skills ?? defaultSkillLoadout,
+      race: shape.race
     }
   );
 }
@@ -864,13 +978,14 @@ export function makeBotCssVars(bot: BotIdentity): Record<string, string> {
 
 export function updateBotIdentity(
   bot: BotIdentity,
-  changes: Partial<Pick<BotIdentity, "body" | "color" | "eye" | "name" | "skills">>
+  changes: Partial<Pick<BotIdentity, "body" | "color" | "eye" | "name" | "skills" | "race">>
 ): BotIdentity {
   const nextBody = changes.body ?? bot.body;
   const nextColor = changes.color ?? bot.color;
   const nextEye = changes.eye ?? bot.eye;
   const nextName = normalizeBotName(changes.name ?? bot.name);
   const nextSkills = sanitizeSkillIds(changes.skills ?? bot.skills);
+  const nextRace = normalizeSporeRace(changes.race ?? bot.race);
 
   return {
     ...bot,
@@ -880,6 +995,7 @@ export function updateBotIdentity(
     color: nextColor,
     eye: nextEye,
     skills: nextSkills,
+    race: nextRace,
     iconVariant: {
       ...bot.iconVariant,
       body: nextBody,
@@ -897,6 +1013,10 @@ function normalizeBotName(name: string): string {
   }
 
   return trimmedName;
+}
+
+export function normalizeSporeRace(race: unknown): SporeRaceId {
+  return sporeRaceIds.includes(race as SporeRaceId) ? (race as SporeRaceId) : "builder";
 }
 
 export function getEquippedSkillSlots(bot: BotIdentity): SkillSlot[] {
@@ -937,6 +1057,7 @@ export function createBotSporeFromIdentity(bot: BotIdentity): BotSpore {
     id: bot.id,
     name: bot.name,
     species,
+    race: normalizeSporeRace(bot.race),
     appearance: {
       body: bot.body,
       color: bot.color,

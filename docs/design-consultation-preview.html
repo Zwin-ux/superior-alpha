@@ -1,0 +1,427 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>SUPERIOR Design Consultation Preview</title>
+    <style>
+      :root {
+        --boot-black: #080706;
+        --ink: #24170f;
+        --wall: #2f7c82;
+        --table: #8a3f29;
+        --tan: #c39762;
+        --gold: #d8a84a;
+        --paper: #f1ddac;
+        --moss: #6f8d4b;
+        --lavender: #a78bb8;
+        --lens: #83d7f2;
+        --green: #67b957;
+        --amber: #d0a03c;
+        --red: #b9543f;
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+
+      body {
+        margin: 0;
+        background: var(--boot-black);
+        color: var(--paper);
+        font-family: "Atkinson Hyperlegible", "Segoe UI", sans-serif;
+      }
+
+      main {
+        min-height: 100vh;
+        padding: 28px;
+        display: grid;
+        gap: 28px;
+      }
+
+      .preview {
+        min-height: 720px;
+        position: relative;
+        overflow: hidden;
+        border: 10px solid #140d09;
+        background:
+          radial-gradient(circle at 50% 12%, rgba(242, 190, 95, 0.55), transparent 16%),
+          linear-gradient(180deg, rgba(255, 255, 255, 0.04), transparent 40%),
+          var(--wall);
+        box-shadow: 0 32px 90px rgba(0, 0, 0, 0.55);
+      }
+
+      .preview::before {
+        content: "";
+        position: absolute;
+        inset: 0;
+        pointer-events: none;
+        background-image: linear-gradient(rgba(255, 255, 255, 0.035) 1px, transparent 1px);
+        background-size: 100% 4px;
+        mix-blend-mode: soft-light;
+      }
+
+      .sign {
+        position: absolute;
+        top: 54px;
+        left: 50%;
+        transform: translateX(-50%);
+        width: 440px;
+        padding: 18px 24px 12px;
+        text-align: center;
+        color: var(--ink);
+        background: var(--tan);
+        border-radius: 24px 19px 22px 18px;
+        box-shadow: inset 0 -8px 0 rgba(78, 45, 27, 0.18), 0 16px 22px rgba(0, 0, 0, 0.28);
+      }
+
+      .sign strong {
+        display: block;
+        font-size: 54px;
+        line-height: 0.9;
+        letter-spacing: 0;
+        font-family: Georgia, serif;
+      }
+
+      .sign span {
+        display: inline-block;
+        margin-top: 10px;
+        padding: 6px 28px;
+        border-radius: 12px;
+        background: #b98757;
+        font-family: "Courier New", monospace;
+        font-weight: 800;
+      }
+
+      .lamp {
+        position: absolute;
+        top: 12px;
+        left: 50%;
+        width: 118px;
+        height: 48px;
+        transform: translateX(-50%);
+        border-radius: 64px 64px 18px 18px;
+        background: #6c5a48;
+        box-shadow: 0 18px 42px rgba(255, 184, 75, 0.75);
+      }
+
+      .lamp::after {
+        content: "";
+        position: absolute;
+        left: 18px;
+        right: 18px;
+        bottom: 4px;
+        height: 10px;
+        border-radius: 999px;
+        background: #ffe197;
+      }
+
+      .rail,
+      .tray {
+        position: absolute;
+        top: 96px;
+        bottom: 96px;
+        width: 250px;
+        padding: 32px 22px;
+        background: var(--tan);
+        color: var(--ink);
+        border-radius: 32px 24px 36px 28px;
+        box-shadow: inset 0 -12px 0 rgba(76, 42, 24, 0.18), 0 20px 30px rgba(0, 0, 0, 0.35);
+      }
+
+      .rail {
+        left: 54px;
+      }
+
+      .tray {
+        right: 54px;
+        width: 300px;
+      }
+
+      .slab,
+      .slot {
+        height: 62px;
+        margin-bottom: 18px;
+        border-radius: 17px 14px 18px 15px;
+        background: var(--gold);
+        color: var(--ink);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 25px;
+        font-weight: 900;
+        box-shadow: inset 0 -8px 0 rgba(80, 49, 20, 0.14), 0 7px 0 rgba(55, 32, 16, 0.22);
+      }
+
+      .tray h2 {
+        margin: 0 0 20px;
+        font-family: "Courier New", monospace;
+        font-size: 24px;
+        letter-spacing: 0;
+      }
+
+      .slot {
+        justify-content: flex-start;
+        gap: 14px;
+        height: 64px;
+        padding: 0 14px;
+        background: #d7b17d;
+        font-size: 18px;
+      }
+
+      .part-dot {
+        width: 34px;
+        height: 34px;
+        border-radius: 50%;
+        background: var(--lavender);
+        box-shadow: inset -5px -6px 0 rgba(0, 0, 0, 0.18);
+      }
+
+      .stage {
+        position: absolute;
+        left: 330px;
+        right: 390px;
+        top: 220px;
+        bottom: 118px;
+        display: grid;
+        place-items: end center;
+      }
+
+      .pedestal {
+        position: absolute;
+        bottom: 40px;
+        width: 420px;
+        height: 92px;
+        border-radius: 38px 34px 30px 31px;
+        background: var(--table);
+        box-shadow: inset 0 -13px 0 rgba(55, 26, 15, 0.24), 0 24px 42px rgba(0, 0, 0, 0.35);
+      }
+
+      .bot {
+        position: relative;
+        bottom: 86px;
+        width: 210px;
+        height: 180px;
+        border-radius: 44% 48% 42% 50%;
+        background: var(--moss);
+        box-shadow: inset -22px -24px 0 rgba(0, 0, 0, 0.14), 0 20px 36px rgba(0, 0, 0, 0.32);
+      }
+
+      .eye {
+        position: absolute;
+        top: 74px;
+        width: 18px;
+        height: 18px;
+        border-radius: 4px;
+        background: var(--lens);
+        box-shadow: 0 0 18px var(--lens);
+      }
+
+      .eye.left {
+        left: 70px;
+      }
+
+      .eye.right {
+        right: 66px;
+      }
+
+      .gear,
+      .badge {
+        position: absolute;
+        background: #cfa15b;
+        box-shadow: inset -5px -5px 0 rgba(0, 0, 0, 0.18);
+      }
+
+      .gear {
+        left: -18px;
+        top: 50px;
+        width: 54px;
+        height: 54px;
+        border-radius: 50%;
+      }
+
+      .badge {
+        right: -20px;
+        top: 78px;
+        width: 48px;
+        height: 56px;
+        border-radius: 10px 14px 12px 9px;
+      }
+
+      .card {
+        position: absolute;
+        left: 50%;
+        bottom: 34px;
+        width: 438px;
+        transform: translateX(-50%);
+        padding: 18px 22px;
+        border-radius: 20px 18px 16px 21px;
+        background: var(--paper);
+        color: var(--ink);
+        box-shadow: inset 0 -7px 0 rgba(80, 49, 20, 0.08), 0 12px 22px rgba(0, 0, 0, 0.26);
+      }
+
+      .card small {
+        display: block;
+        font-family: "Courier New", monospace;
+        font-weight: 900;
+      }
+
+      .card strong {
+        display: block;
+        font-size: 42px;
+        line-height: 1;
+      }
+
+      .status {
+        position: absolute;
+        left: 42px;
+        right: 42px;
+        bottom: 18px;
+        display: flex;
+        gap: 14px;
+      }
+
+      .pill {
+        padding: 9px 16px;
+        border-radius: 999px;
+        background: rgba(16, 12, 9, 0.78);
+        color: var(--paper);
+        font-family: "Courier New", monospace;
+        font-weight: 800;
+      }
+
+      .pill::before {
+        content: "";
+        display: inline-block;
+        width: 14px;
+        height: 14px;
+        margin-right: 9px;
+        border-radius: 50%;
+        background: var(--green);
+        vertical-align: -2px;
+        box-shadow: 0 0 12px var(--green);
+      }
+
+      .pill.warn::before {
+        background: var(--amber);
+        box-shadow: 0 0 12px var(--amber);
+      }
+
+      .system {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+        gap: 16px;
+      }
+
+      .swatch {
+        min-height: 120px;
+        padding: 16px;
+        border-radius: 18px;
+        color: var(--ink);
+        background: var(--paper);
+      }
+
+      .swatch b,
+      .swatch span {
+        display: block;
+      }
+
+      .swatch span {
+        margin-top: 6px;
+        font-family: "Courier New", monospace;
+      }
+
+      @media (max-width: 760px) {
+        main {
+          padding: 12px;
+        }
+
+        .preview {
+          min-height: 980px;
+        }
+
+        .rail,
+        .tray,
+        .stage,
+        .card {
+          position: relative;
+          left: auto;
+          right: auto;
+          top: auto;
+          bottom: auto;
+          width: auto;
+          transform: none;
+          margin: 18px;
+        }
+
+        .sign,
+        .lamp,
+        .status {
+          position: relative;
+          left: auto;
+          right: auto;
+          top: auto;
+          bottom: auto;
+          transform: none;
+          margin: 18px auto;
+        }
+
+        .stage {
+          height: 330px;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <main>
+      <section class="preview" aria-label="SUPERIOR workshop design preview">
+        <div class="lamp"></div>
+        <div class="sign"><strong>SUPERIOR</strong><span>WORKSHOP</span></div>
+        <nav class="rail" aria-label="Launcher">
+          <div class="slab">Continue</div>
+          <div class="slab">New Bot</div>
+          <div class="slab">Skills</div>
+          <div class="slab">Browser</div>
+          <div class="slab">Options</div>
+        </nav>
+        <aside class="tray" aria-label="Clay parts tray">
+          <h2>CLAY PARTS TRAY</h2>
+          <div class="slot"><span class="part-dot"></span><b>Eye</b>&nbsp; X-Ray</div>
+          <div class="slot"><span class="part-dot"></span><b>Crown</b>&nbsp; Empty</div>
+          <div class="slot"><span class="part-dot"></span><b>Side</b>&nbsp; Repo</div>
+          <div class="slot"><span class="part-dot"></span><b>Badge</b>&nbsp; Explain</div>
+          <div class="slot"><span class="part-dot"></span><b>Charm</b>&nbsp; Empty</div>
+        </aside>
+        <div class="stage">
+          <div class="pedestal"></div>
+          <div class="bot">
+            <div class="gear"></div>
+            <div class="eye left"></div>
+            <div class="eye right"></div>
+            <div class="badge"></div>
+          </div>
+        </div>
+        <div class="card">
+          <small>SAVED SPORE</small>
+          <strong>Clawd</strong>
+          <div>Gremlin / Moss Green / Pixel Eye / Browser paired</div>
+        </div>
+        <div class="status">
+          <div class="pill">Daemon ready</div>
+          <div class="pill">Model ready</div>
+          <div class="pill warn">Browser paired</div>
+        </div>
+      </section>
+
+      <section class="system" aria-label="Color tokens">
+        <div class="swatch" style="background: var(--wall)"><b>Workshop Wall</b><span>#2f7c82</span></div>
+        <div class="swatch" style="background: var(--table); color: var(--paper)"><b>Table Brick</b><span>#8a3f29</span></div>
+        <div class="swatch" style="background: var(--tan)"><b>Clay Tan</b><span>#c39762</span></div>
+        <div class="swatch" style="background: var(--gold)"><b>Sun Gold</b><span>#d8a84a</span></div>
+        <div class="swatch" style="background: var(--moss)"><b>Moss Green</b><span>#6f8d4b</span></div>
+        <div class="swatch" style="background: var(--paper)"><b>Chalk Paper</b><span>#f1ddac</span></div>
+      </section>
+    </main>
+  </body>
+</html>

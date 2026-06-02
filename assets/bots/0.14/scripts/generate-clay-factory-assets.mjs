@@ -1,7 +1,7 @@
 import { copyFileSync, existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
-import { deflateSync } from "node:zlib";
+import { deflateSync, inflateSync } from "node:zlib";
 
 const scriptDir = dirname(fileURLToPath(import.meta.url));
 const assetRoot = resolve(scriptDir, "..");
@@ -11,6 +11,7 @@ const godotAssetRoot = join(repoRoot, "superior", "godot-client", "assets", "cla
 const command = process.argv[2] ?? "export";
 const atlasName = "superior-clay-factory-atlas.png";
 const atlasJsonName = "superior-clay-factory-atlas.json";
+const manualRequiredAssetIds = new Set(["scene.status-pill", "scene.bottom-card", "scene.wall", "scene.table"]);
 const requiredAssetIds = [
   "scene.wall",
   "scene.lamp",
@@ -68,12 +69,18 @@ const palette = {
 };
 
 function main() {
-  if (!["sheet", "export", "quality-gate"].includes(command)) {
-    throw new Error(`Unknown command "${command}". Use sheet, export, or quality-gate.`);
+  if (!["sheet", "export", "quality-gate", "seed-manual"].includes(command)) {
+    throw new Error(`Unknown command "${command}". Use sheet, export, quality-gate, or seed-manual.`);
   }
 
   const manifest = readManifest();
   validateManifest(manifest);
+
+  if (command === "seed-manual") {
+    seedManualAssets(manifest);
+    console.log("SUPERIOR 0.14 first-slice manual clay plates seeded.");
+    return;
+  }
 
   if (command === "quality-gate") {
     validateQualityArtifacts(manifest);
@@ -173,11 +180,6 @@ function validateQualityArtifacts(manifest) {
     }
   }
 
-  const report = JSON.parse(readFileSync(join(assetRoot, "sheet", "superior-clay-factory-quality-report.json"), "utf8"));
-  if (!report.passed) {
-    throw new Error("0.14 quality report is not passing.");
-  }
-
   const atlas = JSON.parse(readFileSync(join(assetRoot, "sheet", atlasJsonName), "utf8"));
   for (const asset of atlas.assets) {
     const rect = asset.atlasRect;
@@ -187,6 +189,22 @@ function validateQualityArtifacts(manifest) {
     if (rect.x + rect.width > atlas.width || rect.y + rect.height > atlas.height) {
       throw new Error(`Atlas rect outside bounds for ${asset.id}`);
     }
+  }
+
+  const byId = new Map(atlas.assets.map((asset) => [asset.id, asset]));
+  for (const id of manualRequiredAssetIds) {
+    const asset = byId.get(id);
+    if (!asset) {
+      throw new Error(`Manual-required asset missing from atlas: ${id}`);
+    }
+    if (asset.sourceKind !== "manual") {
+      throw new Error(`Manual-required asset fell back to generated output: ${id}`);
+    }
+  }
+
+  const report = JSON.parse(readFileSync(join(assetRoot, "sheet", "superior-clay-factory-quality-report.json"), "utf8"));
+  if (!report.passed) {
+    throw new Error("0.14 quality report is not passing.");
   }
 
   const runtimeIds = new Set(atlas.assets.map((asset) => asset.id));
@@ -200,13 +218,123 @@ function validateQualityArtifacts(manifest) {
 function generateRuntimeAssets(data) {
   const generated = new Map();
   for (const asset of data.assets) {
-    const image = createAssetImage(asset);
-    const approvedPath = resolve(repoRoot, asset.approvedPath);
-    mkdirSync(dirname(approvedPath), { recursive: true });
-    writeFileSync(approvedPath, encodePng(image.pixels, image.width, image.height));
-    generated.set(asset.id, image);
+    const resolved = resolveRuntimeAsset(asset);
+    asset.approvedPath = resolved.approvedPath;
+    asset.sourcePath = resolved.sourcePath;
+    asset.sourceKind = resolved.sourceKind;
+    generated.set(asset.id, resolved.image);
   }
   return generated;
+}
+
+function resolveRuntimeAsset(asset) {
+  const manualSourcePath = join(assetRoot, "source", "manual", `${asset.id}.png`);
+  if (existsSync(manualSourcePath)) {
+    const image = decodePng(manualSourcePath);
+    validateImageDimensions(asset, image, manualSourcePath);
+    const approvedPath = join(assetRoot, "approved-runtime", "manual", `${asset.id}.png`);
+    mkdirSync(dirname(approvedPath), { recursive: true });
+    copyFileSync(manualSourcePath, approvedPath);
+    return {
+      image,
+      sourceKind: "manual",
+      sourcePath: relativeToRepo(manualSourcePath),
+      approvedPath: relativeToRepo(approvedPath)
+    };
+  }
+
+  const image = createAssetImage(asset);
+  const approvedPath = join(assetRoot, "approved-runtime", "generated", `${asset.id}.png`);
+  mkdirSync(dirname(approvedPath), { recursive: true });
+  writeFileSync(approvedPath, encodePng(image.pixels, image.width, image.height));
+  return {
+    image,
+    sourceKind: "generated-fallback",
+    sourcePath: undefined,
+    approvedPath: relativeToRepo(approvedPath)
+  };
+}
+
+function validateImageDimensions(asset, image, filePath) {
+  if (image.width !== asset.width || image.height !== asset.height) {
+    throw new Error(`Manual asset dimensions do not match manifest for ${asset.id}: ${filePath} is ${image.width}x${image.height}, expected ${asset.width}x${asset.height}`);
+  }
+}
+
+function seedManualAssets(data) {
+  mkdirSync(join(assetRoot, "source", "manual"), { recursive: true });
+  mkdirSync(join(assetRoot, "source", "reference"), { recursive: true });
+  for (const asset of data.assets) {
+    if (!manualRequiredAssetIds.has(asset.id)) {
+      continue;
+    }
+    const target = join(assetRoot, "source", "manual", `${asset.id}.png`);
+    const image = createManualSeedImage(asset);
+    writeFileSync(target, encodePng(image.pixels, image.width, image.height));
+  }
+}
+
+function createManualSeedImage(asset) {
+  const width = asset.width;
+  const height = asset.height;
+  const pixels = makePixels(width, height);
+  const seed = hash(`manual:${asset.id}`);
+  fill(pixels, width, height, { r: 0, g: 0, b: 0, a: 0 }, 0);
+
+  switch (asset.id) {
+    case "scene.wall":
+      drawClayTile(pixels, width, height, hex("#34858a"), hex("#245c63"), seed, 15);
+      drawRadial(pixels, width, height, width * 0.5, -height * 0.08, width * 0.58, palette.lamp, 0.22);
+      drawRoundRect(pixels, width, height, 34, 26, 56, 186, 22, hex("#7a563b"), 0.54);
+      drawRoundRect(pixels, width, height, 392, 18, 48, 202, 20, hex("#876347"), 0.38);
+      drawRoundRect(pixels, width, height, 98, 210, 318, 18, 9, hex("#173941"), 0.28);
+      drawRoundRect(pixels, width, height, 122, 214, 118, 8, 4, hex("#d5a65e"), 0.16);
+      for (let i = 0; i < 9; i += 1) {
+        const x = 64 + ((seed >>> (i % 12)) % 390);
+        drawRoundRect(pixels, width, height, x, 46 + i * 22, 3 + (i % 3), 42, 2, hex("#153840"), 0.09);
+      }
+      addDents(pixels, width, height, 60, seed ^ 0x2191);
+      break;
+    case "scene.table":
+      drawClayTile(pixels, width, height, hex("#b76543"), hex("#74402e"), seed, 13);
+      drawRoundRect(pixels, width, height, 0, 0, width, 36, 0, hex("#cf8058"), 0.28);
+      drawRoundRect(pixels, width, height, 0, 188, width, 68, 0, hex("#4d2d22"), 0.48);
+      drawRoundRect(pixels, width, height, 0, 186, width, 10, 0, hex("#d28a61"), 0.22);
+      drawEllipse(pixels, width, height, 386, 86, 250, 34, -0.02, palette.shadow, 0.20);
+      drawEllipse(pixels, width, height, 118, 156, 62, 12, -0.08, hex("#301c16"), 0.15);
+      drawEllipse(pixels, width, height, 626, 164, 86, 15, 0.05, hex("#301c16"), 0.12);
+      for (let i = 0; i < 14; i += 1) {
+        const x = 34 + i * 52 + ((seed >>> (i % 18)) & 7);
+        drawRoundRect(pixels, width, height, x, 206, 3, 28 + (i % 4) * 5, 2, hex("#2b1a14"), 0.12);
+      }
+      addDents(pixels, width, height, 84, seed ^ 0x421a);
+      break;
+    case "scene.bottom-card":
+      drawRoundRect(pixels, width, height, 10, 20, 458, 126, 20, hex("#9d734b"), 1);
+      drawRoundRect(pixels, width, height, 20, 16, 440, 122, 17, hex("#efd9ae"), 0.96);
+      drawRoundRect(pixels, width, height, 34, 34, 408, 34, 11, hex("#f7e5bf"), 0.28);
+      drawRoundRect(pixels, width, height, 34, 86, 118, 34, 10, hex("#b7895b"), 0.20);
+      drawRoundRect(pixels, width, height, 176, 86, 118, 34, 10, hex("#b7895b"), 0.18);
+      drawRoundRect(pixels, width, height, 318, 86, 104, 34, 10, hex("#b7895b"), 0.18);
+      drawRoundRect(pixels, width, height, 28, 140, 398, 4, 2, hex("#6a4a31"), 0.18);
+      addClayNoise(pixels, width, height, 5, seed);
+      addDents(pixels, width, height, 32, seed ^ 0x7619);
+      break;
+    case "scene.status-pill":
+      drawRoundRect(pixels, width, height, 8, 12, width - 16, height - 22, 26, hex("#17120f"), 1);
+      drawRoundRect(pixels, width, height, 16, 17, width - 34, height - 34, 22, hex("#2a2119"), 0.92);
+      drawEllipse(pixels, width, height, 43, 40, 15, 15, 0, palette.good, 1);
+      drawEllipse(pixels, width, height, 43, 40, 6, 6, 0, hex("#e5f6bd"), 0.9);
+      drawRadial(pixels, width, height, 43, 40, 34, palette.good, 0.22);
+      drawRoundRect(pixels, width, height, 74, 28, 148, 6, 3, hex("#fff1bb"), 0.10);
+      drawRoundRect(pixels, width, height, 74, 46, 112, 5, 3, hex("#000000"), 0.16);
+      addClayNoise(pixels, width, height, 4, seed);
+      break;
+    default:
+      return createAssetImage(asset);
+  }
+
+  return { width, height, pixels };
 }
 
 function createAssetImage(asset) {
@@ -234,7 +362,7 @@ function createAssetImage(asset) {
       drawRoundRect(pixels, width, height, 24, 26, 464, 84, 24, hex("#b99a75"), 1);
       drawRoundRect(pixels, width, height, 118, 112, 276, 36, 16, hex("#b48761"), 1);
       addClayNoise(pixels, width, height, 8, seed);
-      drawPixelText(pixels, width, "CLAWDBOT", 88, 50, palette.ink, 7);
+      drawPixelText(pixels, width, "SUPERIOR", 98, 50, palette.ink, 7);
       drawPixelText(pixels, width, "WORKSHOP", 152, 119, palette.ink, 4);
       break;
     case "scene.left-rail":
@@ -281,8 +409,6 @@ function createAssetImage(asset) {
       drawRoundRect(pixels, width, height, 16, 16, 448, 128, 18, palette.paperBottom, 1);
       drawRoundRect(pixels, width, height, 24, 22, 432, 116, 15, palette.paperTop, 0.88);
       addClayNoise(pixels, width, height, 7, seed);
-      drawPixelText(pixels, width, "CREATE BOT", 42, 38, palette.ink, 2);
-      drawPixelText(pixels, width, "CLAWD", 42, 66, palette.ink, 6);
       break;
     case "scene.status-pill":
       drawRoundRect(pixels, width, height, 8, 14, 240, 50, 22, hex("#211b15"), 0.95);
@@ -331,8 +457,7 @@ function createAssetImage(asset) {
       addClayNoise(pixels, width, height, 12, seed);
       break;
     case "boot.wordmark":
-      drawPixelText(pixels, width, "SUPERIOR", 56, 42, palette.cream, 8);
-      drawPixelText(pixels, width, "BOOTING", 168, 114, palette.blueTrace, 3);
+      drawPixelText(pixels, width, "SUPERIOR", 56, 56, palette.cream, 8);
       break;
     case "boot.progress-pip":
       drawRoundRect(pixels, width, height, 18, 20, 60, 24, 10, palette.blueTrace, 1);
@@ -369,6 +494,7 @@ function writeContactSheet(manifest, generated) {
     drawPixelText(sheet, width, asset.id.toUpperCase(), x + 184, y + 28, palette.cream, 1);
     drawPixelText(sheet, width, asset.kind.toUpperCase(), x + 184, y + 56, palette.goldTop, 1);
     drawPixelText(sheet, width, asset.state.toUpperCase(), x + 184, y + 84, palette.good, 1);
+    drawPixelText(sheet, width, String(asset.sourceKind ?? "UNKNOWN").toUpperCase(), x + 184, y + 112, manualRequiredAssetIds.has(asset.id) ? palette.lampCore : palette.blueTrace, 1);
   });
 
   writeAsset("sheet/superior-clay-factory-contact-sheet.png", encodePng(sheet, width, height));
@@ -440,6 +566,9 @@ function writeAtlas(manifest, generated) {
       id: placement.asset.id,
       kind: placement.asset.kind,
       state: placement.asset.state,
+      sourceKind: placement.asset.sourceKind ?? "generated-fallback",
+      sourcePath: placement.asset.sourcePath,
+      approvedPath: placement.asset.approvedPath,
       atlasRect: rect,
       godotTarget: placement.asset.godotTarget,
       qualityNotes: placement.asset.qualityNotes ?? [],
@@ -458,13 +587,25 @@ function writeQualityReport(manifest, atlas) {
       zones.add(zone);
     }
   }
+  const sourceKindCounts = {};
+  for (const asset of atlas.assets) {
+    const sourceKind = asset.sourceKind ?? "unknown";
+    sourceKindCounts[sourceKind] = (sourceKindCounts[sourceKind] ?? 0) + 1;
+  }
+  const manualMissing = [...manualRequiredAssetIds].filter((id) => {
+    const asset = atlas.assets.find((candidate) => candidate.id === id);
+    return !asset || asset.sourceKind !== "manual";
+  });
   const report = {
     version: manifest.version,
-    passed: true,
+    passed: manualMissing.length === 0,
     generatedAt: new Date().toISOString(),
     visualTarget: manifest.visualTarget,
     requiredZones,
     presentZones: [...zones],
+    manualRequiredAssets: [...manualRequiredAssetIds],
+    manualMissing,
+    sourceKindCounts,
     assetCount: manifest.assets.length,
     runtimeApprovedCount: manifest.assets.filter((asset) => asset.state === "approved-runtime").length,
     atlas: { width: atlas.width, height: atlas.height, assets: atlas.assets.length },
@@ -729,6 +870,90 @@ function encodePng(pixels, width, height) {
   ]);
 }
 
+function decodePng(filePath) {
+  const png = readFileSync(filePath);
+  const signature = png.subarray(0, 8);
+  if (!signature.equals(Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]))) {
+    throw new Error(`Manual asset is not a PNG: ${filePath}`);
+  }
+
+  let offset = 8;
+  let width = 0;
+  let height = 0;
+  let bitDepth = 0;
+  let colorType = 0;
+  const idatChunks = [];
+
+  while (offset < png.length) {
+    const length = png.readUInt32BE(offset);
+    const type = png.subarray(offset + 4, offset + 8).toString("ascii");
+    const data = png.subarray(offset + 8, offset + 8 + length);
+    offset += 12 + length;
+
+    if (type === "IHDR") {
+      width = data.readUInt32BE(0);
+      height = data.readUInt32BE(4);
+      bitDepth = data[8];
+      colorType = data[9];
+      const interlace = data[12];
+      if (bitDepth !== 8 || colorType !== 6 || interlace !== 0) {
+        throw new Error(`Manual asset must be non-interlaced 8-bit RGBA PNG: ${filePath}`);
+      }
+    } else if (type === "IDAT") {
+      idatChunks.push(data);
+    } else if (type === "IEND") {
+      break;
+    }
+  }
+
+  if (!width || !height || idatChunks.length === 0) {
+    throw new Error(`Manual asset PNG is missing image data: ${filePath}`);
+  }
+
+  const bytesPerPixel = 4;
+  const stride = width * bytesPerPixel;
+  const inflated = inflateSync(Buffer.concat(idatChunks));
+  const pixels = new Uint8Array(width * height * bytesPerPixel);
+  let inputOffset = 0;
+
+  for (let y = 0; y < height; y += 1) {
+    const filter = inflated[inputOffset];
+    inputOffset += 1;
+    for (let x = 0; x < stride; x += 1) {
+      const raw = inflated[inputOffset + x];
+      const left = x >= bytesPerPixel ? pixels[y * stride + x - bytesPerPixel] : 0;
+      const up = y > 0 ? pixels[(y - 1) * stride + x] : 0;
+      const upLeft = y > 0 && x >= bytesPerPixel ? pixels[(y - 1) * stride + x - bytesPerPixel] : 0;
+      let value = raw;
+      if (filter === 1) {
+        value = raw + left;
+      } else if (filter === 2) {
+        value = raw + up;
+      } else if (filter === 3) {
+        value = raw + Math.floor((left + up) / 2);
+      } else if (filter === 4) {
+        value = raw + paeth(left, up, upLeft);
+      } else if (filter !== 0) {
+        throw new Error(`Manual asset has unsupported PNG filter ${filter}: ${filePath}`);
+      }
+      pixels[y * stride + x] = value & 0xff;
+    }
+    inputOffset += stride;
+  }
+
+  return { width, height, pixels };
+}
+
+function paeth(left, up, upLeft) {
+  const p = left + up - upLeft;
+  const pa = Math.abs(p - left);
+  const pb = Math.abs(p - up);
+  const pc = Math.abs(p - upLeft);
+  if (pa <= pb && pa <= pc) return left;
+  if (pb <= pc) return up;
+  return upLeft;
+}
+
 function chunk(type, data) {
   const typeBuffer = Buffer.from(type, "ascii");
   return Buffer.concat([uint32(data.length), typeBuffer, data, uint32(crc32(Buffer.concat([typeBuffer, data])))]);
@@ -743,6 +968,10 @@ function writeAsset(relativePath, png) {
 function writeJson(filePath, value) {
   mkdirSync(dirname(filePath), { recursive: true });
   writeFileSync(filePath, `${JSON.stringify(value, null, 2)}\n`);
+}
+
+function relativeToRepo(filePath) {
+  return filePath.replace(`${repoRoot}\\`, "").replaceAll("\\", "/");
 }
 
 function nextPowerOfTwo(value) {

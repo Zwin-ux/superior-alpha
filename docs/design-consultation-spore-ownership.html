@@ -1,0 +1,745 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>SUPERIOR 0.18 Spore Ownership Ritual</title>
+    <style>
+      :root {
+        --boot: #080706;
+        --ink: #24170f;
+        --wall: #2f7c82;
+        --wall-dark: #1c5659;
+        --table: #8a3f29;
+        --table-dark: #5f2d21;
+        --tan: #c39762;
+        --tan-dark: #8d633d;
+        --gold: #d8a84a;
+        --paper: #f1ddac;
+        --moss: #6f8d4b;
+        --moss-dark: #3f5c35;
+        --lens: #83d7f2;
+        --green: #67b957;
+        --amber: #d0a03c;
+        --red: #b9543f;
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+
+      body {
+        margin: 0;
+        background: var(--boot);
+        color: var(--paper);
+        font-family: "Atkinson Hyperlegible", "Segoe UI", sans-serif;
+      }
+
+      main {
+        min-height: 100vh;
+        padding: 24px;
+        display: grid;
+        gap: 20px;
+        overflow-x: hidden;
+      }
+
+      .stage {
+        min-height: 720px;
+        position: relative;
+        overflow: hidden;
+        border: 10px solid #140d09;
+        background:
+          radial-gradient(circle at 50% 10%, rgba(255, 211, 107, 0.55), transparent 13%),
+          linear-gradient(180deg, rgba(255, 255, 255, 0.04), transparent 45%),
+          var(--wall);
+        box-shadow: 0 32px 90px rgba(0, 0, 0, 0.55);
+      }
+
+      .stage::after {
+        content: "";
+        position: absolute;
+        inset: 0;
+        pointer-events: none;
+        background:
+          linear-gradient(rgba(255, 255, 255, 0.035) 1px, transparent 1px),
+          radial-gradient(circle at 50% 55%, transparent 45%, rgba(0, 0, 0, 0.22));
+        background-size: 100% 4px, auto;
+        mix-blend-mode: soft-light;
+      }
+
+      .lamp {
+        position: absolute;
+        top: 10px;
+        left: 50%;
+        width: 96px;
+        height: 54px;
+        transform: translateX(-50%);
+        background: #75614a;
+        border-radius: 50% 50% 20% 20%;
+        box-shadow: 0 16px 44px rgba(255, 211, 107, 0.75);
+      }
+
+      .lamp::after {
+        content: "";
+        position: absolute;
+        left: 18px;
+        right: 18px;
+        bottom: 5px;
+        height: 10px;
+        border-radius: 999px;
+        background: #ffe09a;
+      }
+
+      .sign {
+        position: absolute;
+        top: 76px;
+        left: 50%;
+        transform: translateX(-50%);
+        width: 360px;
+        padding: 14px 20px 10px;
+        text-align: center;
+        color: var(--ink);
+        background: var(--tan);
+        border-radius: 24px 18px 22px 20px;
+        box-shadow: inset 0 -7px 0 rgba(82, 48, 28, 0.18), 0 14px 18px rgba(0, 0, 0, 0.26);
+      }
+
+      .sign strong {
+        display: block;
+        font-size: 42px;
+        line-height: 0.92;
+        letter-spacing: 0;
+      }
+
+      .sign span {
+        display: inline-block;
+        margin-top: 8px;
+        padding: 5px 36px;
+        color: var(--paper);
+        background: #9d5830;
+        border-radius: 999px;
+        font-size: 13px;
+        font-weight: 800;
+        letter-spacing: 1px;
+      }
+
+      .rail,
+      .tray {
+        position: absolute;
+        top: 120px;
+        bottom: 104px;
+        width: 218px;
+        padding: 26px 18px;
+        background: var(--tan);
+        border-radius: 28px 22px 24px 18px;
+        box-shadow: inset 0 -12px 0 rgba(70, 42, 26, 0.18), 0 18px 26px rgba(0, 0, 0, 0.32);
+      }
+
+      .rail {
+        left: 72px;
+      }
+
+      .tray {
+        right: 70px;
+        width: 268px;
+      }
+
+      .step,
+      .slot {
+        height: 52px;
+        margin-bottom: 14px;
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        padding: 0 14px;
+        color: var(--ink);
+        background: var(--gold);
+        border-radius: 16px 13px 14px 12px;
+        box-shadow: inset 0 -6px 0 rgba(83, 52, 25, 0.18), 0 5px 0 rgba(66, 39, 24, 0.16);
+        font-weight: 900;
+        font-size: 15px;
+      }
+
+      .step.dim,
+      .slot.dim {
+        background: #9d8054;
+        opacity: 0.6;
+      }
+
+      .step.active {
+        transform: translateY(2px);
+        box-shadow: inset 0 4px 0 rgba(83, 52, 25, 0.2), 0 0 0 3px rgba(255, 225, 137, 0.35);
+      }
+
+      .led {
+        width: 13px;
+        height: 13px;
+        flex: 0 0 13px;
+        border-radius: 999px;
+        background: #42352b;
+        box-shadow: inset 0 2px 3px rgba(0, 0, 0, 0.35);
+      }
+
+      .done .led,
+      .linked .led {
+        background: var(--green);
+        box-shadow: 0 0 14px rgba(103, 185, 87, 0.8);
+      }
+
+      .active .led,
+      .ready .led {
+        background: var(--amber);
+        box-shadow: 0 0 14px rgba(208, 160, 60, 0.8);
+      }
+
+      .bench {
+        position: absolute;
+        left: 330px;
+        right: 380px;
+        bottom: 118px;
+        height: 128px;
+        background: var(--table);
+        border-radius: 34px 28px 22px 26px;
+        box-shadow: inset 0 -16px 0 rgba(71, 35, 24, 0.23), 0 24px 36px rgba(0, 0, 0, 0.28);
+      }
+
+      .pedestal {
+        position: absolute;
+        left: 50%;
+        bottom: 126px;
+        width: 220px;
+        height: 76px;
+        transform: translateX(-50%);
+        background: #a65a38;
+        border-radius: 32px 28px 20px 24px;
+        box-shadow: inset 0 -12px 0 rgba(73, 34, 22, 0.18), 0 18px 28px rgba(0, 0, 0, 0.3);
+      }
+
+      .spore {
+        position: absolute;
+        left: 50%;
+        bottom: 185px;
+        width: 178px;
+        height: 152px;
+        transform: translateX(-50%);
+        background:
+          radial-gradient(circle at 40% 35%, rgba(255, 255, 255, 0.11), transparent 22%),
+          var(--moss);
+        border-radius: 48% 53% 45% 55%;
+        box-shadow: inset -22px -25px 0 var(--moss-dark), 0 22px 28px rgba(0, 0, 0, 0.34);
+      }
+
+      .spore::before {
+        content: "";
+        position: absolute;
+        top: -52px;
+        left: 79px;
+        width: 16px;
+        height: 58px;
+        background: #65402f;
+        border-radius: 999px;
+      }
+
+      .spore::after {
+        content: "";
+        position: absolute;
+        top: -72px;
+        left: 66px;
+        width: 42px;
+        height: 42px;
+        background: var(--gold);
+        border-radius: 50%;
+        box-shadow: inset -8px -8px 0 rgba(87, 52, 29, 0.18);
+      }
+
+      .eye,
+      .eye.two {
+        position: absolute;
+        top: 62px;
+        width: 16px;
+        height: 16px;
+        background: #dff8ff;
+        box-shadow: 0 0 18px rgba(131, 215, 242, 0.9);
+      }
+
+      .eye {
+        left: 68px;
+      }
+
+      .eye.two {
+        left: 112px;
+      }
+
+      .xray {
+        position: absolute;
+        top: 54px;
+        left: -16px;
+        width: 50px;
+        height: 50px;
+        border-radius: 50%;
+        background: var(--gold);
+        border: 10px solid #6b5f9e;
+        box-shadow: inset -5px -6px 0 rgba(0, 0, 0, 0.18), 0 6px 10px rgba(0, 0, 0, 0.2);
+      }
+
+      .chrome-dock {
+        position: absolute;
+        right: 332px;
+        top: 270px;
+        width: 164px;
+        height: 148px;
+        padding: 18px;
+        color: var(--ink);
+        background: var(--paper);
+        border-radius: 22px 18px 20px 17px;
+        box-shadow: inset 0 -10px 0 rgba(88, 54, 31, 0.15), 0 16px 22px rgba(0, 0, 0, 0.25);
+      }
+
+      .chrome-dock strong {
+        display: block;
+        font-size: 22px;
+        margin-bottom: 12px;
+      }
+
+      .toolbar-slot {
+        position: relative;
+        height: 48px;
+        border-radius: 14px;
+        background: #caa979;
+        box-shadow: inset 0 4px 0 rgba(75, 46, 26, 0.18);
+      }
+
+      .toolbar-icon {
+        position: absolute;
+        top: 8px;
+        right: 12px;
+        width: 32px;
+        height: 32px;
+        border-radius: 50%;
+        background: var(--moss);
+        box-shadow: inset -6px -6px 0 var(--moss-dark), 0 0 0 3px rgba(255, 211, 107, 0.75);
+      }
+
+      .toolbar-icon::before,
+      .toolbar-icon::after {
+        content: "";
+        position: absolute;
+        top: 13px;
+        width: 5px;
+        height: 5px;
+        background: #dff8ff;
+      }
+
+      .toolbar-icon::before {
+        left: 10px;
+      }
+
+      .toolbar-icon::after {
+        right: 9px;
+      }
+
+      .pulse-line {
+        position: absolute;
+        left: 660px;
+        top: 338px;
+        width: 185px;
+        height: 8px;
+        border-radius: 999px;
+        background: linear-gradient(90deg, transparent, var(--lens), transparent);
+        box-shadow: 0 0 22px rgba(131, 215, 242, 0.9);
+      }
+
+      .status {
+        position: absolute;
+        left: 34px;
+        right: 34px;
+        bottom: 24px;
+        display: flex;
+        gap: 18px;
+      }
+
+      .pill {
+        height: 38px;
+        min-width: 168px;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        padding: 0 16px;
+        background: #17120e;
+        border-radius: 999px;
+        color: #d7c999;
+        font-weight: 900;
+        font-size: 14px;
+        box-shadow: inset 0 -4px 0 rgba(255, 255, 255, 0.04), 0 8px 18px rgba(0, 0, 0, 0.25);
+      }
+
+      .pill .led {
+        background: var(--green);
+        box-shadow: 0 0 14px rgba(103, 185, 87, 0.8);
+      }
+
+      .registry {
+        position: absolute;
+        left: 50%;
+        bottom: 86px;
+        width: 340px;
+        transform: translateX(-50%);
+        padding: 14px 18px;
+        background: var(--paper);
+        color: var(--ink);
+        border-radius: 18px 14px 16px 12px;
+        box-shadow: inset 0 -7px 0 rgba(86, 51, 27, 0.12), 0 12px 22px rgba(0, 0, 0, 0.2);
+      }
+
+      .registry span {
+        display: block;
+        font-size: 11px;
+        font-weight: 900;
+      }
+
+      .registry strong {
+        display: block;
+        font-size: 32px;
+      }
+
+      .stamp {
+        position: absolute;
+        left: 50%;
+        bottom: 205px;
+        transform: translateX(-50%) rotate(-2deg);
+        padding: 7px 42px;
+        border: 5px solid rgba(185, 84, 63, 0.9);
+        color: var(--red);
+        font-size: 20px;
+        font-weight: 950;
+        letter-spacing: 1px;
+        background: rgba(241, 221, 172, 0.28);
+        z-index: 3;
+      }
+
+      .notes {
+        display: grid;
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+        gap: 16px;
+      }
+
+      .note {
+        padding: 18px;
+        color: var(--ink);
+        background: var(--paper);
+        border-radius: 18px 14px 16px 12px;
+      }
+
+      .note h2 {
+        margin: 0 0 8px;
+        font-size: 20px;
+      }
+
+      .note p {
+        margin: 0;
+        line-height: 1.45;
+      }
+
+      @media (max-width: 760px) {
+        main {
+          padding: 12px;
+        }
+
+        .stage {
+          min-height: 760px;
+          width: auto;
+          transform: none;
+          margin-bottom: 0;
+        }
+
+        .lamp {
+          top: 10px;
+          width: 74px;
+          height: 42px;
+        }
+
+        .sign {
+          top: 58px;
+          width: calc(100% - 48px);
+          padding: 12px 16px 9px;
+        }
+
+        .sign strong {
+          font-size: 32px;
+        }
+
+        .sign span {
+          margin-top: 6px;
+          padding: 4px 24px;
+          font-size: 11px;
+        }
+
+        .rail {
+          top: 144px;
+          left: 18px;
+          right: 18px;
+          bottom: auto;
+          width: auto;
+          padding: 12px;
+          display: grid;
+          grid-template-columns: repeat(2, minmax(0, 1fr));
+          gap: 8px;
+        }
+
+        .step {
+          height: 36px;
+          margin: 0;
+          padding: 0 9px;
+          gap: 7px;
+          font-size: 12px;
+          border-radius: 12px 10px 11px 9px;
+        }
+
+        .tray {
+          top: 548px;
+          left: 18px;
+          right: 18px;
+          bottom: 82px;
+          width: auto;
+          padding: 12px;
+          display: grid;
+          grid-template-columns: repeat(2, minmax(0, 1fr));
+          gap: 8px;
+        }
+
+        .slot {
+          height: 34px;
+          margin: 0;
+          padding: 0 9px;
+          gap: 7px;
+          font-size: 11px;
+          border-radius: 11px 9px 10px 8px;
+        }
+
+        .bench {
+          left: 28px;
+          right: 28px;
+          bottom: 196px;
+          height: 72px;
+          border-radius: 24px 20px 18px 21px;
+        }
+
+        .pedestal {
+          bottom: 208px;
+          width: 150px;
+          height: 48px;
+        }
+
+        .spore {
+          bottom: 244px;
+          width: 124px;
+          height: 110px;
+        }
+
+        .spore::before {
+          top: -38px;
+          left: 55px;
+          width: 12px;
+          height: 42px;
+        }
+
+        .spore::after {
+          top: -54px;
+          left: 44px;
+          width: 34px;
+          height: 34px;
+        }
+
+        .eye,
+        .eye.two {
+          top: 47px;
+          width: 12px;
+          height: 12px;
+        }
+
+        .eye {
+          left: 47px;
+        }
+
+        .eye.two {
+          left: 78px;
+        }
+
+        .xray {
+          top: 42px;
+          left: -12px;
+          width: 38px;
+          height: 38px;
+          border-width: 8px;
+        }
+
+        .chrome-dock {
+          top: 270px;
+          right: 22px;
+          width: 128px;
+          height: 104px;
+          padding: 12px;
+          border-radius: 16px 13px 15px 12px;
+        }
+
+        .chrome-dock strong {
+          font-size: 16px;
+          margin-bottom: 8px;
+        }
+
+        .toolbar-slot {
+          height: 36px;
+          border-radius: 11px;
+        }
+
+        .toolbar-icon {
+          top: 6px;
+          right: 8px;
+          width: 25px;
+          height: 25px;
+        }
+
+        .toolbar-icon::before,
+        .toolbar-icon::after {
+          top: 10px;
+          width: 4px;
+          height: 4px;
+        }
+
+        .pulse-line {
+          left: 188px;
+          top: 312px;
+          width: 72px;
+          height: 6px;
+        }
+
+        .stamp {
+          bottom: 287px;
+          padding: 5px 20px;
+          font-size: 14px;
+          border-width: 4px;
+        }
+
+        .registry {
+          bottom: 134px;
+          width: 278px;
+          padding: 11px 14px;
+          border-radius: 14px 11px 13px 10px;
+        }
+
+        .registry strong {
+          font-size: 28px;
+        }
+
+        .registry span {
+          font-size: 10px;
+        }
+
+        .status {
+          left: 14px;
+          right: 14px;
+          bottom: 20px;
+          gap: 8px;
+          flex-wrap: wrap;
+        }
+
+        .pill {
+          min-width: 106px;
+          height: 30px;
+          padding: 0 10px;
+          gap: 7px;
+          font-size: 10px;
+        }
+
+        .led {
+          width: 10px;
+          height: 10px;
+          flex-basis: 10px;
+        }
+
+        .notes {
+          grid-template-columns: 1fr;
+          width: 100%;
+        }
+
+        .note {
+          border-radius: 16px 12px 14px 11px;
+          padding: 16px;
+        }
+
+        .note h2 {
+          font-size: 19px;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <main>
+      <section class="stage" aria-label="SUPERIOR spore ownership ritual preview">
+        <div class="lamp"></div>
+        <div class="sign">
+          <strong>SUPERIOR</strong>
+          <span>SPORE REGISTRY</span>
+        </div>
+
+        <aside class="rail" aria-label="setup progress">
+          <div class="step done"><span class="led"></span>01 WAKE</div>
+          <div class="step done"><span class="led"></span>02 BODY</div>
+          <div class="step done"><span class="led"></span>03 EYE</div>
+          <div class="step active"><span class="led"></span>04 BROWSER</div>
+          <div class="step dim"><span class="led"></span>05 SKILL</div>
+          <div class="step dim"><span class="led"></span>06 STAMP</div>
+        </aside>
+
+        <aside class="tray" aria-label="spore kit">
+          <div class="slot linked"><span class="led"></span>EYE X-RAY</div>
+          <div class="slot ready"><span class="led"></span>BROWSER READY</div>
+          <div class="slot linked"><span class="led"></span>ICON MATCH</div>
+          <div class="slot dim"><span class="led"></span>CROWN EMPTY</div>
+          <div class="slot dim"><span class="led"></span>CHARM EMPTY</div>
+        </aside>
+
+        <div class="bench"></div>
+        <div class="pedestal"></div>
+        <div class="spore">
+          <div class="eye"></div>
+          <div class="eye two"></div>
+          <div class="xray"></div>
+        </div>
+        <div class="pulse-line"></div>
+        <div class="chrome-dock">
+          <strong>CHROME</strong>
+          <div class="toolbar-slot">
+            <div class="toolbar-icon"></div>
+          </div>
+        </div>
+        <div class="stamp">ICON MATCH</div>
+        <div class="registry">
+          <span>SPORE STAMPED</span>
+          <strong>CLAWD</strong>
+          <span>GREMLIN / X-RAY / BROWSER HAND</span>
+        </div>
+        <div class="status">
+          <div class="pill"><span class="led"></span>DAEMON READY</div>
+          <div class="pill"><span class="led"></span>MODEL LOCAL</div>
+          <div class="pill"><span class="led"></span>BROWSER LINKED</div>
+        </div>
+      </section>
+
+      <section class="notes">
+        <article class="note">
+          <h2>First Read</h2>
+          <p>The spore is alive on the bench. Everything else supports that moment.</p>
+        </article>
+        <article class="note">
+          <h2>Ownership Proof</h2>
+          <p>The Chrome slot changes from generic extension bead to the same Clawd icon.</p>
+        </article>
+        <article class="note">
+          <h2>Skill Proof</h2>
+          <p>The X-Ray part reacts before any log line explains that the skill ran.</p>
+        </article>
+      </section>
+    </main>
+  </body>
+</html>

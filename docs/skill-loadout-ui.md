@@ -82,6 +82,20 @@ The user should not read a paragraph to understand a skill. They should see:
 
 Only runnable skills appear in the user-facing loadout. Source-mapped Synergy/SUP skills stay in the internal roadmap until they have a working local or daemon adapter.
 
+## Premade Parts
+
+Keep the premade shelf small. The alpha can expose two curated parts per slot so a few test users can understand the system without building custom skills.
+
+Current premade slot shelf:
+
+- `Eye`: `Article X-Ray` runnable, `Feed X-Ray` preview.
+- `Crown`: `Citation Checker` preview, `Transcript Lens` stowed.
+- `Side`: `Repo Reader` runnable, `Market Lane Scout` stowed.
+- `Badge`: `Page Explainer` runnable, `Dark Pattern Scanner` preview.
+- `Charm`: `Price Watch` preview, `Change Sentinel` stowed.
+
+`Runnable` parts can be equipped by default. `Stowed` and `preview` parts can appear as tiny premade clay pieces in controlled alpha screens, but they should not pretend to execute until their adapter passes a local smoke run.
+
 ## Skill Copy
 
 Use short effect text.

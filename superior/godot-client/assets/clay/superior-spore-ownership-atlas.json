@@ -1,0 +1,193 @@
+{
+  "version": "0.15",
+  "name": "SUPERIOR Spore Ownership Runtime Sheet",
+  "artRule": "clay = world + bot + props + parts; pixel = HUD + labels + terminal + status + icons; ownership proof cannot use generated fallback",
+  "figmaFileKey": "8C6EiZivpUIxyLw0b6YT9R",
+  "figmaFileUrl": "https://www.figma.com/design/8C6EiZivpUIxyLw0b6YT9R",
+  "atlas": "superior-spore-ownership-atlas.png",
+  "width": 1024,
+  "height": 1024,
+  "generatedAt": "2026-05-31T20:19:56.730Z",
+  "assets": [
+    {
+      "id": "ownership.chrome-hand.dock",
+      "kind": "clay-world",
+      "state": "approved-runtime",
+      "sourceKind": "manual",
+      "sourcePath": "assets/bots/0.15/source/manual/ownership.chrome-hand.dock.png",
+      "approvedPath": "assets/bots/0.15/approved-runtime/manual/ownership.chrome-hand.dock.png",
+      "atlasRect": {
+        "x": 4,
+        "y": 4,
+        "width": 320,
+        "height": 300
+      },
+      "godotTarget": "res://assets/clay/superior-spore-ownership-atlas.png#ownership.chrome-hand.dock",
+      "qualityNotes": [
+        "large clay dock plate for the Chrome hand ownership beat"
+      ]
+    },
+    {
+      "id": "ownership.chrome-toolbar.slot",
+      "kind": "pixel-ui",
+      "state": "approved-runtime",
+      "sourceKind": "manual",
+      "sourcePath": "assets/bots/0.15/source/manual/ownership.chrome-toolbar.slot.png",
+      "approvedPath": "assets/bots/0.15/approved-runtime/manual/ownership.chrome-toolbar.slot.png",
+      "atlasRect": {
+        "x": 328,
+        "y": 4,
+        "width": 256,
+        "height": 112
+      },
+      "godotTarget": "res://assets/clay/superior-spore-ownership-atlas.png#ownership.chrome-toolbar.slot",
+      "qualityNotes": [
+        "readable toolbar pocket that holds the extension icon"
+      ]
+    },
+    {
+      "id": "ownership.chrome-icon.default",
+      "kind": "platform-icon",
+      "state": "approved-runtime",
+      "sourceKind": "manual",
+      "sourcePath": "assets/bots/0.15/source/manual/ownership.chrome-icon.default.png",
+      "approvedPath": "assets/bots/0.15/approved-runtime/manual/ownership.chrome-icon.default.png",
+      "atlasRect": {
+        "x": 588,
+        "y": 4,
+        "width": 160,
+        "height": 160
+      },
+      "godotTarget": "res://assets/clay/superior-spore-ownership-atlas.png#ownership.chrome-icon.default",
+      "qualityNotes": [
+        "generic pre-owned extension bead, deliberately less specific than Clawd"
+      ]
+    },
+    {
+      "id": "ownership.chrome-icon.clawd",
+      "kind": "platform-icon",
+      "state": "approved-runtime",
+      "sourceKind": "manual",
+      "sourcePath": "assets/bots/0.15/source/manual/ownership.chrome-icon.clawd.png",
+      "approvedPath": "assets/bots/0.15/approved-runtime/manual/ownership.chrome-icon.clawd.png",
+      "atlasRect": {
+        "x": 752,
+        "y": 4,
+        "width": 192,
+        "height": 192
+      },
+      "godotTarget": "res://assets/clay/superior-spore-ownership-atlas.png#ownership.chrome-icon.clawd",
+      "qualityNotes": [
+        "tiny toolbar Clawd: moss gremlin body, pixel eyes, x-ray lens"
+      ]
+    },
+    {
+      "id": "ownership.chrome-cable",
+      "kind": "clay-world",
+      "state": "approved-runtime",
+      "sourceKind": "manual",
+      "sourcePath": "assets/bots/0.15/source/manual/ownership.chrome-cable.png",
+      "approvedPath": "assets/bots/0.15/approved-runtime/manual/ownership.chrome-cable.png",
+      "atlasRect": {
+        "x": 4,
+        "y": 308,
+        "width": 420,
+        "height": 64
+      },
+      "godotTarget": "res://assets/clay/superior-spore-ownership-atlas.png#ownership.chrome-cable",
+      "qualityNotes": [
+        "physical blue cable pulse from Clawd to the Chrome dock"
+      ]
+    },
+    {
+      "id": "ownership.icon-match.flash",
+      "kind": "pixel-ui",
+      "state": "approved-runtime",
+      "sourceKind": "manual",
+      "sourcePath": "assets/bots/0.15/source/manual/ownership.icon-match.flash.png",
+      "approvedPath": "assets/bots/0.15/approved-runtime/manual/ownership.icon-match.flash.png",
+      "atlasRect": {
+        "x": 428,
+        "y": 308,
+        "width": 320,
+        "height": 180
+      },
+      "godotTarget": "res://assets/clay/superior-spore-ownership-atlas.png#ownership.icon-match.flash",
+      "qualityNotes": [
+        "short pixel stamp flash behind the matched toolbar icon"
+      ]
+    },
+    {
+      "id": "ownership.spore-stamp",
+      "kind": "pixel-ui",
+      "state": "approved-runtime",
+      "sourceKind": "manual",
+      "sourcePath": "assets/bots/0.15/source/manual/ownership.spore-stamp.png",
+      "approvedPath": "assets/bots/0.15/approved-runtime/manual/ownership.spore-stamp.png",
+      "atlasRect": {
+        "x": 4,
+        "y": 492,
+        "width": 384,
+        "height": 128
+      },
+      "godotTarget": "res://assets/clay/superior-spore-ownership-atlas.png#ownership.spore-stamp",
+      "qualityNotes": [
+        "pressed spore saved stamp shown on the save beat"
+      ]
+    },
+    {
+      "id": "bot.clawd.icon-body",
+      "kind": "bot-part",
+      "state": "approved-runtime",
+      "sourceKind": "manual",
+      "sourcePath": "assets/bots/0.15/source/manual/bot.clawd.icon-body.png",
+      "approvedPath": "assets/bots/0.15/approved-runtime/manual/bot.clawd.icon-body.png",
+      "atlasRect": {
+        "x": 392,
+        "y": 492,
+        "width": 192,
+        "height": 192
+      },
+      "godotTarget": "res://assets/clay/superior-spore-ownership-atlas.png#bot.clawd.icon-body",
+      "qualityNotes": [
+        "portable Clawd icon body layer for small surfaces"
+      ]
+    },
+    {
+      "id": "bot.clawd.icon-eye.pixel",
+      "kind": "bot-part",
+      "state": "approved-runtime",
+      "sourceKind": "manual",
+      "sourcePath": "assets/bots/0.15/source/manual/bot.clawd.icon-eye.pixel.png",
+      "approvedPath": "assets/bots/0.15/approved-runtime/manual/bot.clawd.icon-eye.pixel.png",
+      "atlasRect": {
+        "x": 588,
+        "y": 492,
+        "width": 128,
+        "height": 64
+      },
+      "godotTarget": "res://assets/clay/superior-spore-ownership-atlas.png#bot.clawd.icon-eye.pixel",
+      "qualityNotes": [
+        "crisp pixel eyes for the small Clawd icon"
+      ]
+    },
+    {
+      "id": "bot.clawd.icon-skill.xray",
+      "kind": "bot-part",
+      "state": "approved-runtime",
+      "sourceKind": "manual",
+      "sourcePath": "assets/bots/0.15/source/manual/bot.clawd.icon-skill.xray.png",
+      "approvedPath": "assets/bots/0.15/approved-runtime/manual/bot.clawd.icon-skill.xray.png",
+      "atlasRect": {
+        "x": 720,
+        "y": 492,
+        "width": 96,
+        "height": 96
+      },
+      "godotTarget": "res://assets/clay/superior-spore-ownership-atlas.png#bot.clawd.icon-skill.xray",
+      "qualityNotes": [
+        "small x-ray lens layer that proves the equipped skill traveled into Chrome"
+      ]
+    }
+  ]
+}

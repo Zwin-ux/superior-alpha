@@ -5,12 +5,15 @@
   "atlas": "superior-clay-factory-atlas.png",
   "width": 2048,
   "height": 2048,
-  "generatedAt": "2026-05-31T03:39:40.914Z",
+  "generatedAt": "2026-05-31T19:54:34.035Z",
   "assets": [
     {
       "id": "scene.wall",
       "kind": "clay-world",
       "state": "approved-runtime",
+      "sourceKind": "manual",
+      "sourcePath": "assets/bots/0.14/source/manual/scene.wall.png",
+      "approvedPath": "assets/bots/0.14/approved-runtime/manual/scene.wall.png",
       "atlasRect": {
         "x": 4,
         "y": 4,
@@ -29,6 +32,8 @@
       "id": "scene.lamp",
       "kind": "clay-world",
       "state": "approved-runtime",
+      "sourceKind": "generated-fallback",
+      "approvedPath": "assets/bots/0.14/approved-runtime/generated/scene.lamp.png",
       "atlasRect": {
         "x": 520,
         "y": 4,
@@ -47,6 +52,8 @@
       "id": "scene.sign",
       "kind": "clay-world",
       "state": "approved-runtime",
+      "sourceKind": "generated-fallback",
+      "approvedPath": "assets/bots/0.14/approved-runtime/generated/scene.sign.png",
       "atlasRect": {
         "x": 780,
         "y": 4,
@@ -65,6 +72,8 @@
       "id": "scene.left-rail",
       "kind": "clay-world",
       "state": "approved-runtime",
+      "sourceKind": "generated-fallback",
+      "approvedPath": "assets/bots/0.14/approved-runtime/generated/scene.left-rail.png",
       "atlasRect": {
         "x": 1296,
         "y": 4,
@@ -83,6 +92,8 @@
       "id": "scene.menu-slab.default",
       "kind": "clay-world",
       "state": "approved-runtime",
+      "sourceKind": "generated-fallback",
+      "approvedPath": "assets/bots/0.14/approved-runtime/generated/scene.menu-slab.default.png",
       "atlasRect": {
         "x": 1556,
         "y": 4,
@@ -101,6 +112,8 @@
       "id": "scene.menu-slab.hover",
       "kind": "clay-world",
       "state": "approved-runtime",
+      "sourceKind": "generated-fallback",
+      "approvedPath": "assets/bots/0.14/approved-runtime/generated/scene.menu-slab.hover.png",
       "atlasRect": {
         "x": 4,
         "y": 520,
@@ -119,6 +132,8 @@
       "id": "scene.menu-slab.pressed",
       "kind": "clay-world",
       "state": "approved-runtime",
+      "sourceKind": "generated-fallback",
+      "approvedPath": "assets/bots/0.14/approved-runtime/generated/scene.menu-slab.pressed.png",
       "atlasRect": {
         "x": 264,
         "y": 520,
@@ -137,6 +152,9 @@
       "id": "scene.table",
       "kind": "clay-world",
       "state": "approved-runtime",
+      "sourceKind": "manual",
+      "sourcePath": "assets/bots/0.14/source/manual/scene.table.png",
+      "approvedPath": "assets/bots/0.14/approved-runtime/manual/scene.table.png",
       "atlasRect": {
         "x": 524,
         "y": 520,
@@ -156,6 +174,8 @@
       "id": "scene.pedestal",
       "kind": "clay-world",
       "state": "approved-runtime",
+      "sourceKind": "generated-fallback",
+      "approvedPath": "assets/bots/0.14/approved-runtime/generated/scene.pedestal.png",
       "atlasRect": {
         "x": 1296,
         "y": 520,
@@ -174,6 +194,8 @@
       "id": "scene.right-tray",
       "kind": "clay-world",
       "state": "approved-runtime",
+      "sourceKind": "generated-fallback",
+      "approvedPath": "assets/bots/0.14/approved-runtime/generated/scene.right-tray.png",
       "atlasRect": {
         "x": 1684,
         "y": 520,
@@ -192,6 +214,8 @@
       "id": "scene.tray-slot.empty",
       "kind": "clay-world",
       "state": "approved-runtime",
+      "sourceKind": "generated-fallback",
+      "approvedPath": "assets/bots/0.14/approved-runtime/generated/scene.tray-slot.empty.png",
       "atlasRect": {
         "x": 4,
         "y": 1036,
@@ -210,6 +234,8 @@
       "id": "scene.tray-slot.equipped",
       "kind": "clay-world",
       "state": "approved-runtime",
+      "sourceKind": "generated-fallback",
+      "approvedPath": "assets/bots/0.14/approved-runtime/generated/scene.tray-slot.equipped.png",
       "atlasRect": {
         "x": 308,
         "y": 1036,
@@ -228,6 +254,9 @@
       "id": "scene.bottom-card",
       "kind": "clay-world",
       "state": "approved-runtime",
+      "sourceKind": "manual",
+      "sourcePath": "assets/bots/0.14/source/manual/scene.bottom-card.png",
+      "approvedPath": "assets/bots/0.14/approved-runtime/manual/scene.bottom-card.png",
       "atlasRect": {
         "x": 612,
         "y": 1036,
@@ -246,6 +275,9 @@
       "id": "scene.status-pill",
       "kind": "pixel-ui",
       "state": "approved-runtime",
+      "sourceKind": "manual",
+      "sourcePath": "assets/bots/0.14/source/manual/scene.status-pill.png",
+      "approvedPath": "assets/bots/0.14/approved-runtime/manual/scene.status-pill.png",
       "atlasRect": {
         "x": 1096,
         "y": 1036,
@@ -264,6 +296,8 @@
       "id": "bot.clawd.body",
       "kind": "bot-part",
       "state": "approved-runtime",
+      "sourceKind": "generated-fallback",
+      "approvedPath": "assets/bots/0.14/approved-runtime/generated/bot.clawd.body.png",
       "atlasRect": {
         "x": 1356,
         "y": 1036,
@@ -282,6 +316,8 @@
       "id": "bot.clawd.eye.pixel",
       "kind": "bot-part",
       "state": "approved-runtime",
+      "sourceKind": "generated-fallback",
+      "approvedPath": "assets/bots/0.14/approved-runtime/generated/bot.clawd.eye.pixel.png",
       "atlasRect": {
         "x": 1744,
         "y": 1036,
@@ -300,6 +336,8 @@
       "id": "bot.clawd.skill.eye",
       "kind": "bot-part",
       "state": "approved-runtime",
+      "sourceKind": "generated-fallback",
+      "approvedPath": "assets/bots/0.14/approved-runtime/generated/bot.clawd.skill.eye.png",
       "atlasRect": {
         "x": 4,
         "y": 1424,
@@ -319,6 +357,8 @@
       "id": "bot.clawd.skill.badge",
       "kind": "bot-part",
       "state": "approved-runtime",
+      "sourceKind": "generated-fallback",
+      "approvedPath": "assets/bots/0.14/approved-runtime/generated/bot.clawd.skill.badge.png",
       "atlasRect": {
         "x": 200,
         "y": 1424,
@@ -338,6 +378,8 @@
       "id": "bot.clawd.skill.side",
       "kind": "bot-part",
       "state": "approved-runtime",
+      "sourceKind": "generated-fallback",
+      "approvedPath": "assets/bots/0.14/approved-runtime/generated/bot.clawd.skill.side.png",
       "atlasRect": {
         "x": 396,
         "y": 1424,
@@ -357,6 +399,8 @@
       "id": "boot.seed",
       "kind": "onboarding",
       "state": "approved-runtime",
+      "sourceKind": "generated-fallback",
+      "approvedPath": "assets/bots/0.14/approved-runtime/generated/boot.seed.png",
       "atlasRect": {
         "x": 592,
         "y": 1424,
@@ -375,6 +419,8 @@
       "id": "boot.wordmark",
       "kind": "pixel-ui",
       "state": "approved-runtime",
+      "sourceKind": "generated-fallback",
+      "approvedPath": "assets/bots/0.14/approved-runtime/generated/boot.wordmark.png",
       "atlasRect": {
         "x": 852,
         "y": 1424,
@@ -393,6 +439,8 @@
       "id": "boot.progress-pip",
       "kind": "pixel-ui",
       "state": "approved-runtime",
+      "sourceKind": "generated-fallback",
+      "approvedPath": "assets/bots/0.14/approved-runtime/generated/boot.progress-pip.png",
       "atlasRect": {
         "x": 1368,
         "y": 1424,

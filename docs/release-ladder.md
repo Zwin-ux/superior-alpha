@@ -95,7 +95,48 @@ Every release cycle must follow [platform-release-testing.md](platform-release-t
 - First-run recovery, package/export QA, and fewer setup assumptions after the Godot signal room is real.
 - Godot export proof must replace WPF visual proof as the main product shell gate.
 
+## 0.15 Spore Ownership Demo
+
+- Stop widening the product and prove one fundable loop.
+- Locked proof: `SUPERIOR boot -> register -> hatch Clawd -> choose Gremlin/Moss/Pixel -> equip Article X-Ray -> connect Chrome -> extension icon becomes exact Clawd -> run skill -> Clawd reacts`.
+- Demo identity is one active spore, not a roster: `Clawd / Gremlin / Moss Green / Pixel Eye / Article X-Ray`.
+- Proof command: `corepack pnpm fixture:spore-ownership`.
+- MP4 command: `corepack pnpm video:godot-engine`.
+- Combined closeout: `corepack pnpm demo:spore-ownership`.
+- Goal: investors see a creature-based way to install and operate an AI system, not another feature list.
+
+## 0.16 Installed Ownership Loop
+
+- Package the same 0.15 loop behind an installed Windows product path and staged Chrome extension.
+- No Vite, source checkout, manual terminal setup, or hidden localhost UI should be required for the demo.
+- Google/X/email account setup may be mocked in local proof, but the spore must remain safe: no raw pairing token, model key, page text, repo state, or browser profile data leaves local state.
+- Goal: prove the magical loop survives installation.
+
+## 0.17 Spore Garden Home
+
+- Add the post-stamp `Spore Garden` as the user's creature home before the Workshop.
+- Make `Race` the visible role-class language: Builder, Scout, and Sentinel are the first playable alpha races.
+- First loop: play with the spore, equip one skill part, trigger a mocked browser/skill signal, then enter Workshop.
+- MP4 command: `corepack pnpm video:godot-engine`.
+- Goal: the active spore feels alive between registration and utility work, without adding a roster, XP grind, or dashboard.
+
+## 0.18 High Quality Alpha Gate
+
+- Stop platform widening and make one installed spore ownership loop undeniable.
+- Target loop: `Install SUPERIOR -> wake/register spore -> choose body -> equip skill -> bind Chrome -> extension icon becomes that spore -> run skill -> spore reacts -> proof is recorded`.
+- Required proof: root gates, Godot/asset gates, spore ownership fixture, extension skill fixture, and production MP4 showcase.
+- Windows packaging proof joins the gate when the environment supports it: `windows:proof`, `windows:msi`, and `windows:installed-loop-smoke`.
+- Goal: a stranger can understand the ownership moment without a narrated demo.
+
+## 0.19 Beta Candidate Gate
+
+- Start only after 0.18 passes.
+- Target loop: `Clean install -> account/spore setup -> Chrome hand bind -> skill proof -> uninstall/reinstall -> spore still loads`.
+- Add first-run recovery states for model/key, daemon, browser, and extension.
+- Publish GitHub release proof with MP4, installer/extension artifacts, caveats, and test commands.
+- Goal: no hidden setup knowledge is required for the first public Beta critique.
+
 ## 1.0 Official Beta
 
-- A fresh Windows install can open SUPERIOR, start a robot-owned browser, pair the extension, equip runnable skills, and show physical proof when those skills run.
-- Official Beta means platform-native Windows behavior: native installer/service lifecycle, local credential storage, staged extension, and a backend host that preserves shared contracts.
+- A fresh Windows install can open SUPERIOR, register or sign in, hatch one active spore, connect Chrome, sync the exact bot icon, run the equipped skill, and show physical proof when the skill succeeds.
+- Official Beta means the creature identity is portable and believable before the platform list expands.

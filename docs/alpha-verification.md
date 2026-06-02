@@ -1,6 +1,6 @@
 # SUPERIOR Alpha Verification
 
-Last checked: 2026-05-31
+Last checked: 2026-06-02
 
 ## Passing Evidence
 
@@ -8,15 +8,30 @@ Last checked: 2026-05-31
 - Root tests pass: `corepack pnpm test`
 - Root build passes: `corepack pnpm build`
 - Godot primary engine lane is scaffolded under `superior/godot-client`.
-- Godot vertical slice includes the 0.14 console-style `SUPERIOR BOOTING` sequence, clay lamp reveal, concept-mapped workshop menu, Clawd Gremlin, terminal mock events, WebSocket fallback, lighter CRT pixel shader pass, and input-driven reactions.
+- Godot vertical slice includes the 0.14 robot wake sequence, clay lamp reveal, concept-mapped workshop menu, Clawd Gremlin, terminal mock events, WebSocket fallback, lighter CRT pixel shader pass, and input-driven reactions.
 - 0.14 clay factory export passes: `corepack pnpm assets:factory-export`.
 - 0.14 clay factory quality gate passes: `corepack pnpm assets:quality-gate`.
 - Godot scaffold check passes with the 0.14 quality gate first: `corepack pnpm superior:engine-check`.
 - Godot 4.6.3 is installed locally through Winget and detected by the Godot client check.
 - Godot engine proof recorder passes: `corepack pnpm video:godot-engine`.
 - Godot proof recorder now uses Godot `--write-movie`, not desktop-region capture, so it cannot pass by recording the wrong foreground window.
-- Latest Godot proof MP4: `.clawdbot/video-proof/2026-05-31T03-39-56-715Z-godot-engine/SUPERIOR-godot-engine-2026-05-31T03-39-56-715Z.mp4`.
-- Latest Godot proof poster: `.clawdbot/video-proof/2026-05-31T03-39-56-715Z-godot-engine/SUPERIOR-godot-engine-2026-05-31T03-39-56-715Z.png`.
+- Godot production showcase recorder passes: `corepack pnpm video:showcase`.
+- Production showcase uses `SUPERIOR_SHOWCASE=1` for a 22-second product-facing capture: SUPERIOR boot, spore wake, body fit, eye fit, role stamp, Chrome icon match, Article X-Ray skill proof, spore reaction, Spore Garden, Workshop reactions, generated in-engine sound effects, and physical menu/slot feedback.
+- Latest 0.18 production showcase MP4: `.clawdbot/video-proof/2026-06-02T05-39-38-548Z-godot-showcase/SUPERIOR-godot-showcase-2026-06-02T05-39-38-548Z.mp4`.
+- Latest 0.18 production showcase poster: `.clawdbot/video-proof/2026-06-02T05-39-38-548Z-godot-showcase/SUPERIOR-godot-showcase-2026-06-02T05-39-38-548Z.png`.
+- Latest 0.18 production showcase contact sheet: `.clawdbot/video-proof/2026-06-02T05-39-38-548Z-godot-showcase/review-frames/contact-sheet-1s.png`.
+- Latest production showcase contains `h264` video and `aac` audio streams.
+- Latest 0.18 Godot proof MP4: `.clawdbot/video-proof/2026-06-02T05-40-43-645Z-godot-engine/SUPERIOR-godot-engine-2026-06-02T05-40-43-645Z.mp4`.
+- Latest 0.18 Godot proof poster: `.clawdbot/video-proof/2026-06-02T05-40-43-645Z-godot-engine/SUPERIOR-godot-engine-2026-06-02T05-40-43-645Z.png`.
+- Latest 0.18 Godot onboarding contact sheet: `.clawdbot/video-proof/2026-06-02T05-40-43-645Z-godot-engine/review-frames/contact-sheet-1s.png`.
+- 0.18 Spore Birth planning gate passes: `node C:\Users\mzwin\.codex\skills\superior-spore-birth-gate\scripts\check_spore_birth_gate.mjs C:\Users\mzwin\Documents\Buddy\clawdbot --planning` reports `39` pass, `0` fail.
+- 0.18 Spore Birth implementation gate passes: `node C:\Users\mzwin\.codex\skills\superior-spore-birth-gate\scripts\check_spore_birth_gate.mjs C:\Users\mzwin\Documents\Buddy\clawdbot --implementation` reports `66` pass, `0` fail.
+- Godot Clay Quality Pass packet is the next accepted visual plan: `docs/agent-packets/godot-clay-quality-pass.md`.
+- Godot Clay Quality Pass resolves the prior open design items: manual clay render method, bundled runtime font direction, and prop density budget.
+- Godot Clay Quality Pass first build slice now has protected manual plates for `scene.wall`, `scene.table`, `scene.bottom-card`, and `scene.status-pill`.
+- 0.14 factory report now records source kind counts: `manual: 4`, `generated-fallback: 18`.
+- Godot onboarding now routes boot into a device-first ritual before Workshop: Wake Spore, Body, Eye, Role, Browser, Stamp.
+- The setup scene ties the spore to local ownership, the Chrome hand icon path, and one starter skill proof before the user enters the wider home.
 - Superior core contracts build and test: `corepack pnpm --filter @superior/core build` and `corepack pnpm --filter @superior/core test`.
 - Superior realtime server builds: `corepack pnpm --filter @superior/server build`.
 - Superior realtime server smoke accepted a `browser` signal and returned state revision `2`.
@@ -117,6 +132,69 @@ Last checked: 2026-05-31
 - Public production aliases for the hub were removed after confirming they were not protected by standard deployment protection.
 - Latest host fixture report: `.clawdbot/verification/host-contract-fixture-1780162930107.json`.
 - Latest extension skill fixture report: `.clawdbot/verification/extension-skill-fixture-1780164331918.json`.
+- Account OAuth wiring added for Supabase Google and X providers:
+  - Shared contracts include `SuperiorAccountStartOAuthRequest`, `SuperiorAccountOAuthStartResult`, and provider connection metadata.
+  - Supabase account Edge Function exposes `POST /account/start-oauth`.
+  - Account RLS migration includes safe `account_connections` rows for `google` and `x`.
+  - Account contracts retain Google, X, and email-code routes; the 0.18 Godot onboarding proof does not foreground provider setup.
+- Focused account checks pass:
+  - `corepack pnpm --filter @clawdbot/shared build`
+  - `corepack pnpm --filter @clawdbot/shared test`
+  - `corepack pnpm --filter @clawdbot/daemon typecheck`
+  - `corepack pnpm fixture:supabase-account`
+  - `deno check --node-modules-dir=auto supabase/functions/account/index.ts`
+- Full workspace gates pass after OAuth wiring:
+  - `corepack pnpm typecheck`
+  - `corepack pnpm test`
+  - `corepack pnpm build`
+- Latest Godot engine proof after account-provider onboarding update:
+  - `.clawdbot/video-proof/2026-05-31T10-08-26-589Z-godot-engine/SUPERIOR-godot-engine-2026-05-31T10-08-26-589Z.mp4`
+- Extension ownership proof tightened for the investor demo loop:
+  - The MV3 background worker paints the last stored bot icon first, then refreshes from `/bot-identity`.
+  - If the daemon is offline, the toolbar keeps the user's last saved bot instead of reverting to the default icon.
+  - Tab completion, tab activation, window focus, startup, install, popup open, pairing, and controlled-profile attach all feed the same identity sync path.
+  - Runtime message `superior-sync-bot-identity` can force the exact active spore into the toolbar icon without opening the popup.
+  - Store package remains permission-tight with no new Chrome permissions.
+- Extension ownership checks pass:
+  - `corepack pnpm --filter @clawdbot/extension typecheck`
+  - `corepack pnpm --filter @clawdbot/extension test`
+  - `corepack pnpm --filter @clawdbot/extension build`
+  - `corepack pnpm extension:store-package`
+  - Store artifact: `.clawdbot/artifacts/extension/SUPERIOR-0.8.0-chrome-mv3.zip`
+- Full workspace gates pass after extension ownership proof:
+  - `corepack pnpm typecheck`
+  - `corepack pnpm test`
+  - `corepack pnpm build`
+- 0.15 Spore Ownership remains the contract basis for the active 0.18 Godot ritual proof:
+  - `corepack pnpm fixture:spore-ownership`
+  - `corepack pnpm demo:spore-ownership`
+  - Saves one active spore: `Clawd / Gremlin / Moss Green / Pixel Eye / Article X-Ray`.
+  - Proves `/setup-state` sees the saved spore.
+  - Proves portable spore export excludes raw pairing tokens and model secrets.
+  - Proves the generated extension icon identity differs from default and carries Gremlin/Moss/Pixel/Article X-Ray details.
+  - Pairs the Chrome hand with safe extension id `spore-ownership-demo-extension`.
+  - Runs Article X-Ray through `/functions/run` and records a success bot reaction on the `Eye` slot.
+- 0.15 Spore Ownership Art Spec exists in Figma: `https://www.figma.com/design/8C6EiZivpUIxyLw0b6YT9R`.
+- 0.15 ownership atlas lane is added:
+  - `corepack pnpm assets:ownership-export`
+  - `corepack pnpm assets:ownership-quality-gate`
+  - Contact sheet: `assets/bots/0.15/sheet/superior-spore-ownership-contact-sheet.png`
+  - Runtime atlas: `assets/bots/0.15/sheet/superior-spore-ownership-atlas.png`
+  - Godot atlas: `superior/godot-client/assets/clay/superior-spore-ownership-atlas.png`
+  - Code Connect-ready map: `assets/bots/0.15/code-connect-map.json`
+  - True Figma Code Connect mapping is blocked until the Figma workspace has a Developer seat on an Organization or Enterprise plan.
+- Godot onboarding now puts Browser after the spore has body, eye, and role, so the Chrome hand copies an already-built Clawd instead of showing a text-only browser check.
+- The 0.18 onboarding MP4 shows a visible Chrome hand dock: generic extension bead -> matched Clawd toolbar icon -> `ICON MATCH` -> Article X-Ray `SKILL RAN` -> spore reaction -> registry stamp.
+- Godot onboarding now reads as a first-boot ritual instead of a settings dashboard:
+  - `Wake Spore -> Body -> Eye -> Role -> Browser -> Stamp -> Workshop`.
+  - Left rail uses completed/current/upcoming/locked setup states.
+  - Center stage starts dim, wakes the spore under the lamp, then attaches modules as the setup advances.
+  - Browser hand is a device-pairing dock with Chrome detected, extension ready, icon match, and bind-to-spore feedback.
+  - Bottom hardware status indicators stay quiet until Browser and Stamp, then progress toward Browser Linked and Workshop Open.
+- Latest 0.18 spore ownership fixture report: `.clawdbot/verification/spore-ownership-fixture-1780378667546.json`.
+- Latest 0.18 Godot proof MP4: `.clawdbot/video-proof/2026-06-02T05-40-43-645Z-godot-engine/SUPERIOR-godot-engine-2026-06-02T05-40-43-645Z.mp4`.
+- Latest 0.18 Godot proof poster: `.clawdbot/video-proof/2026-06-02T05-40-43-645Z-godot-engine/SUPERIOR-godot-engine-2026-06-02T05-40-43-645Z.png`.
+- Latest 0.18 Godot proof contact sheet: `.clawdbot/video-proof/2026-06-02T05-40-43-645Z-godot-engine/review-frames/contact-sheet-1s.png`.
 
 ## Environment Gate
 
@@ -133,6 +211,8 @@ The packaged alpha carries a private Windows Node runtime. If the app cannot fin
 GitHub may rate-limit unauthenticated Repo Reader calls. Add `GITHUB_TOKEN` or `GH_TOKEN` to the local daemon environment when running repeated repo reads.
 
 The Chrome Web Store privacy policy source exists at `docs/extension-privacy.md` and now has a public GitHub URL. Chrome Developer Dashboard upload and review remain manual.
+
+The spore ownership fixture needs the local daemon listening at `http://127.0.0.1:5317`. In dev, start it with `corepack pnpm --filter @clawdbot/daemon dev` before running `corepack pnpm fixture:spore-ownership`; the 0.18 verification pass failed once with `fetch failed` until the daemon was started, then passed.
 
 ## Current Alpha Shape
 

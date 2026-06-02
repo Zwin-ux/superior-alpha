@@ -5,6 +5,7 @@ import { renderBotIconSet } from "./icon";
 const identitySyncThrottleMs = 2500;
 let lastIdentitySyncAt = 0;
 let pendingIdentitySync: Promise<BotIdentity> | null = null;
+let lastRenderedIdentitySignature = "";
 
 export async function syncBotIdentityFromDaemon(options: { force?: boolean } = {}): Promise<BotIdentity> {
   if (!options.force && pendingIdentitySync) {
@@ -34,24 +35,49 @@ export async function refreshActionIcon(bot?: Partial<BotIdentity> | null): Prom
 }
 
 export async function setActionIcon(bot: Partial<BotIdentity>): Promise<void> {
+  const resolvedBot = normalizeBotIdentity(bot);
+  const signature = getBotIdentitySignature(resolvedBot);
+
+  if (signature === lastRenderedIdentitySignature) {
+    return;
+  }
+
   try {
     await chrome.action.setIcon({
-      imageData: renderBotIconSet(normalizeBotIdentity(bot))
+      imageData: renderBotIconSet(resolvedBot)
     });
+    lastRenderedIdentitySignature = signature;
   } catch {
     // Chrome can reject icon updates while the action surface or worker is waking.
   }
 }
 
 async function syncAndRefreshActionIcon(): Promise<BotIdentity> {
+  const storedBot = await loadStoredBotIdentity();
+
+  await setActionIcon(storedBot);
+
   const daemonBot = await fetchDaemonBotIdentity();
-  const bot = daemonBot ?? (await loadStoredBotIdentity());
 
   if (daemonBot) {
     await saveBotIdentity(daemonBot);
+    await setActionIcon(daemonBot);
+
+    return daemonBot;
   }
 
-  await setActionIcon(bot);
+  return storedBot;
+}
 
-  return bot;
+export function getBotIdentitySignature(bot: Partial<BotIdentity> | null | undefined): string {
+  const resolvedBot = normalizeBotIdentity(bot);
+
+  return JSON.stringify({
+    name: resolvedBot.name,
+    body: resolvedBot.body,
+    color: resolvedBot.color,
+    eye: resolvedBot.eye,
+    skills: resolvedBot.skills,
+    updatedAt: resolvedBot.updatedAt ?? ""
+  });
 }

@@ -1,7 +1,7 @@
 {
   "version": "0.14",
   "passed": true,
-  "generatedAt": "2026-05-31T03:39:40.916Z",
+  "generatedAt": "2026-05-31T19:54:34.038Z",
   "visualTarget": "assets/bots/soul/clawdbot-workshop-target.png",
   "requiredZones": [
     "boot",
@@ -19,6 +19,17 @@
     "right-tray",
     "boot"
   ],
+  "manualRequiredAssets": [
+    "scene.status-pill",
+    "scene.bottom-card",
+    "scene.wall",
+    "scene.table"
+  ],
+  "manualMissing": [],
+  "sourceKindCounts": {
+    "manual": 4,
+    "generated-fallback": 18
+  },
   "assetCount": 22,
   "runtimeApprovedCount": 22,
   "atlas": {

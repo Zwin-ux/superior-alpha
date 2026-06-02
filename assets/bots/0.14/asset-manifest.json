@@ -27,7 +27,7 @@
       "state": "approved-runtime",
       "width": 512,
       "height": 288,
-      "approvedPath": "assets/bots/0.14/approved-runtime/generated/scene.wall.png",
+      "approvedPath": "assets/bots/0.14/approved-runtime/manual/scene.wall.png",
       "godotTarget": "res://assets/clay/superior-clay-factory-atlas.png#scene.wall",
       "zones": [
         "lamp-sign"
@@ -40,7 +40,9 @@
         "y": 4,
         "width": 512,
         "height": 288
-      }
+      },
+      "sourcePath": "assets/bots/0.14/source/manual/scene.wall.png",
+      "sourceKind": "manual"
     },
     {
       "id": "scene.lamp",
@@ -61,7 +63,8 @@
         "y": 4,
         "width": 256,
         "height": 192
-      }
+      },
+      "sourceKind": "generated-fallback"
     },
     {
       "id": "scene.sign",
@@ -82,7 +85,8 @@
         "y": 4,
         "width": 512,
         "height": 160
-      }
+      },
+      "sourceKind": "generated-fallback"
     },
     {
       "id": "scene.left-rail",
@@ -103,7 +107,8 @@
         "y": 4,
         "width": 256,
         "height": 512
-      }
+      },
+      "sourceKind": "generated-fallback"
     },
     {
       "id": "scene.menu-slab.default",
@@ -124,7 +129,8 @@
         "y": 4,
         "width": 256,
         "height": 96
-      }
+      },
+      "sourceKind": "generated-fallback"
     },
     {
       "id": "scene.menu-slab.hover",
@@ -145,7 +151,8 @@
         "y": 520,
         "width": 256,
         "height": 96
-      }
+      },
+      "sourceKind": "generated-fallback"
     },
     {
       "id": "scene.menu-slab.pressed",
@@ -166,7 +173,8 @@
         "y": 520,
         "width": 256,
         "height": 96
-      }
+      },
+      "sourceKind": "generated-fallback"
     },
     {
       "id": "scene.table",
@@ -174,7 +182,7 @@
       "state": "approved-runtime",
       "width": 768,
       "height": 256,
-      "approvedPath": "assets/bots/0.14/approved-runtime/generated/scene.table.png",
+      "approvedPath": "assets/bots/0.14/approved-runtime/manual/scene.table.png",
       "godotTarget": "res://assets/clay/superior-clay-factory-atlas.png#scene.table",
       "zones": [
         "center-bot",
@@ -188,7 +196,9 @@
         "y": 520,
         "width": 768,
         "height": 256
-      }
+      },
+      "sourcePath": "assets/bots/0.14/source/manual/scene.table.png",
+      "sourceKind": "manual"
     },
     {
       "id": "scene.pedestal",
@@ -209,7 +219,8 @@
         "y": 520,
         "width": 384,
         "height": 192
-      }
+      },
+      "sourceKind": "generated-fallback"
     },
     {
       "id": "scene.right-tray",
@@ -230,7 +241,8 @@
         "y": 520,
         "width": 320,
         "height": 512
-      }
+      },
+      "sourceKind": "generated-fallback"
     },
     {
       "id": "scene.tray-slot.empty",
@@ -251,7 +263,8 @@
         "y": 1036,
         "width": 300,
         "height": 88
-      }
+      },
+      "sourceKind": "generated-fallback"
     },
     {
       "id": "scene.tray-slot.equipped",
@@ -272,7 +285,8 @@
         "y": 1036,
         "width": 300,
         "height": 88
-      }
+      },
+      "sourceKind": "generated-fallback"
     },
     {
       "id": "scene.bottom-card",
@@ -280,7 +294,7 @@
       "state": "approved-runtime",
       "width": 480,
       "height": 160,
-      "approvedPath": "assets/bots/0.14/approved-runtime/generated/scene.bottom-card.png",
+      "approvedPath": "assets/bots/0.14/approved-runtime/manual/scene.bottom-card.png",
       "godotTarget": "res://assets/clay/superior-clay-factory-atlas.png#scene.bottom-card",
       "zones": [
         "bottom-status"
@@ -293,7 +307,9 @@
         "y": 1036,
         "width": 480,
         "height": 160
-      }
+      },
+      "sourcePath": "assets/bots/0.14/source/manual/scene.bottom-card.png",
+      "sourceKind": "manual"
     },
     {
       "id": "scene.status-pill",
@@ -301,7 +317,7 @@
       "state": "approved-runtime",
       "width": 256,
       "height": 80,
-      "approvedPath": "assets/bots/0.14/approved-runtime/generated/scene.status-pill.png",
+      "approvedPath": "assets/bots/0.14/approved-runtime/manual/scene.status-pill.png",
       "godotTarget": "res://assets/clay/superior-clay-factory-atlas.png#scene.status-pill",
       "zones": [
         "bottom-status"
@@ -314,7 +330,9 @@
         "y": 1036,
         "width": 256,
         "height": 80
-      }
+      },
+      "sourcePath": "assets/bots/0.14/source/manual/scene.status-pill.png",
+      "sourceKind": "manual"
     },
     {
       "id": "bot.clawd.body",
@@ -335,7 +353,8 @@
         "y": 1036,
         "width": 384,
         "height": 384
-      }
+      },
+      "sourceKind": "generated-fallback"
     },
     {
       "id": "bot.clawd.eye.pixel",
@@ -356,7 +375,8 @@
         "y": 1036,
         "width": 256,
         "height": 128
-      }
+      },
+      "sourceKind": "generated-fallback"
     },
     {
       "id": "bot.clawd.skill.eye",
@@ -378,7 +398,8 @@
         "y": 1424,
         "width": 192,
         "height": 192
-      }
+      },
+      "sourceKind": "generated-fallback"
     },
     {
       "id": "bot.clawd.skill.badge",
@@ -400,7 +421,8 @@
         "y": 1424,
         "width": 192,
         "height": 192
-      }
+      },
+      "sourceKind": "generated-fallback"
     },
     {
       "id": "bot.clawd.skill.side",
@@ -422,7 +444,8 @@
         "y": 1424,
         "width": 192,
         "height": 192
-      }
+      },
+      "sourceKind": "generated-fallback"
     },
     {
       "id": "boot.seed",
@@ -443,7 +466,8 @@
         "y": 1424,
         "width": 256,
         "height": 256
-      }
+      },
+      "sourceKind": "generated-fallback"
     },
     {
       "id": "boot.wordmark",
@@ -464,7 +488,8 @@
         "y": 1424,
         "width": 512,
         "height": 160
-      }
+      },
+      "sourceKind": "generated-fallback"
     },
     {
       "id": "boot.progress-pip",
@@ -485,7 +510,8 @@
         "y": 1424,
         "width": 96,
         "height": 64
-      }
+      },
+      "sourceKind": "generated-fallback"
     }
   ]
 }

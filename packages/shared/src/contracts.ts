@@ -10,9 +10,11 @@ import {
   BotStarterPresetId,
   BotSkillLoadoutOption,
   BrowserLinkState,
+  PremadeSkillPartOption,
   SkillCategory,
   SkillId,
   SkillSlot,
+  SporeRaceDefinition,
   createLocalId
 } from "./bot.js";
 
@@ -457,6 +459,9 @@ export type SuperiorAccountStatus = "signed-out" | "code-sent" | "signed-in" | "
 export type SuperiorModelProvider = "ollama" | "openai-byok" | "missing";
 export type SuperiorOllamaStatus = "available" | "missing" | "starting" | "failed";
 export type SuperiorOpenAiKeyStatus = "missing" | "saved" | "ready" | "invalid";
+export const superiorAccountOAuthProviders = ["google", "x"] as const;
+export type SuperiorAccountOAuthProvider = (typeof superiorAccountOAuthProviders)[number];
+export type SuperiorAccountProviderStatus = "available" | "not-configured" | "connected";
 
 export interface BotCreationDraft {
   type: "bot-creation-draft";
@@ -480,7 +485,9 @@ export interface BotStarterPresetsResponse {
 export interface BotCreationOptionsResponse {
   type: "bot-creation-options";
   shapes: BotCreationShapeDefinition[];
+  races: SporeRaceDefinition[];
   skills: BotSkillLoadoutOption[];
+  premadeSkillParts: PremadeSkillPartOption[];
   createdAt: string;
 }
 
@@ -496,7 +503,16 @@ export interface SuperiorAccountState {
   handle?: string;
   email?: string;
   userId?: string;
+  connectedProviders?: SuperiorAccountOAuthProvider[];
+  providers?: SuperiorAccountProviderState[];
   syncedAt?: string;
+  detail: string;
+}
+
+export interface SuperiorAccountProviderState {
+  provider: SuperiorAccountOAuthProvider;
+  label: "Google" | "X";
+  status: SuperiorAccountProviderStatus;
   detail: string;
 }
 
@@ -573,10 +589,25 @@ export interface SuperiorAccountVerifyEmailCodeRequest {
   token: string;
 }
 
+export interface SuperiorAccountStartOAuthRequest {
+  type: "superior-account-start-oauth";
+  provider: SuperiorAccountOAuthProvider;
+  redirectTo?: string;
+}
+
+export interface SuperiorAccountOAuthStartResult {
+  type: "superior-account-oauth-started";
+  provider: SuperiorAccountOAuthProvider;
+  authUrl: string;
+  redirectTo?: string;
+  createdAt: string;
+}
+
 export interface SuperiorAccountSession {
   type: "superior-account-session";
   userId: string;
   email: string;
+  provider?: "email-code" | SuperiorAccountOAuthProvider;
   accessToken: string;
   expiresAt?: number;
   createdAt: string;
@@ -587,9 +618,18 @@ export interface SuperiorAccountProfile {
   userId: string;
   email?: string;
   handle: string;
+  connectedProviders?: SuperiorAccountOAuthProvider[];
   activeSporeId?: string;
   createdAt: string;
   updatedAt: string;
+}
+
+export interface SuperiorAccountConnection {
+  type: "superior-account-connection";
+  userId: string;
+  provider: SuperiorAccountOAuthProvider;
+  providerUserId?: string;
+  connectedAt: string;
 }
 
 export interface SuperiorAccountSpore {

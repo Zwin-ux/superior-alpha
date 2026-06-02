@@ -1,0 +1,44 @@
+{
+  "version": "0.15",
+  "figmaFileKey": "8C6EiZivpUIxyLw0b6YT9R",
+  "figmaFileUrl": "https://www.figma.com/design/8C6EiZivpUIxyLw0b6YT9R",
+  "strategy": "mapping-first",
+  "note": "Godot is not a native Code Connect target. These stable component names and node ids are the handoff contract until the Figma components are published and true Code Connect mappings can be added.",
+  "mappings": [
+    {
+      "figmaComponentName": "Ownership/ChromeHandDock",
+      "figmaNodeId": "1:402",
+      "assetId": "ownership.chrome-hand.dock",
+      "godotNodeName": "ChromeHandDock",
+      "scriptOwner": "superior/godot-client/scripts/onboarding_controller.gd"
+    },
+    {
+      "figmaComponentName": "Ownership/ChromeToolbarSlot",
+      "figmaNodeId": "1:406",
+      "assetId": "ownership.chrome-toolbar.slot",
+      "godotNodeName": "ChromeToolbarSlot",
+      "scriptOwner": "superior/godot-client/scripts/onboarding_controller.gd"
+    },
+    {
+      "figmaComponentName": "Ownership/ClawdToolbarIcon",
+      "figmaNodeId": "1:410",
+      "assetId": "ownership.chrome-icon.clawd",
+      "godotNodeName": "ChromeClawdIconBody",
+      "scriptOwner": "superior/godot-client/scripts/onboarding_controller.gd"
+    },
+    {
+      "figmaComponentName": "Ownership/IconMatchFlash",
+      "figmaNodeId": "1:414",
+      "assetId": "ownership.icon-match.flash",
+      "godotNodeName": "IconMatchFlash",
+      "scriptOwner": "superior/godot-client/scripts/onboarding_controller.gd"
+    },
+    {
+      "figmaComponentName": "Ownership/SporeStamp",
+      "figmaNodeId": "1:418",
+      "assetId": "ownership.spore-stamp",
+      "godotNodeName": "SporeStampedLabel",
+      "scriptOwner": "superior/godot-client/scripts/onboarding_controller.gd"
+    }
+  ]
+}

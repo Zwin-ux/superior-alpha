@@ -7,11 +7,14 @@ const requiredFiles = [
   "project.godot",
   "scenes/Boot.tscn",
   "scenes/Onboarding.tscn",
+  "scenes/SporeGarden.tscn",
   "scenes/ClayWorkshop.tscn",
   "scenes/SignalRoom.tscn",
   "scripts/boot_controller.gd",
   "scripts/onboarding_controller.gd",
+  "scripts/spore_garden.gd",
   "scripts/clay_workshop.gd",
+  "scripts/sfx_player.gd",
   "scripts/realtime_client.gd",
   "scripts/signal_room.gd",
   "shaders/crt_pixel_pass.gdshader",
@@ -35,8 +38,10 @@ if (!projectConfig.includes('run/main_scene="res://scenes/Boot.tscn"')) {
 
 const workshopScript = readFileSync(path.join(projectRoot, "scripts/clay_workshop.gd"), "utf8");
 const onboardingScript = readFileSync(path.join(projectRoot, "scripts/onboarding_controller.gd"), "utf8");
+const gardenScript = readFileSync(path.join(projectRoot, "scripts/spore_garden.gd"), "utf8");
 const clientScript = readFileSync(path.join(projectRoot, "scripts/realtime_client.gd"), "utf8");
 const bootScript = readFileSync(path.join(projectRoot, "scripts/boot_controller.gd"), "utf8");
+const sfxScript = readFileSync(path.join(projectRoot, "scripts/sfx_player.gd"), "utf8");
 const shaderSource = readFileSync(path.join(projectRoot, "shaders/crt_pixel_pass.gdshader"), "utf8");
 for (const token of ["ClayWorkshop", "ClawdGremlin", "send_signal", "CRTPixelPass", "KEY_1", "KEY_2", "KEY_3", "clay_atlas", "superior-clay-factory-atlas.json", "scene.left-rail", "bot.clawd.body"]) {
   if (!workshopScript.includes(token)) {
@@ -51,14 +56,24 @@ for (const token of ["mock_events", "_tick_mock_feed", "_emit_mock_signal"]) {
     throw new Error(`Godot realtime client is missing mock fallback token: ${token}`);
   }
 }
-for (const token of ["SUPERIOR BOOTING", "boot.seed", "boot.wordmark", "Onboarding.tscn", "ClayWorkshop.tscn"]) {
+for (const token of ["BOOT_DURATION", "AudioStreamGenerator", "boot.seed", "boot.wordmark", "BootProgressPip", "Onboarding.tscn", "ClayWorkshop.tscn"]) {
   if (!bootScript.includes(token)) {
     throw new Error(`Boot controller is missing expected token: ${token}`);
   }
 }
-for (const token of ["ACCOUNT", "LOCAL OLLAMA", "OpenAI BYOK", "CLAWD", "SAVE SPORE", "superior-setup-complete.flag"]) {
+for (const token of ["REGISTER", "Local Ollama", "OpenAI BYOK", "CHROME HAND", "CLAWD", "SAVE SPORE", "SporeGarden.tscn", "superior-setup-complete.flag"]) {
   if (!onboardingScript.includes(token)) {
     throw new Error(`Onboarding controller is missing expected token: ${token}`);
+  }
+}
+for (const token of ["SporeGarden", "BUILDER RACE", "SCOUT RACE", "SENTINEL RACE", "KEY_1", "KEY_2", "KEY_3", "ClayWorkshop.tscn", "SporeGardenCRTPixelPass"]) {
+  if (!gardenScript.includes(token)) {
+    throw new Error(`Spore garden is missing expected token: ${token}`);
+  }
+}
+for (const token of ["SuperiorSfxPlayer", "AudioStreamGenerator", "play_sfx", "browser_bind", "stamp", "equip", "signal"]) {
+  if (!sfxScript.includes(token)) {
+    throw new Error(`Godot SFX player is missing expected token: ${token}`);
   }
 }
 for (const token of ["scanline_strength", "dither_strength", "low_res_scale", "hint_screen_texture"]) {

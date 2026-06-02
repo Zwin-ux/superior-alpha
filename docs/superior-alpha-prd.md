@@ -6,10 +6,21 @@ Source: local-first worktree, Superior OS, SUP Playable Core, Synergy
 Verification: [alpha-verification.md](alpha-verification.md)
 User cases: [user-cases-player-base.md](user-cases-player-base.md)
 Repo playpen plan: [repo-playpen-continuation-plan.md](repo-playpen-continuation-plan.md)
+Account OAuth setup: [account-oauth-setup.md](account-oauth-setup.md)
 
 ## Product Sentence
 
-SUPERIOR is a Windows desktop creature utility: install the exe, launch a clay workshop, build a small bot, pair the browser extension, then run powerful local-first page skills without sending secrets into the extension.
+SUPERIOR is a creature-based way to install and operate AI systems: hatch one spore, equip a skill, connect Chrome, and watch the same bot act across the machine.
+
+## Current Focus
+
+`0.15` is the spore ownership demo. Stop widening until this loop is undeniable:
+
+```text
+SUPERIOR boot -> register -> hatch Clawd -> choose Gremlin / Moss / Pixel -> equip Article X-Ray -> connect Chrome -> extension icon becomes Clawd -> run skill -> Clawd reacts
+```
+
+Everything else is secondary until this loop works as a contract fixture and a critique-worthy MP4.
 
 ## Alpha Promise
 

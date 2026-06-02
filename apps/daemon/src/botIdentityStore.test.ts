@@ -26,7 +26,8 @@ describe("bot identity store", () => {
     const customBot = updateBotIdentity(DEFAULT_BOT_IDENTITY, {
       body: "scanner",
       color: "brickRed",
-      eye: "lens"
+      eye: "lens",
+      race: "scout"
     });
 
     writeBotIdentity(customBot);
@@ -35,6 +36,7 @@ describe("bot identity store", () => {
 
     expect(saved.body).toBe("scanner");
     expect(saved.color).toBe("brickRed");
+    expect(saved.race).toBe("scout");
     expect(saved.iconVariant.eye).toBe("lens");
   });
 });

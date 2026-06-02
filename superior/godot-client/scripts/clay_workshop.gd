@@ -1,6 +1,7 @@
 extends Node3D
 class_name ClayWorkshop
 
+const SFX_PLAYER := preload("res://scripts/sfx_player.gd")
 const CLAY_ATLAS_MANIFEST_PATH := "res://assets/clay/superior-clay-factory-atlas.json"
 
 var realtime_client := preload("res://scripts/realtime_client.gd").new()
@@ -20,6 +21,10 @@ var side_part: MeshInstance3D
 var lens_part: MeshInstance3D
 var lamp_light: OmniLight3D
 var tray_light: OmniLight3D
+var workshop_menu_slabs: Array[MeshInstance3D] = []
+var workshop_menu_lights: Array[MeshInstance3D] = []
+var workshop_tray_slots: Array[MeshInstance3D] = []
+var workshop_tray_lights: Array[MeshInstance3D] = []
 var trace_nodes: Array[MeshInstance3D] = []
 var clay_textures: Dictionary = {}
 var reaction_kind := ""
@@ -27,19 +32,25 @@ var reaction_timer := 0.0
 var pulse := 0.0
 var latest_intensity := 1
 var video_reaction_step := 0
+var showcase_mode := false
+var sfx_player
+var menu_focus_index := 0
 
 func _ready() -> void:
+	showcase_mode = OS.get_environment("SUPERIOR_SHOWCASE") == "1"
 	clay_image = _load_png_image("res://assets/clay/superior-clay-factory-atlas.png")
 	if clay_image:
 		clay_atlas = ImageTexture.create_from_image(clay_image)
 	_load_clay_asset_manifest()
 	_build_room()
 	_build_hud()
+	_build_sfx()
 	add_child(realtime_client)
 	realtime_client.message_received.connect(_on_realtime_message)
 	realtime_client.server_status_changed.connect(_on_server_status_changed)
 	realtime_client.connect_to_server("ws://127.0.0.1:7357/socket")
 	_add_terminal_line("WORKSHOP / LAMP READY")
+	sfx_player.play_sfx("success", 0.45)
 
 func _process(delta: float) -> void:
 	pulse += delta
@@ -86,8 +97,8 @@ func _build_room() -> void:
 	tray_light.light_energy = 0.2
 	add_child(tray_light)
 
-	_add_panel("WallPlate", "scene.wall", Vector2(10.4, 5.8), Vector3(0, 2.06, -2.6))
-	_add_panel("TablePlate", "scene.table", Vector2(10.5, 1.28), Vector3(0, -0.82, -0.08))
+	_add_panel("WallPlate", "scene.wall", Vector2(14.2, 5.95), Vector3(0, 2.06, -2.72))
+	_add_panel("TablePlate", "scene.table", Vector2(14.4, 1.34), Vector3(0, -0.82, -0.08))
 	_add_box(self, "TableDepth", Vector3(9.8, 0.42, 3.1), Vector3(0, -1.0, 0.62), Color("#5e3427"))
 	_add_panel("LampPlate", "scene.lamp", Vector2(1.78, 1.34), Vector3(0.0, 3.2, -1.68))
 	_add_panel("SignPlate", "scene.sign", Vector2(3.55, 1.12), Vector3(0.0, 2.58, -1.54))
@@ -104,8 +115,11 @@ func _build_left_rail() -> void:
 	var labels := ["CONTINUE", "NEW BOT", "CUSTOMIZE", "SKILLS", "BROWSER", "OPTIONS", "QUIT"]
 	for index in range(labels.size()):
 		var y := 2.34 - float(index) * 0.39
-		_add_panel("MenuSlab%s" % index, "scene.menu-slab.default", Vector2(1.1, 0.38), Vector3(-3.06, y, 0.06))
-		_add_world_label(labels[index], Vector3(-3.06, y - 0.025, 0.16), 19, Color("#23170f"))
+		var slab := _add_panel("MenuSlab%s" % index, "scene.menu-slab.default", Vector2(1.1, 0.38), Vector3(-3.06, y, 0.06))
+		var light := _add_sphere(self, "MenuLight%s" % index, 0.035, Vector3(-3.52, y - 0.01, 0.22), Color("#3a3128"))
+		workshop_menu_slabs.append(slab)
+		workshop_menu_lights.append(light)
+		_add_world_label(labels[index], Vector3(-3.0, y - 0.025, 0.16), 17, Color("#23170f"))
 
 func _build_parts_tray() -> void:
 	_add_panel("PartsTray", "scene.right-tray", Vector2(1.78, 3.24), Vector3(2.56, 1.32, -0.12))
@@ -114,13 +128,16 @@ func _build_parts_tray() -> void:
 		["EYE", "PIXEL"],
 		["BADGE", "X-RAY"],
 		["SIDE", "REPO"],
-		["CROWN", "EMPTY"],
-		["CHARM", "EMPTY"]
+		["CROWN", "CITE"],
+		["CHARM", "WATCH"]
 	]
 	for index in range(rows.size()):
 		var y := 2.12 - float(index) * 0.46
 		var asset_id := "scene.tray-slot.equipped" if index < 3 else "scene.tray-slot.empty"
-		_add_panel("TraySlot%s" % index, asset_id, Vector2(1.34, 0.36), Vector3(2.58, y, 0.16))
+		var slot := _add_panel("TraySlot%s" % index, asset_id, Vector2(1.34, 0.36), Vector3(2.58, y, 0.16))
+		var light := _add_sphere(self, "TrayLight%s" % index, 0.034, Vector3(2.05, y - 0.02, 0.32), Color("#72d968") if index < 3 else Color("#3a3128"))
+		workshop_tray_slots.append(slot)
+		workshop_tray_lights.append(light)
 		_add_world_label(rows[index][0], Vector3(2.46, y - 0.02, 0.28), 16, Color("#23170f"))
 		_add_world_label(rows[index][1], Vector3(2.89, y - 0.02, 0.28), 12, Color("#4c3524"))
 
@@ -146,12 +163,15 @@ func _build_clawd() -> void:
 
 func _build_status_pills() -> void:
 	for index in range(3):
-		var x := -3.48 + float(index) * 0.98
-		_add_panel("StatusPill%s" % index, "scene.status-pill", Vector2(0.9, 0.3), Vector3(x, -0.34, 1.1))
-	_add_world_label("DAEMON", Vector3(-3.41, -0.35, 1.22), 12, Color("#d7c999"))
-	_add_world_label("OPENAI", Vector3(-2.44, -0.35, 1.22), 12, Color("#d7c999"))
-	_add_world_label("BROWSER", Vector3(-1.46, -0.35, 1.22), 12, Color("#d7c999"))
+		var x := -3.72 + float(index) * 1.1
+		_add_panel("StatusPill%s" % index, "scene.status-pill", Vector2(1.0, 0.34), Vector3(x, -0.34, 1.18))
+	_add_world_label("DAEMON", Vector3(-3.62, -0.35, 1.31), 15, Color("#d7c999"))
+	_add_world_label("OPENAI", Vector3(-2.52, -0.35, 1.31), 15, Color("#d7c999"))
+	_add_world_label("BROWSER", Vector3(-1.42, -0.35, 1.31), 15, Color("#d7c999"))
 	_add_panel("BotCard", "scene.bottom-card", Vector2(2.4, 0.78), Vector3(0.0, -0.42, 1.12))
+	_add_world_label("SAVED SPORE", Vector3(-0.56, -0.22, 1.31), 12, Color("#23170f"))
+	_add_world_label("CLAWD", Vector3(-0.50, -0.42, 1.32), 28, Color("#23170f"))
+	_add_world_label("GREMLIN / MOSS / PIXEL", Vector3(0.36, -0.53, 1.31), 10, Color("#4c3524"))
 
 func _build_props() -> void:
 	_add_box(self, "BackShelf", Vector3(2.0, 0.12, 0.2), Vector3(3.2, 2.45, -1.32), Color("#65402f"))
@@ -205,11 +225,15 @@ func _build_hud() -> void:
 
 	signal_label = Label.new()
 	signal_label.position = Vector2(782, 620)
-	signal_label.text = "1 BROWSER   2 REPO   3 CLAWD"
+	signal_label.text = "BROWSER HAND   REPO SIGNAL   CLAWD READY" if showcase_mode else "1 BROWSER   2 REPO   3 CLAWD"
 	signal_label.add_theme_font_size_override("font_size", 18)
 	root.add_child(signal_label)
 
 	_add_crt_pass(root)
+
+func _build_sfx() -> void:
+	sfx_player = SFX_PLAYER.new()
+	add_child(sfx_player)
 
 func _update_bot_motion() -> void:
 	if not bot_rig:
@@ -241,6 +265,29 @@ func _update_lights() -> void:
 	for trace in trace_nodes:
 		if trace and trace.material_override:
 			trace.material_override.albedo_color = Color("#8fe8ff") if reaction_kind == "repo" and reaction_timer > 0.0 else Color("#385761")
+	_update_menu_animation()
+
+func _update_menu_animation() -> void:
+	var focus_pulse := 0.5 + absf(sin(pulse * 4.0)) * 0.5
+	for index in range(workshop_menu_slabs.size()):
+		var active := index == menu_focus_index
+		var slab := workshop_menu_slabs[index]
+		var light := workshop_menu_lights[index]
+		if slab:
+			slab.scale = Vector3(1.06, 0.92, 1.0) if active else Vector3.ONE
+		if light and light.material_override:
+			light.material_override.albedo_color = Color("#ffd36b").lerp(Color("#72d968"), focus_pulse) if active else Color("#3a3128")
+			light.scale = Vector3.ONE * (1.25 if active else 1.0)
+
+	for index in range(workshop_tray_slots.size()):
+		var equipped := index < 3
+		var reacting := (reaction_kind == "browser" and index == 0) or (reaction_kind == "agent" and index == 1) or (reaction_kind == "repo" and index == 2)
+		var slot := workshop_tray_slots[index]
+		var light := workshop_tray_lights[index]
+		if slot:
+			slot.scale = Vector3(1.06, 1.06, 1.0) if reacting and reaction_timer > 0.0 else Vector3.ONE
+		if light and light.material_override:
+			light.material_override.albedo_color = Color("#8fe8ff") if reacting and reaction_timer > 0.0 else Color("#72d968") if equipped else Color("#3a3128")
 
 func _update_stats() -> void:
 	if stats_label:
@@ -250,15 +297,19 @@ func _update_stats() -> void:
 
 func _on_server_status_changed(status: String) -> void:
 	if status_label:
-		status_label.text = "SERVER / %s" % status.to_upper()
+		var visible_status := "LOCAL" if showcase_mode and status == "mock" else status.to_upper()
+		status_label.text = "SERVER / %s" % visible_status
 
 func _on_realtime_message(message: Dictionary) -> void:
 	if message.has("event"):
 		var event: Dictionary = message["event"]
 		latest_intensity = int(event.get("intensity", 1))
 		var kind := str(event.get("kind", "signal"))
-		var label := "%s / %s" % [kind.to_upper(), str(event.get("label", "Signal"))]
-		if bool(message.get("mock", false)):
+		var event_label := str(event.get("label", "Signal"))
+		if showcase_mode and event_label.begins_with("MOCK "):
+			event_label = event_label.substr(5)
+		var label := "%s / %s" % [kind.to_upper(), event_label]
+		if bool(message.get("mock", false)) and not showcase_mode:
 			label = "MOCK " + label
 		_trigger_reaction(kind)
 		_add_terminal_line(label)
@@ -270,19 +321,46 @@ func _on_realtime_message(message: Dictionary) -> void:
 func _trigger_reaction(kind: String) -> void:
 	reaction_kind = kind
 	reaction_timer = 0.65
+	match kind:
+		"browser":
+			menu_focus_index = 4
+		"repo":
+			menu_focus_index = 3
+		"agent":
+			menu_focus_index = 2
+		_:
+			menu_focus_index = 0
+	if not sfx_player:
+		return
+	match kind:
+		"browser":
+			sfx_player.play_sfx("browser_bind", 0.72)
+		"repo":
+			sfx_player.play_sfx("repo", 0.82)
+		"agent":
+			sfx_player.play_sfx("attach", 0.82)
+		"system":
+			sfx_player.play_sfx("step", 0.45)
+		"market":
+			sfx_player.play_sfx("signal", 0.5)
+		_:
+			sfx_player.play_sfx("signal", 0.55)
 
 func _update_video_proof_reactions() -> void:
 	if OS.get_environment("SUPERIOR_VIDEO_PROOF") != "1":
 		return
-	if video_reaction_step == 0 and pulse > 1.1:
+	var beat_1 := 0.72 if showcase_mode else 1.1
+	var beat_2 := 2.2 if showcase_mode else 3.1
+	var beat_3 := 3.65 if showcase_mode else 5.1
+	if video_reaction_step == 0 and pulse > beat_1:
 		video_reaction_step = 1
 		_trigger_reaction("browser")
 		realtime_client.send_signal("browser", "BROWSER HAND PULSE", 2)
-	if video_reaction_step == 1 and pulse > 3.1:
+	if video_reaction_step == 1 and pulse > beat_2:
 		video_reaction_step = 2
 		_trigger_reaction("repo")
 		realtime_client.send_signal("repo", "REPO SIGNAL STAMP", 2)
-	if video_reaction_step == 2 and pulse > 5.1:
+	if video_reaction_step == 2 and pulse > beat_3:
 		video_reaction_step = 3
 		_trigger_reaction("agent")
 		realtime_client.send_signal("agent", "CLAWD SNAP", 3)
@@ -300,10 +378,10 @@ func _add_crt_pass(root: Control) -> void:
 	var shader := load("res://shaders/crt_pixel_pass.gdshader")
 	var material := ShaderMaterial.new()
 	material.shader = shader
-	material.set_shader_parameter("scanline_strength", 0.11)
-	material.set_shader_parameter("dither_strength", 0.04)
+	material.set_shader_parameter("scanline_strength", 0.07)
+	material.set_shader_parameter("dither_strength", 0.025)
 	material.set_shader_parameter("low_res_scale", 2.0)
-	material.set_shader_parameter("vignette_strength", 0.12)
+	material.set_shader_parameter("vignette_strength", 0.07)
 	overlay.material = material
 	root.add_child(overlay)
 

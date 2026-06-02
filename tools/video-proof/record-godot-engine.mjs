@@ -7,14 +7,19 @@ import { fileURLToPath } from "node:url";
 const rootDir = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..");
 const projectDir = path.join(rootDir, "superior", "godot-client");
 const artifactRoot = path.join(rootDir, ".clawdbot", "video-proof");
-const scenario = "godot-engine";
+const options = parseArgs(process.argv.slice(2));
+const scenario = options.scenario;
+const fps = 30;
+const frameCount = options.frames;
 const stamp = new Date().toISOString().replace(/[:.]/g, "-");
 const runDir = path.join(artifactRoot, `${stamp}-${scenario}`);
 const rawMoviePath = path.join(runDir, `SUPERIOR-${scenario}-${stamp}.avi`);
 const mp4Path = path.join(runDir, `SUPERIOR-${scenario}-${stamp}.mp4`);
 const posterPath = path.join(runDir, `SUPERIOR-${scenario}-${stamp}.png`);
+const reviewFramesDir = path.join(runDir, "review-frames");
+const contactSheetPath = path.join(reviewFramesDir, "contact-sheet-1s.png");
 const manifestPath = path.join(runDir, "manifest.json");
-const latestManifestPath = path.join(artifactRoot, "latest-godot.json");
+const latestManifestPath = path.join(artifactRoot, options.showcase ? "latest-showcase.json" : "latest-godot.json");
 const startedAt = new Date().toISOString();
 const godotWindowTitle = "SUPERIOR Alpha Engine (DEBUG)";
 
@@ -31,19 +36,20 @@ try {
     "--path",
     projectDir,
     "--fixed-fps",
-    "30",
+    String(fps),
     "--write-movie",
     rawMoviePath,
     "--quit-after",
-    "600"
+    String(frameCount)
   ], {
     cwd: projectDir,
     encoding: "utf8",
     windowsHide: false,
     env: {
       ...process.env,
-      SUPERIOR_FORCE_WORKSHOP: "1",
-      SUPERIOR_VIDEO_PROOF: "1"
+      SUPERIOR_FORCE_ONBOARDING: "1",
+      SUPERIOR_VIDEO_PROOF: "1",
+      SUPERIOR_SHOWCASE: options.showcase ? "1" : process.env.SUPERIOR_SHOWCASE ?? ""
     }
   });
 
@@ -52,11 +58,15 @@ try {
   }
 
   convertMovie(ffmpegPath, rawMoviePath, mp4Path);
-  extractPoster(ffmpegPath, mp4Path, posterPath);
+  extractPoster(ffmpegPath, mp4Path, posterPath, options.posterSecond);
+  await mkdir(reviewFramesDir, { recursive: true });
+  extractReviewFrames(ffmpegPath, mp4Path, reviewFramesDir, options.reviewFrameSeconds);
+  createContactSheet(ffmpegPath, mp4Path, contactSheetPath, Math.ceil(frameCount / fps));
 
   const manifest = {
     kind: "superior-video-proof",
     scenario,
+    showcase: options.showcase,
     engine: "Godot",
     godotPath,
     projectDir,
@@ -65,13 +75,13 @@ try {
     rawMoviePath,
     mp4Path,
     posterPath,
+    reviewFramesDir,
+    contactSheetPath,
     captureMode: "godot-write-movie",
-    frames: 600,
-    fps: 30,
-    notes: [
-      "Generated from the Superior Alpha Godot engine slice.",
-      "Shows the 0.14 SUPERIOR console boot, clay lamp reveal, concept-mapped workshop menu, Clawd Gremlin, CRT pass, mocked server events, and input-driven reactions."
-    ]
+    frames: frameCount,
+    fps,
+    durationSeconds: frameCount / fps,
+    notes: options.notes
   };
 
   await writeJson(manifestPath, manifest);
@@ -103,6 +113,45 @@ function resolveGodotPath() {
     throw new Error("Godot 4.x was not found. Set GODOT_BIN to the Godot executable path.");
   }
   return found;
+}
+
+function parseArgs(args) {
+  let requestedScenario = "engine";
+  let requestedFrames;
+  for (let index = 0; index < args.length; index += 1) {
+    const arg = args[index];
+    if (arg === "--scenario") {
+      requestedScenario = args[index + 1] ?? requestedScenario;
+      index += 1;
+    } else if (arg === "--showcase") {
+      requestedScenario = "showcase";
+    } else if (arg === "--frames") {
+      requestedFrames = Number(args[index + 1]);
+      index += 1;
+    }
+  }
+
+  const showcase = requestedScenario === "showcase" || requestedScenario === "godot-showcase";
+  const scenario = showcase ? "godot-showcase" : "godot-engine";
+  const frames = Number.isFinite(requestedFrames) && requestedFrames > 0 ? Math.floor(requestedFrames) : (showcase ? 660 : 720);
+
+  return {
+    scenario,
+    showcase,
+    frames,
+    posterSecond: showcase ? 10.8 : 12.1,
+    reviewFrameSeconds: showcase ? [1.0, 2.6, 4.2, 5.8, 7.4, 9.2, 10.8, 12.6, 15.0, 17.2, 20.6] : [1.0, 3.2, 5.2, 7.2, 9.2, 10.8, 12.1, 14.6, 17.4, 20.0, 22.8],
+    notes: showcase
+      ? [
+          "Production showcase from the Superior Godot runtime.",
+          "22-second beat map: console boot, Wake Spore, body pick, eye fit, role stamp, Browser bind, ICON MATCH, Article X-Ray SKILL RAN, spore reaction, registry stamp, Spore Garden, Workshop reactions.",
+          "Uses SUPERIOR_SHOWCASE=1 to hide debug controls and keep labels product-facing."
+        ]
+      : [
+          "Generated from the Superior Alpha Godot engine slice.",
+          "Shows the SUPERIOR first-boot ritual: Wake Spore, choose body, fit eye, choose role, bind browser hand, ICON MATCH, Article X-Ray SKILL RAN, spore reaction, stamp registry, Spore Garden home, workshop drop, mocked server events, and bot reactions."
+        ]
+  };
 }
 
 function commandPath(command) {
@@ -325,11 +374,52 @@ function captureWindowTitle(ffmpegPath, outputPath, windowTitle) {
   }
 }
 
-function extractPoster(ffmpegPath, inputPath, outputPath) {
-  const result = spawnSync(ffmpegPath, ["-y", "-ss", "00:00:10", "-i", inputPath, "-frames:v", "1", outputPath], { encoding: "utf8" });
+function extractPoster(ffmpegPath, inputPath, outputPath, posterSecond) {
+  const result = spawnSync(ffmpegPath, ["-y", "-ss", formatTimestamp(posterSecond), "-i", inputPath, "-frames:v", "1", outputPath], { encoding: "utf8" });
   if (result.status !== 0 || !existsSync(outputPath)) {
     throw new Error(`ffmpeg failed to extract poster frame.\n${result.stderr || result.stdout}`);
   }
+}
+
+function extractReviewFrames(ffmpegPath, inputPath, outputDir, seconds) {
+  for (const second of seconds) {
+    const outputPath = path.join(outputDir, `frame-${String(second).replace(".", "-")}s.png`);
+    const result = spawnSync(ffmpegPath, ["-y", "-ss", formatTimestamp(second), "-i", inputPath, "-frames:v", "1", outputPath], { encoding: "utf8" });
+    if (result.status !== 0 || !existsSync(outputPath)) {
+      throw new Error(`ffmpeg failed to extract review frame at ${second}s.\n${result.stderr || result.stdout}`);
+    }
+  }
+}
+
+function createContactSheet(ffmpegPath, inputPath, outputPath, durationSeconds) {
+  const columns = 5;
+  const rows = Math.ceil(durationSeconds / columns);
+  const result = spawnSync(
+    ffmpegPath,
+    [
+      "-y",
+      "-i",
+      inputPath,
+      "-vf",
+      `fps=1,scale=320:-1,tile=${columns}x${rows}`,
+      "-frames:v",
+      "1",
+      outputPath
+    ],
+    { encoding: "utf8" }
+  );
+  if (result.status !== 0 || !existsSync(outputPath)) {
+    throw new Error(`ffmpeg failed to create review contact sheet.\n${result.stderr || result.stdout}`);
+  }
+}
+
+function formatTimestamp(seconds) {
+  const whole = Math.max(0, Math.floor(seconds));
+  const milliseconds = Math.round((seconds - whole) * 1000);
+  const hh = String(Math.floor(whole / 3600)).padStart(2, "0");
+  const mm = String(Math.floor((whole % 3600) / 60)).padStart(2, "0");
+  const ss = String(whole % 60).padStart(2, "0");
+  return `${hh}:${mm}:${ss}.${String(milliseconds).padStart(3, "0")}`;
 }
 
 function stopProcessTree(pid) {

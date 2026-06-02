@@ -1,0 +1,31 @@
+{
+  "version": "0.15",
+  "passed": true,
+  "generatedAt": "2026-05-31T20:19:56.733Z",
+  "figmaFileUrl": "https://www.figma.com/design/8C6EiZivpUIxyLw0b6YT9R",
+  "requiredAssetIds": [
+    "ownership.chrome-hand.dock",
+    "ownership.chrome-toolbar.slot",
+    "ownership.chrome-icon.default",
+    "ownership.chrome-icon.clawd",
+    "ownership.chrome-cable",
+    "ownership.icon-match.flash",
+    "ownership.spore-stamp",
+    "bot.clawd.icon-body",
+    "bot.clawd.icon-eye.pixel",
+    "bot.clawd.icon-skill.xray"
+  ],
+  "assetCount": 10,
+  "atlas": {
+    "width": 1024,
+    "height": 1024,
+    "assets": 10
+  },
+  "sourceKindCounts": {
+    "manual": 10
+  },
+  "notes": [
+    "0.15 gate is focused on the spore ownership moment.",
+    "The Chrome hand, toolbar slot, matched Clawd icon, cable, flash, and stamp are dedicated runtime assets."
+  ]
+}

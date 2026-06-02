@@ -18,6 +18,9 @@ const edgeFunction = readFileSync(functionPath, "utf8");
 for (const token of [
   "create table if not exists public.profiles",
   "create table if not exists public.bot_spores",
+  "create table if not exists public.account_connections",
+  "provider in ('google', 'x')",
+  "auth_providers text[]",
   "enable row level security",
   "auth.uid() = user_id",
   "grant select, insert, update"
@@ -29,12 +32,18 @@ for (const token of [
 
 for (const token of [
   "/start-email-code",
+  "/start-oauth",
   "/verify-email-code",
   "/profile",
   "/spore",
   "SUPABASE_PUBLISHABLE_KEY",
   "signInWithOtp",
-  "verifyOtp"
+  "signInWithOAuth",
+  "verifyOtp",
+  "provider: oauthProvider",
+  "\"google\"",
+  "\"x\"",
+  "account_connections"
 ]) {
   if (!edgeFunction.includes(token)) {
     throw new Error(`Supabase Edge Function missing expected route/auth token: ${token}`);

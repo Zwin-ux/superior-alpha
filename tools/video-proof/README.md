@@ -28,6 +28,16 @@ This launches `superior/godot-client/project.godot`, captures the Godot window r
 - `.clawdbot/video-proof/<run>/manifest.json`
 - `.clawdbot/video-proof/latest-godot.json`
 
+For a production-style 20 second showcase:
+
+```powershell
+corepack pnpm video:showcase
+```
+
+This uses the same Godot movie writer, but sets `SUPERIOR_SHOWCASE=1` so the runtime hides debug labels, removes mock-language from visible product logs, and follows the pitch beat map documented in `docs/production-showcase.md`. It writes the latest manifest to:
+
+- `.clawdbot/video-proof/latest-showcase.json`
+
 ## Notes
 
 - The first recorder target is the alpha Workshop harness because it is fast and deterministic.

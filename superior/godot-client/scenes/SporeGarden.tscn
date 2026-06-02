@@ -1,0 +1,6 @@
+[gd_scene load_steps=2 format=3 uid="uid://superiorsporegarden"]
+
+[ext_resource type="Script" path="res://scripts/spore_garden.gd" id="1_garden"]
+
+[node name="SporeGarden" type="Node3D"]
+script = ExtResource("1_garden")
