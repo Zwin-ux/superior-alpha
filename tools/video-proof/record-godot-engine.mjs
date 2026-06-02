@@ -133,14 +133,14 @@ function parseArgs(args) {
 
   const showcase = requestedScenario === "showcase" || requestedScenario === "godot-showcase";
   const scenario = showcase ? "godot-showcase" : "godot-engine";
-  const frames = Number.isFinite(requestedFrames) && requestedFrames > 0 ? Math.floor(requestedFrames) : (showcase ? 660 : 720);
+  const frames = Number.isFinite(requestedFrames) && requestedFrames > 0 ? Math.floor(requestedFrames) : 660;
 
   return {
     scenario,
     showcase,
     frames,
     posterSecond: showcase ? 10.8 : 12.1,
-    reviewFrameSeconds: showcase ? [1.0, 2.6, 4.2, 5.8, 7.4, 9.2, 10.8, 12.6, 15.0, 17.2, 20.6] : [1.0, 3.2, 5.2, 7.2, 9.2, 10.8, 12.1, 14.6, 17.4, 20.0, 22.8],
+    reviewFrameSeconds: showcase ? [1.0, 2.6, 4.2, 5.8, 7.4, 9.2, 10.8, 12.6, 15.0, 17.2, 20.6] : [1.0, 3.2, 5.2, 7.2, 9.2, 10.8, 12.1, 14.6, 17.4, 19.6, 21.2],
     notes: showcase
       ? [
           "Production showcase from the Superior Godot runtime.",
