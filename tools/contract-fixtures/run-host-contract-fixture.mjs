@@ -76,11 +76,12 @@ await runCheck("bot-creation-options", async () => {
 await runCheck("setup-state", async () => {
   const setup = await getJson("/setup-state");
   const steps = setup.steps?.map((item) => item.step) ?? [];
+  const expectedSteps = ["account", "daemon", "key", "model", "browser", "starter", "skills", "assembly", "finish"];
 
   assert(setup.type === "superior-setup-state", "Expected setup state response.");
   assert(typeof setup.activeBotSaved === "boolean", "Expected activeBotSaved flag.");
   assert(typeof setup.requiresSetup === "boolean", "Expected requiresSetup flag.");
-  assert(steps.join(",") === "daemon,key,browser,shape,skills,assembly,finish", "Expected setup step order.");
+  assert(steps.join(",") === expectedSteps.join(","), "Expected setup step order.");
   assert(setup.bot?.identity?.id === botIdentity.id, "Expected setup state active bot.");
 
   return {
@@ -88,6 +89,29 @@ await runCheck("setup-state", async () => {
     steps,
     key: setup.key?.status,
     browser: setup.browser?.status
+  };
+});
+
+await runCheck("mobile-companion", async () => {
+  const companion = await getJson("/mobile-companion");
+  const serialized = JSON.stringify(companion);
+
+  assert(companion.type === "superior-mobile-companion", "Expected mobile companion response.");
+  assert(companion.bot?.id === botIdentity.id, "Expected mobile companion active bot.");
+  assert(companion.asset?.format === "glb", "Expected mobile companion GLB asset.");
+  assert(Array.isArray(companion.bot?.equippedSkills), "Expected equipped skill summaries.");
+  assert(Array.isArray(companion.recentProof), "Expected recent proof list.");
+  assert(!serialized.includes("pair_"), "Mobile companion must not expose raw pairing tokens.");
+  assert(!serialized.includes("OPENAI_API_KEY"), "Mobile companion must not expose model keys.");
+  assert(!serialized.includes("browser-profiles"), "Mobile companion must not expose browser profile paths.");
+  assert(!serialized.includes("debugPort"), "Mobile companion must not expose debug ports.");
+  assert(!serialized.includes("cleanText"), "Mobile companion must not expose page text.");
+
+  return {
+    bot: companion.bot.name,
+    asset: companion.asset.id,
+    proofCount: companion.recentProof.length,
+    browser: companion.device?.browser?.status ?? "unknown"
   };
 });
 

@@ -11,15 +11,27 @@ import {
   CustomSkillImportRequest,
   ExplainPageError,
   ExplainPageRequest,
+  MobileCompanionRecentProof,
+  MobileCompanionResponse,
+  RecentSkillResult,
   RepoReaderError as RepoReaderContractError,
   RepoReaderRequest,
+  SuperiorAccountError,
+  SuperiorAccountOAuthCompleteRequest,
+  SuperiorAccountOAuthCompleteResult,
+  SuperiorAccountOAuthProvider,
+  SuperiorAccountOAuthStartResult,
+  SuperiorAccountProfile,
+  SuperiorAccountSession,
   SuperiorBrowserAttachRequest,
   SuperiorBrowserActivePageReport,
   SuperiorBrowserError,
+  SuperiorBrowserState,
   SuperiorBrowserStartRequest,
   SuperiorFunctionError,
   SuperiorFunctionErrorCode,
   SuperiorFunctionRunRequest,
+  SuperiorFunctionRunSummary,
   SuperiorModelProviderError,
   SuperiorModelProviderSelectRequest,
   SuperiorOpenAiKeySaveRequest,
@@ -27,11 +39,19 @@ import {
   botCreationShapes,
   botSkillLoadoutOptions,
   botStarterPresets,
+  createBotSporeFromIdentity,
   createSuperiorFunctionRunRequest,
   premadeSkillPartOptions,
+  skillCatalog,
   sporeRaceCatalog,
   superiorAccountOAuthProviders
 } from "@clawdbot/shared";
+import {
+  clearStoredAccountSession,
+  readStoredAccountState,
+  writePendingAccountProvider,
+  writeStoredAccountSession
+} from "./accountStore.js";
 import {
   completeBrowserPairing,
   readBrowserLinkState,
@@ -104,6 +124,16 @@ const server = createServer(async (request, response) => {
 
   if (request.method === "GET" && url.pathname === "/setup-state") {
     sendJson(response, 200, readSetupState());
+    return;
+  }
+
+  if (request.method === "GET" && url.pathname === "/mobile-companion") {
+    sendJson(response, 200, readMobileCompanion());
+    return;
+  }
+
+  if (request.method === "GET" && url.pathname === "/account/oauth/callback") {
+    sendHtml(response, 200, renderAccountOAuthCallbackPage());
     return;
   }
 
@@ -200,6 +230,21 @@ const server = createServer(async (request, response) => {
 
   if (request.method === "POST" && url.pathname === "/browser-link/start") {
     await handleBrowserPairingStart(request, response);
+    return;
+  }
+
+  if (request.method === "POST" && url.pathname === "/account/start-oauth") {
+    await handleAccountOAuthStart(request, response);
+    return;
+  }
+
+  if (request.method === "POST" && url.pathname === "/account/oauth/complete") {
+    await handleAccountOAuthComplete(request, response);
+    return;
+  }
+
+  if (request.method === "POST" && url.pathname === "/account/sign-out") {
+    await handleAccountSignOut(request, response);
     return;
   }
 
@@ -440,6 +485,153 @@ async function handleBrowserSessionAttach(
   } catch (error) {
     sendBrowserRuntimeError(response, payload.requestId, error);
   }
+}
+
+async function handleAccountOAuthStart(request: IncomingMessage, response: ServerResponse): Promise<void> {
+  if (!isTrustedLocalOrigin(request.headers.origin)) {
+    sendJson(response, 403, {
+      type: "superior-account-error",
+      code: "bad_request",
+      message: "Account sign-in can only start from the local Workshop."
+    } satisfies SuperiorAccountError);
+    return;
+  }
+
+  let payload: {
+    type?: string;
+    provider?: unknown;
+    redirectTo?: unknown;
+  };
+
+  try {
+    payload = (await readJsonBody(request)) as typeof payload;
+  } catch {
+    sendJson(response, 400, {
+      type: "superior-account-error",
+      code: "bad_request",
+      message: "Expected an account OAuth start request."
+    } satisfies SuperiorAccountError);
+    return;
+  }
+
+  const provider = parseAccountProvider(payload.provider);
+
+  if (payload.type !== "superior-account-start-oauth" || !provider) {
+    sendJson(response, 400, {
+      type: "superior-account-error",
+      code: "bad_request",
+      message: "Choose Google or X."
+    } satisfies SuperiorAccountError);
+    return;
+  }
+
+  if (!isAccountConfigured()) {
+    sendJson(response, 503, {
+      type: "superior-account-error",
+      code: "not_configured",
+      message: "Supabase account login is not configured for this build."
+    } satisfies SuperiorAccountError);
+    return;
+  }
+
+  const redirectTo =
+    typeof payload.redirectTo === "string" && payload.redirectTo.trim()
+      ? payload.redirectTo.trim()
+      : config.accountRedirectUrl;
+
+  try {
+    const started = await startAccountOAuth(provider, redirectTo);
+
+    writePendingAccountProvider(provider);
+    sendJson(response, 200, started);
+  } catch (error) {
+    sendJson(response, 502, {
+      type: "superior-account-error",
+      code: "auth_failed",
+      message: error instanceof Error ? error.message : "Account sign-in could not start."
+    } satisfies SuperiorAccountError);
+  }
+}
+
+async function handleAccountOAuthComplete(request: IncomingMessage, response: ServerResponse): Promise<void> {
+  let payload: SuperiorAccountOAuthCompleteRequest;
+
+  try {
+    payload = (await readJsonBody(request)) as SuperiorAccountOAuthCompleteRequest;
+  } catch {
+    sendJson(response, 400, {
+      type: "superior-account-error",
+      code: "bad_request",
+      message: "Expected an account OAuth completion payload."
+    } satisfies SuperiorAccountError);
+    return;
+  }
+
+  if (payload.type !== "superior-account-oauth-complete" || typeof payload.accessToken !== "string") {
+    sendJson(response, 400, {
+      type: "superior-account-error",
+      code: "bad_request",
+      message: "OAuth callback needs the returned access token."
+    } satisfies SuperiorAccountError);
+    return;
+  }
+
+  if (!isAccountConfigured()) {
+    sendJson(response, 503, {
+      type: "superior-account-error",
+      code: "not_configured",
+      message: "Supabase account login is not configured for this build."
+    } satisfies SuperiorAccountError);
+    return;
+  }
+
+  try {
+    const accountState = readStoredAccountState();
+    const profile = await syncAccountProfile(payload.accessToken, readServiceBotIdentity().id);
+    const session: SuperiorAccountSession = {
+      type: "superior-account-session",
+      userId: profile.userId,
+      email: profile.email ?? accountState.session?.email ?? "operator@superior.local",
+      ...(accountState.pendingProvider ? { provider: accountState.pendingProvider } : {}),
+      accessToken: payload.accessToken,
+      ...(typeof payload.expiresAt === "number" ? { expiresAt: payload.expiresAt } : {}),
+      createdAt: new Date().toISOString()
+    };
+
+    writeStoredAccountSession({
+      session,
+      profile
+    });
+    await syncAccountSpore(payload.accessToken, readServiceBotIdentity()).catch(() => undefined);
+
+    sendJson(response, 200, {
+      type: "superior-account-connected",
+      session,
+      profile,
+      account: getSetupAccountState(),
+      createdAt: new Date().toISOString()
+    } satisfies SuperiorAccountOAuthCompleteResult);
+  } catch (error) {
+    sendJson(response, 502, {
+      type: "superior-account-error",
+      code: "auth_failed",
+      message: error instanceof Error ? error.message : "Could not finish account sign-in."
+    } satisfies SuperiorAccountError);
+  }
+}
+
+async function handleAccountSignOut(request: IncomingMessage, response: ServerResponse): Promise<void> {
+  if (!isTrustedLocalOrigin(request.headers.origin)) {
+    sendJson(response, 403, {
+      type: "superior-account-error",
+      code: "bad_request",
+      message: "Account sign-out can only start from the local Workshop."
+    } satisfies SuperiorAccountError);
+    return;
+  }
+
+  clearStoredAccountSession();
+  sendJson(response, 200, readSetupState());
 }
 
 async function handleModelProviderSelect(request: IncomingMessage, response: ServerResponse): Promise<void> {
@@ -710,13 +902,21 @@ async function handleFunctionRun(request: IncomingMessage, response: ServerRespo
 async function handleBotIdentitySave(request: IncomingMessage, response: ServerResponse): Promise<void> {
   try {
     const payload = (await readJsonBody(request)) as BotIdentity;
+    const saved = writeBotIdentity({
+      ...payload,
+      browserLinkState: readBrowserLinkState()
+    });
+
+    const accountSession = getActiveAccountSession();
+
+    if (accountSession) {
+      void syncAccountSpore(accountSession.accessToken, saved).catch(() => undefined);
+    }
+
     sendJson(
       response,
       200,
-      writeBotIdentity({
-        ...payload,
-        browserLinkState: readBrowserLinkState()
-      })
+      saved
     );
   } catch {
     sendJson(response, 400, {
@@ -1076,10 +1276,289 @@ function readBotCreationOptions(): BotCreationOptionsResponse {
   };
 }
 
+function getSetupAccountState(): SuperiorSetupState["account"] {
+  const session = getActiveAccountSession();
+  const stored = readStoredAccountState();
+  const profile = stored.profile;
+  const configured = isAccountConfigured();
+  const connectedProviders = profile?.connectedProviders ?? (session?.provider && session.provider !== "email-code" ? [session.provider] : []);
+  const email = profile?.email ?? session?.email;
+
+  return {
+    status: session ? "signed-in" : configured ? "signed-out" : "offline",
+    ...(profile?.handle ? { handle: profile.handle } : {}),
+    ...(email ? { email } : {}),
+    ...(session?.userId ? { userId: session.userId } : {}),
+    ...(profile?.avatarUrl ? { avatarUrl: profile.avatarUrl } : {}),
+    connectedProviders,
+    providers: superiorAccountOAuthProviders.map((provider) => ({
+      provider,
+      label: formatAccountProviderLabel(provider),
+      status: connectedProviders.includes(provider)
+        ? "connected"
+        : configured
+          ? "available"
+          : "not-configured",
+      detail: connectedProviders.includes(provider)
+        ? "linked"
+        : configured
+          ? "ready"
+          : "missing config"
+    })),
+    ...(profile?.updatedAt ? { syncedAt: profile.updatedAt } : {}),
+    detail:
+      profile?.handle ??
+      profile?.email ??
+      (session ? "spore claimed" : configured ? "Google / X / Discord" : "account offline")
+  };
+}
+
+function formatAccountProviderLabel(provider: SuperiorAccountOAuthProvider): "Google" | "X" | "Discord" {
+  if (provider === "google") {
+    return "Google";
+  }
+
+  if (provider === "discord") {
+    return "Discord";
+  }
+
+  return "X";
+}
+
+function getActiveAccountSession(): SuperiorAccountSession | null {
+  const session = readStoredAccountState().session;
+
+  if (!session) {
+    return null;
+  }
+
+  if (typeof session.expiresAt === "number" && session.expiresAt <= Math.floor(Date.now() / 1000)) {
+    clearStoredAccountSession();
+    return null;
+  }
+
+  return session;
+}
+
+function isAccountConfigured(): boolean {
+  return Boolean(config.supabaseUrl && config.supabasePublishableKey);
+}
+
+function parseAccountProvider(value: unknown): SuperiorAccountOAuthProvider | null {
+  return superiorAccountOAuthProviders.includes(value as SuperiorAccountOAuthProvider)
+    ? (value as SuperiorAccountOAuthProvider)
+    : null;
+}
+
+async function startAccountOAuth(
+  provider: SuperiorAccountOAuthProvider,
+  redirectTo: string | undefined
+): Promise<SuperiorAccountOAuthStartResult> {
+  const response = await fetch(`${getAccountBaseUrl()}/start-oauth`, {
+    method: "POST",
+    headers: getAccountHeaders(),
+    body: JSON.stringify({
+      type: "superior-account-start-oauth",
+      provider,
+      ...(redirectTo ? { redirectTo } : {})
+    })
+  });
+
+  if (!response.ok) {
+    throw new Error(await readRemoteAccountError(response, "Supabase did not return an OAuth URL."));
+  }
+
+  return (await response.json()) as SuperiorAccountOAuthStartResult;
+}
+
+async function syncAccountProfile(accessToken: string, activeSporeId: string): Promise<SuperiorAccountProfile> {
+  const baseUrl = getAccountBaseUrl();
+  const authorizationHeaders = getAccountHeaders({
+    Authorization: `Bearer ${accessToken}`
+  });
+  const profileResponse = await fetch(`${baseUrl}/profile`, {
+    headers: authorizationHeaders
+  });
+
+  if (!profileResponse.ok) {
+    throw new Error(await readRemoteAccountError(profileResponse, "Could not read account profile."));
+  }
+
+  const profile = (await profileResponse.json()) as SuperiorAccountProfile;
+  const upsertResponse = await fetch(`${baseUrl}/profile`, {
+    method: "PUT",
+    headers: authorizationHeaders,
+    body: JSON.stringify({
+      handle: profile.handle,
+      activeSporeId
+    })
+  });
+
+  if (!upsertResponse.ok) {
+    throw new Error(await readRemoteAccountError(upsertResponse, "Could not save account profile."));
+  }
+
+  return (await upsertResponse.json()) as SuperiorAccountProfile;
+}
+
+async function syncAccountSpore(accessToken: string, bot: BotIdentity): Promise<void> {
+  const response = await fetch(`${getAccountBaseUrl()}/spore`, {
+    method: "PUT",
+    headers: getAccountHeaders({
+      Authorization: `Bearer ${accessToken}`
+    }),
+    body: JSON.stringify({
+      starterPresetId: bot.starterPresetId,
+      spore: createBotSporeFromIdentity(bot)
+    })
+  });
+
+  if (!response.ok) {
+    throw new Error(await readRemoteAccountError(response, "Could not sync the active spore."));
+  }
+}
+
+function getAccountBaseUrl(): string {
+  if (!config.supabaseUrl) {
+    throw new Error("SUPABASE_URL is not configured.");
+  }
+
+  return `${config.supabaseUrl.replace(/\/+$/, "")}/functions/v1/account`;
+}
+
+function getAccountHeaders(extraHeaders: Record<string, string> = {}): Record<string, string> {
+  if (!config.supabasePublishableKey) {
+    throw new Error("SUPABASE_PUBLISHABLE_KEY is not configured.");
+  }
+
+  return {
+    "Content-Type": "application/json",
+    apikey: config.supabasePublishableKey,
+    ...extraHeaders
+  };
+}
+
+async function readRemoteAccountError(response: Response, fallback: string): Promise<string> {
+  const payload = (await response.json().catch(() => null)) as Partial<SuperiorAccountError> | null;
+
+  return payload?.message ?? fallback;
+}
+
+function renderAccountOAuthCallbackPage(): string {
+  return `<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>SUPERIOR Sign-In</title>
+    <style>
+      :root {
+        color-scheme: light;
+        font-family: "Segoe UI", sans-serif;
+        background: #dcc29e;
+        color: #2e211a;
+      }
+      body {
+        margin: 0;
+        min-height: 100vh;
+        display: grid;
+        place-items: center;
+        background:
+          radial-gradient(circle at top, rgba(255, 233, 177, 0.74), transparent 28%),
+          linear-gradient(180deg, #8fb2b8 0%, #caa47c 54%, #8f5639 100%);
+      }
+      main {
+        width: min(420px, calc(100vw - 24px));
+        padding: 24px 22px;
+        border-radius: 24px;
+        background: rgba(255, 244, 219, 0.92);
+        box-shadow: 0 22px 60px rgba(33, 22, 16, 0.24);
+      }
+      p {
+        margin: 0;
+        line-height: 1.45;
+      }
+      .kicker {
+        display: inline-block;
+        margin-bottom: 10px;
+        font-size: 12px;
+        font-weight: 800;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+      }
+      #status {
+        font-size: 24px;
+        font-weight: 700;
+      }
+      #detail {
+        margin-top: 10px;
+        color: #6c5342;
+      }
+    </style>
+  </head>
+  <body>
+    <main>
+      <span class="kicker">SUPERIOR</span>
+      <p id="status">Finishing sign-in...</p>
+      <p id="detail">Keep the Workshop open.</p>
+    </main>
+    <script>
+      const status = document.getElementById("status");
+      const detail = document.getElementById("detail");
+      const fragment = new URLSearchParams(window.location.hash.slice(1));
+      const accessToken = fragment.get("access_token");
+      const refreshToken = fragment.get("refresh_token");
+      const expiresAt = fragment.get("expires_at");
+      const authError = fragment.get("error_description") || fragment.get("error");
+
+      history.replaceState(null, "", "/account/oauth/callback");
+
+      if (authError) {
+        status.textContent = "Sign-in failed";
+        detail.textContent = authError;
+      } else if (!accessToken) {
+        status.textContent = "Token missing";
+        detail.textContent = "The provider returned without an access token.";
+      } else {
+        fetch("/account/oauth/complete", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json"
+          },
+          body: JSON.stringify({
+            type: "superior-account-oauth-complete",
+            accessToken,
+            ...(refreshToken ? { refreshToken } : {}),
+            ...(expiresAt ? { expiresAt: Number(expiresAt) } : {})
+          })
+        })
+          .then(async (response) => {
+            const payload = await response.json().catch(() => null);
+
+            if (!response.ok) {
+              throw new Error(payload?.message || "Could not finish sign-in.");
+            }
+
+            const handle = payload?.profile?.handle || payload?.profile?.email || "spore claimed";
+
+            status.textContent = "Account linked";
+            detail.textContent = handle + ". Return to the Workshop.";
+          })
+          .catch((error) => {
+            status.textContent = "Sign-in failed";
+            detail.textContent = error instanceof Error ? error.message : "Could not finish sign-in.";
+          });
+      }
+    </script>
+  </body>
+</html>`;
+}
+
 function readSetupState(): SuperiorSetupState {
   const bot = readServiceBotIdentity();
   const browserLinkState = readBrowserLinkState();
   const modelProviderState = readModelProviderState(config);
+  const accountState = getSetupAccountState();
   const activeBotSaved = hasSavedBotIdentity();
   const keyReady = modelProviderState.openAiKeyStatus === "ready" || modelProviderState.openAiKeyStatus === "saved";
   const modelReady = modelProviderState.modelProvider !== "missing";
@@ -1093,13 +1572,14 @@ function readSetupState(): SuperiorSetupState {
   return {
     type: "superior-setup-state",
     activeBotSaved,
-    requiresSetup: !activeBotSaved,
+    requiresSetup: !activeBotSaved || accountState.status !== "signed-in",
     steps: [
       {
         step: "account",
-        status: "missing",
+        status:
+          accountState.status === "signed-in" ? "ready" : accountState.status === "offline" ? "blocked" : "missing",
         label: "Account",
-        detail: "Google / X / email code"
+        detail: accountState.detail
       },
       {
         step: "daemon",
@@ -1145,22 +1625,17 @@ function readSetupState(): SuperiorSetupState {
       },
       {
         step: "finish",
-        status: activeBotSaved ? "ready" : "blocked",
+        status: activeBotSaved && accountState.status === "signed-in" ? "ready" : "blocked",
         label: "Save",
-        detail: activeBotSaved ? "active bot saved" : "save active bot"
+        detail:
+          activeBotSaved && accountState.status === "signed-in"
+            ? "active bot saved"
+            : accountState.status !== "signed-in"
+              ? "claim spore first"
+              : "save active bot"
       }
     ],
-    account: {
-      status: "signed-out",
-      connectedProviders: [],
-      providers: superiorAccountOAuthProviders.map((provider) => ({
-        provider,
-        label: provider === "google" ? "Google" : "X",
-        status: "available",
-        detail: provider === "google" ? "Supabase Google OAuth" : "Supabase X OAuth 2.0"
-      })),
-      detail: "Google / X / email code"
-    },
+    account: accountState,
     daemon: {
       status: "ready",
       detail: `SUPERIOR daemon ${config.version}`
@@ -1183,6 +1658,170 @@ function readSetupState(): SuperiorSetupState {
     },
     createdAt: new Date().toISOString()
   };
+}
+
+function readMobileCompanion(): MobileCompanionResponse {
+  const bot = readServiceBotIdentity();
+  const spore = createBotSporeFromIdentity(bot);
+  const account = getSetupAccountState();
+  const modelProviderState = readModelProviderState(config);
+  const browserLinkState = readBrowserLinkState();
+  const browserState = getSuperiorBrowserState();
+  const recentProof = [
+    ...readRecentSkillResults().items.map(toMobileSkillProof),
+    ...readRecentFunctionRuns().items.map(toMobileFunctionProof)
+  ]
+    .sort((left, right) => Date.parse(right.createdAt) - Date.parse(left.createdAt))
+    .slice(0, 8);
+
+  return {
+    type: "superior-mobile-companion",
+    bot: {
+      id: bot.id,
+      name: bot.name,
+      body: bot.body,
+      color: bot.color,
+      eye: bot.eye,
+      ...(bot.race ? { race: bot.race } : {}),
+      avatarAsset: spore.appearance.avatarAsset,
+      equippedSkills: bot.skills.map((skillId) => {
+        const skill = skillCatalog[skillId];
+
+        return {
+          id: skill.id,
+          label: skill.label,
+          slot: skill.slot,
+          attachment: skill.attachment,
+          effect: skill.effect
+        };
+      }),
+      ...(bot.updatedAt ? { updatedAt: bot.updatedAt } : {})
+    },
+    account: {
+      status: account.status,
+      ...(account.handle ? { handle: account.handle } : {}),
+      ...(account.avatarUrl ? { avatarUrl: account.avatarUrl } : {}),
+      connectedProviders: account.connectedProviders ?? [],
+      detail: account.detail
+    },
+    device: {
+      browser: {
+        status: browserLinkState.status,
+        ...(browserLinkState.extensionId ? { extensionId: browserLinkState.extensionId } : {}),
+        ...(browserLinkState.lastSeenAt ? { lastSeenAt: browserLinkState.lastSeenAt } : {})
+      },
+      superiorBrowser: toMobileBrowserRuntime(browserState),
+      model: {
+        modelProvider: modelProviderState.modelProvider,
+        ollamaStatus: modelProviderState.ollamaStatus,
+        openAiKeyStatus: modelProviderState.openAiKeyStatus,
+        detail: modelProviderState.detail
+      }
+    },
+    recentProof,
+    asset: {
+      id: "mobile-clawd-gremlin",
+      version: "mobile-3d-0.1",
+      format: "glb",
+      runtimePath: "assets/bots/mobile-3d/generated/mobile-clawd-gremlin.glb",
+      sourcePath: "assets/bots/mobile-3d/asset-manifest.json",
+      triangleCount: 492,
+      fileBytes: 19064,
+      requiredNodeNames: [
+        "Body_Gremlin",
+        "Eye_Left_Pixel",
+        "Eye_Right_Pixel",
+        "Antenna_Left",
+        "Antenna_Right",
+        "Skill_ArticleXray_Lens",
+        "Skill_RepoReader_Gear"
+      ]
+    },
+    share: {
+      status: "not-configured",
+      acceptedInputs: ["url", "text"],
+      detail: "Share-sheet capture is a future mobile lane; desktop remains the alpha runtime."
+    },
+    privacy: {
+      localOnly: true,
+      excludes: [
+        "OpenAI API keys",
+        "raw browser pairing tokens",
+        "browser profile paths",
+        "debug ports",
+        "page text",
+        "local repo workspace data"
+      ]
+    },
+    createdAt: new Date().toISOString()
+  };
+}
+
+function toMobileBrowserRuntime(browserState: SuperiorBrowserState): MobileCompanionResponse["device"]["superiorBrowser"] {
+  const session = browserState.activeSession;
+
+  return {
+    status: browserState.status,
+    ...(session?.browserKind ? { browserKind: session.browserKind } : {}),
+    ...(session?.repoTitle ? { repoTitle: session.repoTitle } : {}),
+    ...(session?.playpenLabel ? { playpenLabel: session.playpenLabel } : {}),
+    ...(session?.startedAt ? { startedAt: session.startedAt } : {}),
+    ...(session?.pairedAt ? { pairedAt: session.pairedAt } : {}),
+    ...(session?.inspection
+      ? {
+          inspection: {
+            status: session.inspection.status,
+            ...(session.inspection.pageTitle ? { pageTitle: session.inspection.pageTitle } : {}),
+            consoleErrorCount: session.inspection.consoleErrorCount,
+            networkFailureCount: session.inspection.networkFailureCount,
+            ...(session.inspection.note ? { note: session.inspection.note } : {})
+          }
+        }
+      : {})
+  };
+}
+
+function toMobileSkillProof(item: RecentSkillResult): MobileCompanionRecentProof {
+  const sourceHost = readSourceHost(item.source.url);
+
+  return {
+    type: "mobile-companion-proof",
+    id: item.id,
+    source: "recent-skill",
+    label: item.skillLabel,
+    status: item.status,
+    summary: item.status === "ready" ? `${item.skillLabel} proof recorded.` : `${item.skillLabel} needs review.`,
+    detail: `${item.skillLabel} ran on ${sourceHost ?? "captured source"}.`,
+    skillId: item.skillId,
+    ...(sourceHost ? { sourceHost } : {}),
+    sourceTitle: item.source.title,
+    createdAt: item.createdAt
+  };
+}
+
+function toMobileFunctionProof(item: SuperiorFunctionRunSummary): MobileCompanionRecentProof {
+  return {
+    type: "mobile-companion-proof",
+    id: item.runId,
+    source: "function-run",
+    label: item.label,
+    status: item.status === "completed" ? "ready" : "failed",
+    summary: item.status === "completed" ? `${item.label} completed.` : `${item.label} failed.`,
+    detail: item.botReaction.slot
+      ? `${item.botReaction.label} / ${item.botReaction.slot}`
+      : item.botReaction.label,
+    functionId: item.functionId,
+    ...(item.botReaction.skillId ? { skillId: item.botReaction.skillId } : {}),
+    createdAt: item.createdAt
+  };
+}
+
+function readSourceHost(value: string): string | undefined {
+  try {
+    return new URL(value).host;
+  } catch {
+    return undefined;
+  }
 }
 
 function readServiceBotIdentity(): BotIdentity {

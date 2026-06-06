@@ -11,6 +11,9 @@ export interface DaemonConfig {
   keyFilePath: string;
   keyFilePresent: boolean;
   openaiConfigSource: "environment" | "env-file" | "missing";
+  supabaseUrl?: string;
+  supabasePublishableKey?: string;
+  accountRedirectUrl?: string;
   version: string;
 }
 
@@ -68,6 +71,11 @@ export function getDaemonConfig(): DaemonConfig {
   const localStateDirectory = getSuperiorStateDirectory();
   const keyFilePath = join(localStateDirectory, ".env.local");
   const openaiApiKey = process.env.OPENAI_API_KEY || undefined;
+  const supabaseUrl = process.env.SUPABASE_URL || undefined;
+  const supabasePublishableKey = process.env.SUPABASE_PUBLISHABLE_KEY || undefined;
+  const accountRedirectUrl =
+    process.env.SUPERIOR_AUTH_REDIRECT_URL ||
+    `http://${process.env.CLAWDBOT_DAEMON_HOST ?? "127.0.0.1"}:${Number.isFinite(port) ? port : 5317}/account/oauth/callback`;
 
   return {
     host: process.env.CLAWDBOT_DAEMON_HOST ?? "127.0.0.1",
@@ -78,6 +86,9 @@ export function getDaemonConfig(): DaemonConfig {
     keyFilePath,
     keyFilePresent: existsSync(keyFilePath),
     openaiConfigSource: openaiApiKey ? (loadedOpenAIKeyPath || !hadProcessOpenAIKey ? "env-file" : "environment") : "missing",
+    ...(supabaseUrl ? { supabaseUrl } : {}),
+    ...(supabasePublishableKey ? { supabasePublishableKey } : {}),
+    ...(accountRedirectUrl ? { accountRedirectUrl } : {}),
     version: process.env.npm_package_version ?? "0.2.0"
   };
 }

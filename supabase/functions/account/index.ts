@@ -104,15 +104,7 @@ Deno.serve(async (request) => {
         return json({ type: "superior-account-error", code: "profile_failed", message: error.message }, 400);
       }
 
-      return json(data ?? {
-        type: "superior-account-profile",
-        userId: user.id,
-        email: user.email,
-        handle: defaultHandle(user.email),
-        connectedProviders: connectedProvidersFromUser(user),
-        createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString()
-      });
+      return json(data ? profileFromRow(data, user) : profileFromUser(user));
     }
 
     if (request.method === "PUT" && pathname === "/profile") {
@@ -126,6 +118,7 @@ Deno.serve(async (request) => {
         user_id: user.id,
         email: user.email,
         handle: String(payload.handle ?? defaultHandle(user.email)).trim() || defaultHandle(user.email),
+        avatar_url: normalizeAvatarUrl(payload.avatarUrl) ?? avatarUrlFromUser(user) ?? null,
         auth_providers: connectedProviders,
         active_spore_id: payload.activeSporeId ?? null,
         updated_at: now
@@ -136,7 +129,7 @@ Deno.serve(async (request) => {
         return json({ type: "superior-account-error", code: "profile_failed", message: error.message }, 400);
       }
 
-      return json(data);
+      return json(profileFromRow(data, user));
     }
 
     if (request.method === "PUT" && pathname === "/spore") {
@@ -174,7 +167,7 @@ Deno.serve(async (request) => {
 });
 
 function createAnonClient() {
-  return createClient(requiredEnv("SUPABASE_URL"), requiredEnv("SUPABASE_PUBLISHABLE_KEY"));
+  return createClient(requiredEnv("SUPABASE_URL"), requiredPublishableKey());
 }
 
 function createUserClient(request: Request) {
@@ -184,7 +177,7 @@ function createUserClient(request: Request) {
     throw new Error("Account request needs a bearer token.");
   }
 
-  return createClient(requiredEnv("SUPABASE_URL"), requiredEnv("SUPABASE_PUBLISHABLE_KEY"), {
+  return createClient(requiredEnv("SUPABASE_URL"), requiredPublishableKey(), {
     global: {
       headers: {
         Authorization: authorization
@@ -207,12 +200,72 @@ function defaultHandle(email?: string): string {
   return email?.split("@")[0]?.trim() || "operator";
 }
 
-type SuperiorAccountOAuthProvider = "google" | "x";
+interface AccountUser {
+  id: string;
+  email?: string;
+  user_metadata?: Record<string, unknown>;
+  app_metadata?: Record<string, unknown>;
+  identities?: Array<{
+    id?: string;
+    identity_id?: string;
+    provider?: string;
+    user_id?: string;
+    created_at?: string;
+    identity_data?: Record<string, unknown>;
+  }>;
+}
+
+interface SuperiorAccountProfile {
+  type: "superior-account-profile";
+  userId: string;
+  email?: string;
+  handle: string;
+  avatarUrl?: string;
+  connectedProviders?: SuperiorAccountOAuthProvider[];
+  activeSporeId?: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+type SuperiorAccountOAuthProvider = "google" | "x" | "discord";
+
+function profileFromUser(user: AccountUser): SuperiorAccountProfile {
+  const now = new Date().toISOString();
+  const avatarUrl = avatarUrlFromUser(user);
+
+  return {
+    type: "superior-account-profile",
+    userId: user.id,
+    ...(user.email ? { email: user.email } : {}),
+    handle: defaultHandle(user.email),
+    ...(avatarUrl ? { avatarUrl } : {}),
+    connectedProviders: connectedProvidersFromUser(user),
+    createdAt: now,
+    updatedAt: now
+  };
+}
+
+function profileFromRow(row: Record<string, unknown>, user: AccountUser): SuperiorAccountProfile {
+  const avatarUrl = normalizeAvatarUrl(row.avatar_url) ?? avatarUrlFromUser(user);
+  const connectedProviders = providersFromValue(row.auth_providers) ?? connectedProvidersFromUser(user);
+
+  return {
+    type: "superior-account-profile",
+    userId: typeof row.user_id === "string" ? row.user_id : user.id,
+    ...(typeof row.email === "string" ? { email: row.email } : user.email ? { email: user.email } : {}),
+    handle: typeof row.handle === "string" && row.handle.trim() ? row.handle : defaultHandle(user.email),
+    ...(avatarUrl ? { avatarUrl } : {}),
+    connectedProviders,
+    ...(typeof row.active_spore_id === "string" ? { activeSporeId: row.active_spore_id } : {}),
+    createdAt: typeof row.created_at === "string" ? row.created_at : new Date().toISOString(),
+    updatedAt: typeof row.updated_at === "string" ? row.updated_at : new Date().toISOString()
+  };
+}
 
 function parseOAuthProvider(value: unknown): SuperiorAccountOAuthProvider {
   const provider = String(value ?? "").trim().toLowerCase();
 
-  if (provider === "google" || provider === "x") {
+  if (provider === "google" || provider === "x" || provider === "discord") {
     return provider;
   }
 
@@ -220,7 +273,7 @@ function parseOAuthProvider(value: unknown): SuperiorAccountOAuthProvider {
     return "x";
   }
 
-  throw new Error("OAuth provider must be google or x.");
+  throw new Error("OAuth provider must be google, x, or discord.");
 }
 
 function normalizeRedirectTo(value: unknown): string | undefined {
@@ -250,32 +303,75 @@ function connectedProvidersFromUser(user: { app_metadata?: Record<string, unknow
     : metadata.provider
       ? [metadata.provider]
       : [];
-  const normalized = providers
-    .map((provider) => {
-      try {
-        return parseOAuthProvider(provider);
-      } catch {
-        return undefined;
-      }
-    })
+  return providersFromValue(providers) ?? [];
+}
+
+function providersFromValue(value: unknown): SuperiorAccountOAuthProvider[] | undefined {
+  if (!Array.isArray(value)) {
+    return undefined;
+  }
+
+  const normalized = value
+    .map((provider) => normalizeProvider(provider))
     .filter((provider): provider is SuperiorAccountOAuthProvider => Boolean(provider));
 
   return [...new Set(normalized)];
 }
 
+function normalizeProvider(value: unknown): SuperiorAccountOAuthProvider | undefined {
+  try {
+    return parseOAuthProvider(value);
+  } catch {
+    return undefined;
+  }
+}
+
+function avatarUrlFromUser(user: AccountUser): string | undefined {
+  const candidates = [
+    user.user_metadata?.avatar_url,
+    user.user_metadata?.picture,
+    user.user_metadata?.avatar,
+    ...(user.identities ?? []).flatMap((identity) => [
+      identity.identity_data?.avatar_url,
+      identity.identity_data?.picture,
+      identity.identity_data?.avatar
+    ])
+  ];
+
+  for (const candidate of candidates) {
+    const avatarUrl = normalizeAvatarUrl(candidate);
+
+    if (avatarUrl) {
+      return avatarUrl;
+    }
+  }
+
+  return undefined;
+}
+
+function normalizeAvatarUrl(value: unknown): string | undefined {
+  if (typeof value !== "string") {
+    return undefined;
+  }
+
+  const rawValue = value.trim();
+
+  if (!rawValue) {
+    return undefined;
+  }
+
+  try {
+    const url = new URL(rawValue);
+
+    return url.protocol === "https:" || url.protocol === "http:" ? url.toString() : undefined;
+  } catch {
+    return undefined;
+  }
+}
+
 async function syncAccountConnections(
   client: ReturnType<typeof createAnonClient>,
-  user: {
-    id: string;
-    identities?: Array<{
-      id?: string;
-      identity_id?: string;
-      provider?: string;
-      user_id?: string;
-      created_at?: string;
-    }>;
-    app_metadata?: Record<string, unknown>;
-  }
+  user: AccountUser
 ) {
   const fallbackProviders = connectedProvidersFromUser(user);
   const identityRows = (user.identities ?? [])
@@ -318,6 +414,16 @@ function requiredEnv(name: string): string {
 
   if (!value) {
     throw new Error(`${name} is not configured.`);
+  }
+
+  return value;
+}
+
+function requiredPublishableKey(): string {
+  const value = Deno.env.get("SUPABASE_PUBLISHABLE_KEY") ?? Deno.env.get("SUPABASE_ANON_KEY");
+
+  if (!value) {
+    throw new Error("SUPABASE_PUBLISHABLE_KEY or SUPABASE_ANON_KEY is not configured.");
   }
 
   return value;

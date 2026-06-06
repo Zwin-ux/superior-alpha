@@ -459,7 +459,7 @@ export type SuperiorAccountStatus = "signed-out" | "code-sent" | "signed-in" | "
 export type SuperiorModelProvider = "ollama" | "openai-byok" | "missing";
 export type SuperiorOllamaStatus = "available" | "missing" | "starting" | "failed";
 export type SuperiorOpenAiKeyStatus = "missing" | "saved" | "ready" | "invalid";
-export const superiorAccountOAuthProviders = ["google", "x"] as const;
+export const superiorAccountOAuthProviders = ["google", "x", "discord"] as const;
 export type SuperiorAccountOAuthProvider = (typeof superiorAccountOAuthProviders)[number];
 export type SuperiorAccountProviderStatus = "available" | "not-configured" | "connected";
 
@@ -503,6 +503,7 @@ export interface SuperiorAccountState {
   handle?: string;
   email?: string;
   userId?: string;
+  avatarUrl?: string;
   connectedProviders?: SuperiorAccountOAuthProvider[];
   providers?: SuperiorAccountProviderState[];
   syncedAt?: string;
@@ -511,7 +512,7 @@ export interface SuperiorAccountState {
 
 export interface SuperiorAccountProviderState {
   provider: SuperiorAccountOAuthProvider;
-  label: "Google" | "X";
+  label: "Google" | "X" | "Discord";
   status: SuperiorAccountProviderStatus;
   detail: string;
 }
@@ -603,6 +604,21 @@ export interface SuperiorAccountOAuthStartResult {
   createdAt: string;
 }
 
+export interface SuperiorAccountOAuthCompleteRequest {
+  type: "superior-account-oauth-complete";
+  accessToken: string;
+  refreshToken?: string;
+  expiresAt?: number;
+}
+
+export interface SuperiorAccountOAuthCompleteResult {
+  type: "superior-account-connected";
+  session: SuperiorAccountSession;
+  profile: SuperiorAccountProfile;
+  account: SuperiorAccountState;
+  createdAt: string;
+}
+
 export interface SuperiorAccountSession {
   type: "superior-account-session";
   userId: string;
@@ -618,6 +634,7 @@ export interface SuperiorAccountProfile {
   userId: string;
   email?: string;
   handle: string;
+  avatarUrl?: string;
   connectedProviders?: SuperiorAccountOAuthProvider[];
   activeSporeId?: string;
   createdAt: string;
@@ -639,6 +656,12 @@ export interface SuperiorAccountSpore {
   starterPresetId?: BotStarterPresetId;
   createdAt: string;
   updatedAt: string;
+}
+
+export interface SuperiorAccountError {
+  type: "superior-account-error";
+  code: "bad_request" | "not_configured" | "auth_failed" | "offline";
+  message: string;
 }
 
 export interface BrowserPairingStartResult {
@@ -878,6 +901,116 @@ export interface SuperiorFunctionRunEventsResponse {
   type: "superior-function-run-events";
   runId: string;
   items: SuperiorFunctionRunEvent[];
+  createdAt: string;
+}
+
+export interface MobileCompanionEquippedSkill {
+  id: SkillId;
+  label: string;
+  slot: SkillSlot;
+  attachment: string;
+  effect: string;
+}
+
+export interface MobileCompanionBotSummary {
+  id: string;
+  name: string;
+  body: BotBody;
+  color: BotColorId;
+  eye: BotEye;
+  race?: SporeRaceDefinition["id"];
+  avatarAsset: string;
+  equippedSkills: MobileCompanionEquippedSkill[];
+  updatedAt?: string;
+}
+
+export interface MobileCompanionAssetReference {
+  id: string;
+  version: string;
+  format: "glb";
+  runtimePath: string;
+  sourcePath: string;
+  triangleCount: number;
+  fileBytes: number;
+  requiredNodeNames: string[];
+}
+
+export interface MobileCompanionAccountSummary {
+  status: SuperiorAccountStatus;
+  handle?: string;
+  avatarUrl?: string;
+  connectedProviders: SuperiorAccountOAuthProvider[];
+  detail: string;
+}
+
+export interface MobileCompanionBrowserSummary {
+  status: BrowserLinkState["status"];
+  extensionId?: string;
+  lastSeenAt?: string;
+}
+
+export interface MobileCompanionBrowserRuntimeSummary {
+  status: SuperiorBrowserStatus;
+  browserKind?: SuperiorBrowserKind;
+  repoTitle?: string;
+  playpenLabel?: string;
+  startedAt?: string;
+  pairedAt?: string;
+  inspection?: {
+    status: SuperiorBrowserInspectionStatus;
+    pageTitle?: string;
+    consoleErrorCount: number;
+    networkFailureCount: number;
+    note?: string;
+  };
+}
+
+export interface MobileCompanionDeviceSummary {
+  browser: MobileCompanionBrowserSummary;
+  superiorBrowser: MobileCompanionBrowserRuntimeSummary;
+  model: {
+    modelProvider: SuperiorModelProvider;
+    ollamaStatus: SuperiorOllamaStatus;
+    openAiKeyStatus: SuperiorOpenAiKeyStatus;
+    detail: string;
+  };
+}
+
+export interface MobileCompanionRecentProof {
+  type: "mobile-companion-proof";
+  id: string;
+  source: "recent-skill" | "function-run";
+  label: string;
+  status: "ready" | "warning" | "failed";
+  summary: string;
+  detail?: string;
+  skillId?: SkillId;
+  functionId?: SuperiorFunctionId;
+  sourceHost?: string;
+  sourceTitle?: string;
+  createdAt: string;
+}
+
+export interface MobileCompanionShareIntentContract {
+  status: "not-configured" | "ready";
+  acceptedInputs: Array<"url" | "text">;
+  detail: string;
+}
+
+export interface MobileCompanionPrivacySummary {
+  localOnly: true;
+  excludes: string[];
+}
+
+export interface MobileCompanionResponse {
+  type: "superior-mobile-companion";
+  bot: MobileCompanionBotSummary;
+  account: MobileCompanionAccountSummary;
+  device: MobileCompanionDeviceSummary;
+  recentProof: MobileCompanionRecentProof[];
+  asset: MobileCompanionAssetReference;
+  share: MobileCompanionShareIntentContract;
+  privacy: MobileCompanionPrivacySummary;
   createdAt: string;
 }
 

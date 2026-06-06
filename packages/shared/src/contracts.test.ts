@@ -18,6 +18,8 @@ import {
   createSuperiorBrowserActivePageReport,
   createSuperiorBrowserAttachRequest,
   createSuperiorBrowserStartRequest,
+  MobileCompanionResponse,
+  SuperiorAccountOAuthCompleteRequest,
   SuperiorAccountStartEmailCodeRequest,
   SuperiorAccountStartOAuthRequest,
   SuperiorModelProviderState,
@@ -344,6 +346,12 @@ describe("shared SUPERIOR contracts", () => {
       provider: "x",
       redirectTo: "superior://auth/callback"
     };
+    const oauthCompleteRequest: SuperiorAccountOAuthCompleteRequest = {
+      type: "superior-account-oauth-complete",
+      accessToken: "token_test",
+      refreshToken: "refresh_test",
+      expiresAt: 1_770_000_000
+    };
     const modelState: SuperiorModelProviderState = {
       type: "superior-model-provider-state",
       modelProvider: "ollama",
@@ -356,8 +364,96 @@ describe("shared SUPERIOR contracts", () => {
     expect(accountRequest.type).toBe("superior-account-start-email-code");
     expect(oauthRequest.provider).toBe("x");
     expect(oauthRequest.redirectTo).toContain("superior://");
+    expect(oauthCompleteRequest.refreshToken).toBe("refresh_test");
     expect(modelState.modelProvider).toBe("ollama");
     expect(modelState.openAiKeyStatus).toBe("missing");
+  });
+
+  it("defines a mobile-safe companion envelope without local secrets", () => {
+    const companion: MobileCompanionResponse = {
+      type: "superior-mobile-companion",
+      bot: {
+        id: "bot_test",
+        name: "Clawd",
+        body: "gremlin",
+        color: "mossGreen",
+        eye: "pixel",
+        race: "builder",
+        avatarAsset: "assets/bots/soul/icons/clawd-avatar-1024.png",
+        equippedSkills: [
+          {
+            id: "article-xray",
+            label: "Article X-Ray",
+            slot: "eye",
+            attachment: "Pressed clay lens ring",
+            effect: "Cleans article text."
+          }
+        ]
+      },
+      account: {
+        status: "signed-out",
+        connectedProviders: [],
+        detail: "Google / X / Discord"
+      },
+      device: {
+        browser: {
+          status: "unpaired"
+        },
+        superiorBrowser: {
+          status: "closed"
+        },
+        model: {
+          modelProvider: "ollama",
+          ollamaStatus: "missing",
+          openAiKeyStatus: "missing",
+          detail: "install or start Ollama"
+        }
+      },
+      recentProof: [
+        {
+          type: "mobile-companion-proof",
+          id: "proof_test",
+          source: "recent-skill",
+          label: "Article X-Ray",
+          status: "ready",
+          summary: "Clean read captured.",
+          skillId: "article-xray",
+          sourceHost: "example.com",
+          sourceTitle: "Example",
+          createdAt: new Date(0).toISOString()
+        }
+      ],
+      asset: {
+        id: "mobile-clawd-gremlin",
+        version: "mobile-3d-0.1",
+        format: "glb",
+        runtimePath: "assets/bots/mobile-3d/generated/mobile-clawd-gremlin.glb",
+        sourcePath: "assets/bots/mobile-3d/asset-manifest.json",
+        triangleCount: 492,
+        fileBytes: 19064,
+        requiredNodeNames: ["Body_Gremlin", "Eye_Left_Pixel", "Eye_Right_Pixel"]
+      },
+      share: {
+        status: "not-configured",
+        acceptedInputs: ["url", "text"],
+        detail: "Share-sheet capture is a future mobile lane."
+      },
+      privacy: {
+        localOnly: true,
+        excludes: ["OpenAI API keys", "raw browser pairing tokens", "browser profile paths", "page text"]
+      },
+      createdAt: new Date(0).toISOString()
+    };
+    const serialized = JSON.stringify(companion);
+
+    expect(companion.type).toBe("superior-mobile-companion");
+    expect(companion.bot.equippedSkills[0]?.slot).toBe("eye");
+    expect(companion.asset.format).toBe("glb");
+    expect(serialized).not.toContain("pair_");
+    expect(serialized).not.toContain("OPENAI_API_KEY");
+    expect(serialized).not.toContain("browser-profiles");
+    expect(serialized).not.toContain("debugPort");
+    expect(serialized).not.toContain("cleanText");
   });
 
   it("maps bot identity to clay CSS variables", () => {

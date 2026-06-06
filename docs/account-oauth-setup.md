@@ -1,15 +1,15 @@
 # SUPERIOR Account OAuth Setup
 
 Status: alpha wiring
-Updated: 2026-05-31
+Updated: 2026-06-06
 
-SUPERIOR account login is for claiming the spore and syncing safe bot identity. It is not the local robot brain.
+SUPERIOR account login is for claiming the spore and syncing safe bot identity. It is not the local robot brain, and it is not the authority for the active local bot.
 
 Cloud may store:
 
 - Supabase user id and email
 - handle
-- connected providers: `google`, `x`
+- connected providers: `google`, `x`, `discord`
 - active bot spore metadata
 - starter preset and timestamps
 
@@ -21,18 +21,27 @@ Cloud must not store:
 - repo workspace state
 - browser profile state
 - local daemon logs
+- Supabase access or refresh tokens
+
+Local machine remains authoritative for:
+
+- active `BotIdentity`
+- browser pairing token
+- OpenAI key and model settings
+- repo workspace records
+- recent browser/page proof data
 
 ## Runtime Shape
 
 ```text
 Godot / Windows setup
-  -> POST /account/start-oauth { provider: "google" | "x" }
+  -> POST /account/start-oauth { provider: "google" | "x" | "discord" }
   -> Supabase returns authUrl
   -> app opens system browser
-  -> Supabase Auth handles Google or X
+  -> Supabase Auth handles Google, X, or Discord
   -> app callback stores session locally
   -> PUT /account/profile
-  -> PUT /account/spore
+  -> PUT /account/spore with safe BotSpore export only
 ```
 
 The Edge Function route added for this slice is:
@@ -64,6 +73,8 @@ Result:
 ```
 
 `provider: "x"` maps to Supabase's current X / Twitter OAuth 2.0 provider. Legacy `twitter` input is normalized to `x` only as a compatibility guard.
+
+`provider: "discord"` uses Supabase's Discord OAuth provider and can supply avatar metadata for the local account seal.
 
 ## Supabase Project Setup
 
@@ -111,6 +122,19 @@ In Supabase Dashboard:
 - Enable X provider.
 - Add X Client ID and Client Secret.
 
+## Discord Provider
+
+In Discord Developer Portal:
+
+- Create an OAuth2 application.
+- Add the Supabase callback URL.
+- Use the minimum scopes needed for account display: `identify`, `email`, and avatar profile data when available.
+
+In Supabase Dashboard:
+
+- Enable Discord provider.
+- Add Discord Client ID and Client Secret.
+
 ## Database
 
 `profiles` stores safe account display state:
@@ -124,11 +148,33 @@ In Supabase Dashboard:
 `account_connections` stores safe provider presence:
 
 - `user_id`
-- `provider`: `google` or `x`
+- `provider`: `google`, `x`, or `discord`
 - `provider_user_id`
 - `connected_at`
 
 Both tables use RLS with `auth.uid() = user_id`.
+
+## Continuity Proof
+
+The deterministic account fixture proves the alpha boundary without calling live Supabase:
+
+```powershell
+corepack pnpm fixture:supabase-account
+```
+
+It seeds an isolated local state directory with:
+
+- a signed-in account record with Google, X, and Discord provider metadata
+- a separate local active spore
+- fake Supabase URL, publishable key, access token, and raw browser pairing token sentinels
+
+It then starts a temporary daemon and verifies:
+
+- `/setup-state` shows the account as signed in while keeping the local spore as the active bot
+- `/bot-identity` remains the local authority for the spore
+- portable `BotSpore` export excludes account tokens, Supabase config, account email, and raw pairing tokens
+- `/mobile-companion` can show account display state without exposing tokens or local file paths
+- `POST /account/sign-out` clears account state without deleting the local spore
 
 ## Next Callback Slice
 
@@ -144,5 +190,6 @@ The current patch starts OAuth and records provider state after a Supabase sessi
 
 - Supabase Google provider docs: https://supabase.com/docs/guides/auth/social-login/auth-google
 - Supabase X / Twitter provider docs: https://supabase.com/docs/guides/auth/social-login/auth-twitter
+- Supabase Discord provider docs: https://supabase.com/docs/guides/auth/social-login/auth-discord
 - Supabase OAuth API docs: https://supabase.com/docs/reference/javascript/auth-signinwithoauth
 - Supabase changelog checked: https://supabase.com/changelog.md
