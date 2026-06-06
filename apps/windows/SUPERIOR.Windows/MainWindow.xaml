@@ -156,6 +156,19 @@
             <TextBlock Text="SETUP" FontSize="11" FontWeight="Black" Foreground="{StaticResource ClayMuted}" />
             <TextBlock x:Name="SetupStepText" Text="Power / Key / Browser / Shape / Skills / Save" FontWeight="Bold" TextWrapping="Wrap" />
             <TextBlock x:Name="SetupDetailText" Text="empty bench" FontSize="11" Foreground="{StaticResource ClayMuted}" TextWrapping="Wrap" />
+            <Border Margin="0,10,0,2"
+                    Padding="10"
+                    Background="#DFA85F"
+                    BorderBrush="#9D6530"
+                    BorderThickness="1"
+                    CornerRadius="10">
+              <StackPanel>
+                <TextBlock Text="RECOVERY" FontSize="11" FontWeight="Black" Foreground="{StaticResource ClayMuted}" />
+                <TextBlock x:Name="RecoveryStatusText" Text="checking" FontWeight="Black" TextWrapping="Wrap" />
+                <TextBlock x:Name="RecoveryDetailText" Text="waiting for daemon" FontSize="11" Foreground="{StaticResource ClayMuted}" TextWrapping="Wrap" />
+                <TextBlock x:Name="RecoveryQueueText" Text="Power / Key / Browser / Hand" FontSize="11" Foreground="{StaticResource ClayMuted}" TextWrapping="Wrap" />
+              </StackPanel>
+            </Border>
             <TextBlock Text="SHAPE" FontSize="11" FontWeight="Black" Foreground="{StaticResource ClayMuted}" Margin="0,10,0,2" />
             <UniformGrid Columns="3" Margin="0,10,0,2">
               <Button Content="Orb" Tag="orb" Click="OnShapeClicked" Margin="0,0,5,8" />
@@ -253,6 +266,7 @@
           <StackPanel>
             <TextBlock Text="BROWSER" FontSize="11" FontWeight="Black" Foreground="{StaticResource ClayMuted}" />
             <TextBlock x:Name="BrowserStatusText" Text="Checking" FontWeight="Bold" />
+            <TextBlock x:Name="BrowserDetailText" Text="runtime pending" FontSize="11" Foreground="{StaticResource ClayMuted}" TextWrapping="Wrap" />
             <TextBlock x:Name="ExtensionStatusText" Text="extension pending" FontSize="11" Foreground="{StaticResource ClayMuted}" />
           </StackPanel>
         </Border>

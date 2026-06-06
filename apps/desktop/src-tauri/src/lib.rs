@@ -12,7 +12,8 @@ pub fn run() {
         .invoke_handler(tauri::generate_handler![
             ensure_daemon,
             open_local_folder,
-            open_extension_folder
+            open_extension_folder,
+            open_external_url
         ])
         .run(tauri::generate_context!())
         .expect("error while running SUPERIOR");
@@ -68,6 +69,12 @@ struct OpenLocalFolderResult {
     path: String,
 }
 
+#[derive(Serialize)]
+struct OpenExternalUrlResult {
+    status: &'static str,
+    url: String,
+}
+
 #[tauri::command]
 fn open_local_folder(path: String) -> OpenLocalFolderResult {
     let folder = PathBuf::from(path);
@@ -112,6 +119,54 @@ fn open_extension_folder(app: tauri::AppHandle) -> OpenLocalFolderResult {
             "failed"
         },
         path: display_path,
+    }
+}
+
+#[tauri::command]
+fn open_external_url(url: String) -> OpenExternalUrlResult {
+    let Ok(parsed) = url::Url::parse(&url) else {
+        return OpenExternalUrlResult {
+            status: "blocked",
+            url,
+        };
+    };
+
+    if parsed.scheme() != "http" && parsed.scheme() != "https" {
+        return OpenExternalUrlResult {
+            status: "blocked",
+            url,
+        };
+    }
+
+    let opened = if cfg!(windows) {
+        Command::new("explorer")
+            .arg(&url)
+            .stdin(Stdio::null())
+            .stdout(Stdio::null())
+            .stderr(Stdio::null())
+            .spawn()
+            .is_ok()
+    } else if cfg!(target_os = "macos") {
+        Command::new("open")
+            .arg(&url)
+            .stdin(Stdio::null())
+            .stdout(Stdio::null())
+            .stderr(Stdio::null())
+            .spawn()
+            .is_ok()
+    } else {
+        Command::new("xdg-open")
+            .arg(&url)
+            .stdin(Stdio::null())
+            .stdout(Stdio::null())
+            .stderr(Stdio::null())
+            .spawn()
+            .is_ok()
+    };
+
+    OpenExternalUrlResult {
+        status: if opened { "opened" } else { "failed" },
+        url,
     }
 }
 

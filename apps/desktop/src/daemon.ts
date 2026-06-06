@@ -9,6 +9,10 @@ import {
   RepoWorkspaceRecordsResponse,
   RepoReaderError,
   RepoReaderResult,
+  SuperiorAccountError,
+  SuperiorAccountOAuthProvider,
+  SuperiorAccountOAuthStartResult,
+  SuperiorSetupState,
   SuperiorFunctionRunsResponse,
   SuperiorBrowserError,
   SuperiorBrowserEventsResponse,
@@ -32,6 +36,11 @@ export interface DaemonLaunchResult {
 export interface OpenLocalFolderResult {
   status: "opened" | "blocked" | "failed" | "missing";
   path: string;
+}
+
+export interface OpenExternalUrlResult {
+  status: "opened" | "blocked" | "failed";
+  url: string;
 }
 
 export async function ensureLocalDaemon(): Promise<DaemonLaunchResult | null> {
@@ -64,6 +73,17 @@ export async function openExtensionFolder(): Promise<OpenLocalFolderResult | nul
   return invoke<OpenLocalFolderResult>("open_extension_folder");
 }
 
+export async function openExternalUrl(url: string): Promise<OpenExternalUrlResult | null> {
+  if (!("__TAURI_INTERNALS__" in window)) {
+    window.open(url, "_blank", "noopener,noreferrer");
+    return null;
+  }
+
+  const { invoke } = await import("@tauri-apps/api/core");
+
+  return invoke<OpenExternalUrlResult>("open_external_url", { url });
+}
+
 export async function fetchDaemonHealth(): Promise<DaemonHealth> {
   const response = await fetch(`${daemonUrl}/health`);
 
@@ -82,6 +102,16 @@ export async function fetchDaemonBotIdentity(): Promise<BotIdentity> {
   }
 
   return (await response.json()) as BotIdentity;
+}
+
+export async function fetchSetupState(): Promise<SuperiorSetupState> {
+  const response = await fetch(`${daemonUrl}/setup-state`);
+
+  if (!response.ok) {
+    throw new Error("Daemon setup-state check failed.");
+  }
+
+  return (await response.json()) as SuperiorSetupState;
 }
 
 export async function fetchRecentSkillResults(): Promise<RecentSkillResultsResponse> {
@@ -172,6 +202,37 @@ export async function startBrowserPairing(): Promise<BrowserPairingStartResult> 
   return (await response.json()) as BrowserPairingStartResult;
 }
 
+export async function startAccountOAuth(provider: SuperiorAccountOAuthProvider): Promise<SuperiorAccountOAuthStartResult> {
+  const response = await fetch(`${daemonUrl}/account/start-oauth`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json"
+    },
+    body: JSON.stringify({
+      type: "superior-account-start-oauth",
+      provider
+    })
+  });
+
+  if (!response.ok) {
+    throw new Error(await readDaemonError(response, "Account sign-in could not start."));
+  }
+
+  return (await response.json()) as SuperiorAccountOAuthStartResult;
+}
+
+export async function signOutAccount(): Promise<SuperiorSetupState> {
+  const response = await fetch(`${daemonUrl}/account/sign-out`, {
+    method: "POST"
+  });
+
+  if (!response.ok) {
+    throw new Error(await readDaemonError(response, "Account sign-out failed."));
+  }
+
+  return (await response.json()) as SuperiorSetupState;
+}
+
 export async function resetBrowserPairing(): Promise<BrowserPairingResetResult> {
   const response = await fetch(`${daemonUrl}/browser-link/reset`, {
     method: "POST"
@@ -246,7 +307,7 @@ export async function stopSuperiorBrowser(): Promise<SuperiorBrowserStopResult> 
 
 async function readDaemonError(response: Response, fallback: string): Promise<string> {
   const payload = (await response.json().catch(() => null)) as Partial<
-    CustomSkillImportError | RepoReaderError | SuperiorBrowserError
+    CustomSkillImportError | RepoReaderError | SuperiorBrowserError | SuperiorAccountError
   > | null;
 
   return payload?.message ?? fallback;

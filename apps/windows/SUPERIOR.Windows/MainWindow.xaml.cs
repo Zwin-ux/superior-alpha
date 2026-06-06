@@ -7,6 +7,8 @@ namespace Superior.Windows;
 
 public partial class MainWindow : Window
 {
+    private sealed record RecoveryCue(string Title, string Detail);
+
     private readonly SuperiorDaemonClient daemonClient = new(new Uri("http://127.0.0.1:5317"));
     private readonly DaemonSupervisor daemonSupervisor;
     private readonly WindowsDaemonServiceController serviceController = new();
@@ -99,11 +101,18 @@ public partial class MainWindow : Window
         {
             var pairing = await daemonClient.StartPairingAsync();
             PairingTokenText.Text = $"Pair token: {pairing.PairingToken}";
-            BrowserStatusText.Text = pairing.BrowserLinkState?.Status ?? "pairing";
+            BrowserStatusText.Text = "pairing";
+            BrowserDetailText.Text = "Use this token in the extension.";
+            ExtensionStatusText.Text = pairing.BrowserLinkState?.Status ?? "token waiting";
+            RecoveryStatusText.Text = "Hand pairing";
+            RecoveryDetailText.Text = "Finish the token in the browser extension.";
+            RecoveryQueueText.Text = "Browser hand waiting";
         }
         catch (Exception error)
         {
             PairingTokenText.Text = $"Pair failed: {error.Message}";
+            RecoveryStatusText.Text = "Pair failed";
+            RecoveryDetailText.Text = error.Message;
         }
     }
 
@@ -315,13 +324,15 @@ public partial class MainWindow : Window
             DaemonDetailText.Text = launch.Detail;
             InstalledRuntimeStatusText.Text = launch.RuntimeStatus;
             ApplyOpenAiState(health);
-            BrowserStatusText.Text = health.BrowserLinkState?.Status ?? "unknown";
-            ExtensionStatusText.Text = FormatExtensionStatus(browserState);
+            BrowserStatusText.Text = FormatBrowserStatus(browserState);
+            BrowserDetailText.Text = FormatBrowserDetail(browserState);
+            ExtensionStatusText.Text = FormatExtensionStatus(health.BrowserLinkState, browserState);
             var recentReaction = recent.Items.FirstOrDefault()?.BotReaction;
             FunctionProofText.Text = recentReaction?.Label ?? $"{catalog.Items.Count} parts ready";
             ApplyRepoWorkspaceState(currentRepoWorkspace);
             ApplyPlaypenState(browserState, browserEvents);
             ApplySetupState(setupState);
+            ApplyRecoveryState(setupState, browserState);
             UpdatePlaypenButtons();
 
             ApplyBot(bot, recentReaction);
@@ -344,9 +355,11 @@ public partial class MainWindow : Window
             OpenAiStatusText.Text = "offline";
             OpenAiDetailText.Text = openAiKeyStore.KeyFilePath;
             BrowserStatusText.Text = "offline";
-            ExtensionStatusText.Text = FormatExtensionStatus(currentBrowserState);
+            BrowserDetailText.Text = "daemon offline; browser check blocked";
+            ExtensionStatusText.Text = FormatExtensionStatus(null, currentBrowserState);
             SetupStepText.Text = "Power";
             SetupDetailText.Text = "daemon offline";
+            ApplyDaemonOfflineRecoveryState(error);
             PlaypenStatusText.Text = "offline";
             NativeLoopStatusText.Text = "failed";
             RepoReadStatusText.Text = "failed";
@@ -512,6 +525,69 @@ public partial class MainWindow : Window
             ?? (setupState.ActiveBotSaved ? $"{setupState.Bot.Identity.Name} awake" : "save active bot");
     }
 
+    private void ApplyRecoveryState(SuperiorSetupState setupState, SuperiorBrowserState browserState)
+    {
+        var cues = CollectRecoveryCues(setupState, browserState);
+
+        if (cues.Count == 0)
+        {
+            RecoveryStatusText.Text = "Bench ready";
+            RecoveryDetailText.Text = "Spore, key, browser, and hand are fitted.";
+            RecoveryQueueText.Text = "Power ready / Key ready / Browser ready / Hand fitted";
+            return;
+        }
+
+        var lead = cues[0];
+        RecoveryStatusText.Text = lead.Title;
+        RecoveryDetailText.Text = lead.Detail;
+        RecoveryQueueText.Text = string.Join(" / ", cues.Select(cue => cue.Title));
+    }
+
+    private static IReadOnlyList<RecoveryCue> CollectRecoveryCues(SuperiorSetupState setupState, SuperiorBrowserState browserState)
+    {
+        var cues = new List<RecoveryCue>();
+        var accountStep = setupState.Steps.FirstOrDefault(step => step.Step == "account" && step.Status != "ready");
+
+        if (accountStep is not null)
+        {
+            cues.Add(new RecoveryCue("Spore unclaimed", "Sign in with Google, X, or Discord."));
+        }
+
+        if (setupState.Key.Status != "ready")
+        {
+            cues.Add(new RecoveryCue("Key missing", "Paste a local OpenAI key. Press Save Key."));
+        }
+
+        if (browserState.Status == "missing-browser")
+        {
+            cues.Add(new RecoveryCue("Browser missing", "Install Chrome or Edge, or set SUPERIOR_BROWSER_PATH."));
+        }
+
+        if (browserState.Status != "missing-browser" && setupState.Browser.Status != "paired")
+        {
+            var detail = setupState.Browser.Status == "pairing"
+                ? "Token is live. Finish pairing in the extension."
+                : "Press Pair. Fit the Chrome hand to this spore.";
+            cues.Add(new RecoveryCue("Hand unpaired", detail));
+        }
+
+        var modelStep = setupState.Steps.FirstOrDefault(step => step.Step == "model" && step.Status != "ready");
+
+        if (modelStep is not null && setupState.Key.Status == "ready")
+        {
+            cues.Add(new RecoveryCue("Model missing", modelStep.Detail));
+        }
+
+        return cues;
+    }
+
+    private void ApplyDaemonOfflineRecoveryState(Exception error)
+    {
+        RecoveryStatusText.Text = "Power offline";
+        RecoveryDetailText.Text = "Press Start. If it stays down, check packaged daemon resources.";
+        RecoveryQueueText.Text = $"Daemon not answering / {error.Message}";
+    }
+
     private void ApplySetupDraft(BotIdentity bot)
     {
         BotNameInput.Text = bot.Name;
@@ -669,14 +745,54 @@ public partial class MainWindow : Window
         return $"{browser} / {paired} / {page}";
     }
 
-    private static string FormatExtensionStatus(SuperiorBrowserState? browserState)
+    private static string FormatBrowserStatus(SuperiorBrowserState browserState)
     {
-        if (browserState?.Status == "paired")
+        return browserState.Status == "missing-browser" ? "browser missing" : browserState.Status;
+    }
+
+    private static string FormatBrowserDetail(SuperiorBrowserState browserState)
+    {
+        if (browserState.Status == "missing-browser")
         {
-            return "loaded in playpen";
+            return "Install Chrome or Edge, or set SUPERIOR_BROWSER_PATH.";
         }
 
-        return SuperiorRuntimePaths.HasAnyExtensionPackage() ? "packaged" : "missing";
+        if (browserState.ActiveSession is not null)
+        {
+            return FormatPlaypenDetail(browserState.ActiveSession);
+        }
+
+        if (browserState.Status == "closed")
+        {
+            return "Chrome/Edge found. Start Playpen after Repo Reader.";
+        }
+
+        return browserState.Status == "failed" ? "start failed" : $"playpen {browserState.Status}";
+    }
+
+    private static string FormatExtensionStatus(BrowserLinkState? browserLinkState, SuperiorBrowserState? browserState)
+    {
+        if (browserState?.ActiveSession?.Inspection?.ExtensionPaired == true)
+        {
+            return "hand reporting active page";
+        }
+
+        if (browserLinkState?.Status == "paired")
+        {
+            return browserLinkState.ExtensionId is null ? "hand paired" : $"hand paired / {browserLinkState.ExtensionId}";
+        }
+
+        if (browserLinkState?.Status == "pairing")
+        {
+            return "token waiting";
+        }
+
+        if (browserState?.Status == "missing-browser")
+        {
+            return SuperiorRuntimePaths.HasAnyExtensionPackage() ? "packaged; browser missing" : "extension package missing";
+        }
+
+        return SuperiorRuntimePaths.HasAnyExtensionPackage() ? "packaged; press Pair" : "extension package missing";
     }
 
     private void UpdatePlaypenButtons()

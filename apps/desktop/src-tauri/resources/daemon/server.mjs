@@ -19,6 +19,8 @@ var skillIds = [
   "citation-checker",
   "deal-scout"
 ];
+var skillSlots = ["eye", "crown", "side", "badge", "charm"];
+var sporeRaceIds = ["builder", "scout", "sentinel"];
 var clayPigments = {
   skyBlue: {
     label: "Sky Blue",
@@ -270,6 +272,182 @@ function isRunnableSkill(skill) {
 var runnableSkillShelf = skillShelf.filter(isRunnableSkill);
 var runnableSkillIds = runnableSkillShelf.map((skill) => skill.id);
 var defaultSkillLoadout = ["page-explainer", "article-xray", "repo-reader"];
+var botStarterPresets = [
+  {
+    id: "clawd",
+    name: "Clawd",
+    role: "Starter builder",
+    race: "builder",
+    body: "orb",
+    color: "lavender",
+    eye: "glow",
+    skills: ["page-explainer", "article-xray", "repo-reader"],
+    slotNotes: {
+      eye: "X-Ray lens",
+      side: "repo gear",
+      badge: "explain tab"
+    }
+  },
+  {
+    id: "hermes",
+    name: "Hermes",
+    role: "Browser courier",
+    race: "scout",
+    body: "scanner",
+    color: "skyBlue",
+    eye: "lens",
+    skills: ["page-explainer", "article-xray"],
+    slotNotes: {
+      eye: "courier lens",
+      badge: "explain tab"
+    }
+  },
+  {
+    id: "mote",
+    name: "Mote",
+    role: "Soft helper",
+    race: "builder",
+    body: "orb",
+    color: "lavender",
+    eye: "glow",
+    skills: ["page-explainer"],
+    slotNotes: {
+      badge: "explain tab"
+    }
+  }
+];
+var sporeRaceCatalog = [
+  {
+    id: "builder",
+    label: "Builder",
+    role: "project work",
+    silhouette: "gremlin",
+    behavior: "snaps tools onto the bench and reacts to repo signals",
+    gardenPrompt: "tool antenna, clay gear, eager hop"
+  },
+  {
+    id: "scout",
+    label: "Scout",
+    role: "browser signals",
+    silhouette: "scanner",
+    behavior: "tracks pages, points the lens, and pulses on browser hand events",
+    gardenPrompt: "wide lens, quick glance, signal sweep"
+  },
+  {
+    id: "sentinel",
+    label: "Sentinel",
+    role: "checks and alerts",
+    silhouette: "sentinel",
+    behavior: "guards the spore gate and stamps warning pulses",
+    gardenPrompt: "shield plate, alert blink, planted stance"
+  }
+];
+var botCreationShapes = [
+  {
+    id: "orb",
+    label: "Orb",
+    body: "orb",
+    defaultColor: "lavender",
+    defaultEye: "glow",
+    starterPresetId: "clawd",
+    starterName: "Clawd",
+    race: "builder",
+    role: "Soft starter",
+    benchPrompt: "round clay, steady light"
+  },
+  {
+    id: "gremlin",
+    label: "Gremlin",
+    body: "gremlin",
+    defaultColor: "mossGreen",
+    defaultEye: "pixel",
+    starterPresetId: "clawd",
+    starterName: "Clawd",
+    race: "builder",
+    role: "Workshop tinkerer",
+    benchPrompt: "scrappy clay, tool hand"
+  },
+  {
+    id: "scanner",
+    label: "Scanner",
+    body: "scanner",
+    defaultColor: "skyBlue",
+    defaultEye: "lens",
+    starterPresetId: "hermes",
+    starterName: "Hermes",
+    race: "scout",
+    role: "Browser courier",
+    benchPrompt: "wide lens, page hand"
+  },
+  {
+    id: "sentinel",
+    label: "Sentinel",
+    body: "sentinel",
+    defaultColor: "brickRed",
+    defaultEye: "dot",
+    starterPresetId: "clawd",
+    starterName: "Ward",
+    race: "sentinel",
+    role: "Guard shape",
+    benchPrompt: "helmet clay, shield mark"
+  },
+  {
+    id: "core",
+    label: "Core",
+    body: "core",
+    defaultColor: "chalkWhite",
+    defaultEye: "dot",
+    starterPresetId: "mote",
+    starterName: "Mote",
+    race: "builder",
+    role: "Plain helper",
+    benchPrompt: "blank clay, simple eyes"
+  }
+];
+var botSkillLoadoutOptions = runnableSkillShelf.map((skill) => ({
+  skillId: skill.id,
+  slot: skill.slot,
+  label: skill.shortLabel,
+  effect: skill.effect,
+  attachment: skill.attachment
+}));
+var premadeSkillPartsBySlot = {
+  eye: [
+    createPremadeSkillPart("article-xray", "runnable", ["builder", "scout", "sentinel"]),
+    createPremadeSkillPart("feed-xray", "preview", ["scout"])
+  ],
+  crown: [
+    createPremadeSkillPart("citation-checker", "preview", ["sentinel", "scout"]),
+    createPremadeSkillPart("transcript-lens", "stowed", ["scout"])
+  ],
+  side: [
+    createPremadeSkillPart("repo-reader", "runnable", ["builder"]),
+    createPremadeSkillPart("market-lane-scout", "stowed", ["scout", "builder"])
+  ],
+  badge: [
+    createPremadeSkillPart("page-explainer", "runnable", ["builder", "scout", "sentinel"]),
+    createPremadeSkillPart("dark-pattern-scanner", "preview", ["sentinel"])
+  ],
+  charm: [
+    createPremadeSkillPart("price-watch", "preview", ["scout", "sentinel"]),
+    createPremadeSkillPart("change-sentinel", "stowed", ["sentinel"])
+  ]
+};
+var premadeSkillPartOptions = skillSlots.flatMap((slot) => premadeSkillPartsBySlot[slot]);
+function createPremadeSkillPart(skillId, state, fits) {
+  const skill = skillCatalog[skillId];
+  return {
+    id: `${skill.slot}.${skill.id}`,
+    skillId,
+    slot: skill.slot,
+    label: skill.label,
+    shortLabel: skill.shortLabel,
+    effect: skill.effect,
+    attachment: skill.attachment,
+    state,
+    fits
+  };
+}
 function sanitizeSkillIds(skills) {
   const runnableIds = new Set(runnableSkillIds);
   const seenIds = /* @__PURE__ */ new Set();
@@ -284,11 +462,13 @@ function sanitizeSkillIds(skills) {
 }
 var DEFAULT_BOT_IDENTITY = {
   id: "local-default",
-  name: "Superior",
-  body: "gremlin",
-  color: "mossGreen",
-  eye: "pixel",
+  name: "Clawd",
+  body: "orb",
+  color: "lavender",
+  eye: "glow",
   skills: [...defaultSkillLoadout],
+  starterPresetId: "clawd",
+  race: "builder",
   rules: [
     {
       id: "concise",
@@ -306,9 +486,9 @@ var DEFAULT_BOT_IDENTITY = {
   },
   iconVariant: {
     surface: "launcher",
-    body: "gremlin",
-    color: "mossGreen",
-    eye: "pixel"
+    body: "orb",
+    color: "lavender",
+    eye: "glow"
   }
 };
 function updateBotIdentity(bot, changes) {
@@ -317,6 +497,7 @@ function updateBotIdentity(bot, changes) {
   const nextEye = changes.eye ?? bot.eye;
   const nextName = normalizeBotName(changes.name ?? bot.name);
   const nextSkills = sanitizeSkillIds(changes.skills ?? bot.skills);
+  const nextRace = normalizeSporeRace(changes.race ?? bot.race);
   return {
     ...bot,
     ...changes,
@@ -325,6 +506,7 @@ function updateBotIdentity(bot, changes) {
     color: nextColor,
     eye: nextEye,
     skills: nextSkills,
+    race: nextRace,
     iconVariant: {
       ...bot.iconVariant,
       body: nextBody,
@@ -336,9 +518,12 @@ function updateBotIdentity(bot, changes) {
 function normalizeBotName(name) {
   const trimmedName = name.trim();
   if (!trimmedName || trimmedName === "Claw") {
-    return "Superior";
+    return "Clawd";
   }
   return trimmedName;
+}
+function normalizeSporeRace(race) {
+  return sporeRaceIds.includes(race) ? race : "builder";
 }
 function getEquippedSkillSlots(bot) {
   const seenSlots = /* @__PURE__ */ new Set();
@@ -352,29 +537,102 @@ function getEquippedSkillSlots(bot) {
     return slots;
   }, []);
 }
+function createBotSporeFromIdentity(bot) {
+  const equippedSkills = bot.skills.map((skillId) => skillCatalog[skillId]).filter((skill) => Boolean(skill));
+  const slotParts = equippedSkills.reduce((parts, skill) => {
+    if (!parts[skill.slot]) {
+      parts[skill.slot] = skill.id;
+    }
+    return parts;
+  }, {});
+  const browserPairing = toSporePairing(bot.browserLinkState);
+  const species = bot.starterPresetId === "hermes" ? "hermes" : "clawd";
+  const createdAt = bot.createdAt ?? (/* @__PURE__ */ new Date()).toISOString();
+  const updatedAt = bot.updatedAt ?? createdAt;
+  return {
+    schemaVersion: "0.1",
+    id: bot.id,
+    name: bot.name,
+    species,
+    race: normalizeSporeRace(bot.race),
+    appearance: {
+      body: bot.body,
+      color: bot.color,
+      eye: bot.eye,
+      ...slotParts.crown ? { crown: slotParts.crown } : {},
+      ...slotParts.side ? { side: slotParts.side } : {},
+      ...slotParts.badge ? { badge: slotParts.badge } : {},
+      ...slotParts.charm ? { charm: slotParts.charm } : {},
+      avatarAsset: "assets/bots/soul/icons/clawd-avatar-1024.png"
+    },
+    skills: equippedSkills.map((skill) => ({
+      id: skill.id,
+      label: skill.label,
+      enabled: true,
+      source: "local"
+    })),
+    pairings: {
+      ...browserPairing ? { browser: browserPairing, chromeExtension: browserPairing } : {}
+    },
+    preferences: {
+      animationIntensity: "medium",
+      theme: "clay-workshop"
+    },
+    createdAt,
+    updatedAt
+  };
+}
+function toSporePairing(browserLinkState) {
+  if (browserLinkState.status === "offline") {
+    return {
+      status: "error",
+      ...browserLinkState.extensionId ? { safePairingId: browserLinkState.extensionId } : {},
+      ...browserLinkState.lastSeenAt ? { lastSeenAt: browserLinkState.lastSeenAt } : {}
+    };
+  }
+  if (browserLinkState.status === "paired") {
+    return {
+      status: "ready",
+      ...browserLinkState.extensionId ? { safePairingId: browserLinkState.extensionId } : {},
+      ...browserLinkState.lastSeenAt ? { lastSeenAt: browserLinkState.lastSeenAt } : {}
+    };
+  }
+  return {
+    status: browserLinkState.status
+  };
+}
 function createBotIconSvg(bot, size = 64) {
   const pigment = clayPigments[bot.color];
   const center = 32;
   const radius = bot.body === "orb" ? 23 : 21;
   const eyeColor = bot.eye === "glow" || bot.eye === "lens" ? "#dff8ff" : "#15120f";
-  const skillSlots = getEquippedSkillSlots(bot);
+  const skillSlots2 = getEquippedSkillSlots(bot);
   const head = bot.body === "sentinel" ? `<path d="M${center} 7 L54 19 L50 48 L${center} 58 L14 48 L10 19 Z" fill="${pigment.hex}"/>` : `<ellipse cx="${center}" cy="${center}" rx="${bot.body === "gremlin" ? radius + 2 : radius}" ry="${bot.body === "orb" ? radius : radius - 3}" fill="${pigment.hex}"/>`;
   const antennae = bot.body === "gremlin" ? `<path d="M24 15 L16 4 M39 15 L48 6" stroke="${pigment.shadow}" stroke-width="6" stroke-linecap="round"/>` : "";
   const inner = bot.body === "orb" ? `<circle cx="${center}" cy="${center}" r="13" fill="#dff8ff" opacity=".32"/>` : bot.body === "sentinel" ? `<rect x="39" y="22" width="9" height="15" rx="4" fill="#fff4dc" opacity=".28"/>` : "";
+  const clayTexture = [
+    `<ellipse cx="27" cy="23" rx="14" ry="5" fill="${pigment.highlight}" opacity=".3" transform="rotate(-20 27 23)"/>`,
+    `<ellipse cx="40" cy="42" rx="11" ry="5" fill="${pigment.shadow}" opacity=".22" transform="rotate(-12 40 42)"/>`,
+    `<circle cx="20" cy="25" r="1.4" fill="${pigment.shadow}" opacity=".2"/>`,
+    `<circle cx="33" cy="19" r="1" fill="${pigment.shadow}" opacity=".16"/>`,
+    `<circle cx="43" cy="28" r="1.2" fill="${pigment.shadow}" opacity=".18"/>`,
+    `<circle cx="27" cy="42" r="1" fill="${pigment.highlight}" opacity=".18"/>`
+  ].join("");
   const eyes = bot.eye === "lens" || bot.body === "scanner" ? `<circle cx="${center}" cy="29" r="11" fill="#7cc8d8"/><circle cx="29" cy="25" r="3" fill="#f7ffff"/>` : `<circle cx="25" cy="31" r="${bot.eye === "dot" ? 3 : 4}" fill="${eyeColor}"/><circle cx="39" cy="31" r="${bot.eye === "dot" ? 3 : 4}" fill="${eyeColor}"/>`;
   const gear = bot.body === "gremlin" ? `<circle cx="54" cy="32" r="7" fill="${pigment.shadow}"/><circle cx="54" cy="32" r="3" fill="#d9c0a0"/>` : "";
   const skillPieces = [
-    skillSlots.includes("crown") ? `<rect x="23" y="7" width="18" height="9" rx="4" fill="#d8a849"/><path d="M26 8 L30 3 L34 8 L39 3 L38 15 L25 15 Z" fill="#f0cd7a" opacity=".72"/>` : "",
-    skillSlots.includes("eye") ? `<circle cx="15" cy="31" r="9" fill="#e8d6b8"/><circle cx="15" cy="31" r="5" fill="${pigment.hex}"/><circle cx="15" cy="31" r="3" fill="#7cc8d8" opacity=".7"/>` : "",
-    skillSlots.includes("side") ? `<circle cx="50" cy="43" r="6" fill="#d8a849"/><circle cx="50" cy="43" r="2.5" fill="${pigment.shadow}" opacity=".55"/>` : "",
-    skillSlots.includes("badge") ? `<rect x="47" y="24" width="11" height="17" rx="4" fill="#fff4dc"/><path d="M50 29 H55 M50 33 H54" stroke="#b9ad9b" stroke-width="1.4" stroke-linecap="round"/>` : "",
-    skillSlots.includes("charm") ? `<path d="M31 46 C29 50 29 53 32 55 C35 53 35 50 33 46 Z" fill="#d8a849"/><path d="M32 46 V41" stroke="#9a7331" stroke-width="2" stroke-linecap="round"/>` : ""
+    skillSlots2.includes("crown") ? `<rect x="23" y="7" width="18" height="9" rx="4" fill="#d8a849"/><path d="M26 8 L30 3 L34 8 L39 3 L38 15 L25 15 Z" fill="#f0cd7a" opacity=".72"/>` : "",
+    skillSlots2.includes("eye") ? `<circle cx="15" cy="31" r="9" fill="#e8d6b8"/><circle cx="15" cy="31" r="5" fill="${pigment.hex}"/><circle cx="15" cy="31" r="3" fill="#7cc8d8" opacity=".7"/>` : "",
+    skillSlots2.includes("side") ? `<circle cx="50" cy="43" r="6" fill="#d8a849"/><circle cx="50" cy="43" r="2.5" fill="${pigment.shadow}" opacity=".55"/>` : "",
+    skillSlots2.includes("badge") ? `<rect x="47" y="24" width="11" height="17" rx="4" fill="#fff4dc"/><path d="M50 29 H55 M50 33 H54" stroke="#b9ad9b" stroke-width="1.4" stroke-linecap="round"/>` : "",
+    skillSlots2.includes("charm") ? `<path d="M31 46 C29 50 29 53 32 55 C35 53 35 50 33 46 Z" fill="#d8a849"/><path d="M32 46 V41" stroke="#9a7331" stroke-width="2" stroke-linecap="round"/>` : ""
   ].join("");
   return [
     `<svg xmlns="http://www.w3.org/2000/svg" width="${size}" height="${size}" viewBox="0 0 64 64">`,
     `<ellipse cx="${center}" cy="43" rx="24" ry="10" fill="${pigment.shadow}" opacity=".45"/>`,
     antennae,
     head,
+    clayTexture,
     inner,
     skillPieces,
     eyes,
@@ -401,6 +659,17 @@ function createPairingToken() {
 }
 
 // ../../packages/shared/src/contracts.ts
+var superiorAccountOAuthProviders = ["google", "x", "discord"];
+function createSuperiorFunctionRunRequest(input) {
+  return {
+    type: "superior-function-run",
+    requestId: createLocalId("function"),
+    functionId: input.functionId,
+    input: input.input,
+    ...input.bot ? { bot: input.bot } : {},
+    createdAt: (/* @__PURE__ */ new Date()).toISOString()
+  };
+}
 function getPageText(page) {
   return (page.selectedText || page.bodyText || "").trim();
 }
@@ -415,6 +684,1556 @@ function truncatePageText(text, maxCharacters = 16e3) {
   return `${trimmed.slice(0, maxCharacters)}
 
 [Content truncated by SUPERIOR.]`;
+}
+
+// src/accountStore.ts
+import { existsSync as existsSync2, mkdirSync, readFileSync, writeFileSync } from "node:fs";
+import { dirname as dirname2, join as join2 } from "node:path";
+
+// src/localPaths.ts
+import { existsSync } from "node:fs";
+import { homedir, platform } from "node:os";
+import { dirname, join, parse, resolve } from "node:path";
+function getSuperiorStateDirectory(startDirectory = process.cwd()) {
+  if (process.env.CLAWDBOT_STATE_DIR) {
+    return resolve(process.env.CLAWDBOT_STATE_DIR);
+  }
+  const workspaceRoot = findUpDirectory("pnpm-workspace.yaml", startDirectory);
+  if (workspaceRoot) {
+    return join(workspaceRoot, ".clawdbot");
+  }
+  return getUserStateDirectory();
+}
+function findUp(fileName, startDirectory) {
+  const directory = findUpDirectory(fileName, startDirectory);
+  return directory ? join(directory, fileName) : void 0;
+}
+function findUpDirectory(fileName, startDirectory) {
+  let current = resolve(startDirectory);
+  const root = parse(current).root;
+  while (true) {
+    const candidate = join(current, fileName);
+    if (existsSync(candidate)) {
+      return current;
+    }
+    if (current === root) {
+      return void 0;
+    }
+    current = dirname(current);
+  }
+}
+function getUserStateDirectory() {
+  if (platform() === "win32") {
+    return join(process.env.APPDATA ?? join(homedir(), "AppData", "Roaming"), "SUPERIOR", ".clawdbot");
+  }
+  if (platform() === "darwin") {
+    return join(homedir(), "Library", "Application Support", "SUPERIOR", ".clawdbot");
+  }
+  return join(process.env.XDG_STATE_HOME ?? join(homedir(), ".local", "state"), "superior");
+}
+
+// src/accountStore.ts
+var EMPTY_ACCOUNT_STATE = {
+  session: null,
+  profile: null,
+  pendingProvider: null
+};
+function readStoredAccountState() {
+  const filePath = getStoredAccountFilePath();
+  try {
+    if (!existsSync2(filePath)) {
+      return EMPTY_ACCOUNT_STATE;
+    }
+    const parsed = JSON.parse(readFileSync(filePath, "utf8"));
+    return normalizeStoredAccountState(parsed);
+  } catch {
+    return EMPTY_ACCOUNT_STATE;
+  }
+}
+function writeStoredAccountSession(input) {
+  return writeStoredAccountState({
+    ...readStoredAccountState(),
+    session: input.session,
+    profile: normalizeProfile(input.profile),
+    pendingProvider: null
+  });
+}
+function writePendingAccountProvider(provider) {
+  return writeStoredAccountState({
+    ...readStoredAccountState(),
+    pendingProvider: provider
+  });
+}
+function clearStoredAccountSession() {
+  return writeStoredAccountState({
+    session: null,
+    profile: null,
+    pendingProvider: null
+  });
+}
+function writeStoredAccountState(state) {
+  const normalized = normalizeStoredAccountState(state);
+  const filePath = getStoredAccountFilePath();
+  mkdirSync(dirname2(filePath), {
+    recursive: true
+  });
+  writeFileSync(filePath, JSON.stringify(normalized, null, 2), "utf8");
+  return normalized;
+}
+function normalizeStoredAccountState(state) {
+  const pendingProvider = superiorAccountOAuthProviders.includes(
+    state.pendingProvider
+  ) ? state.pendingProvider : null;
+  return {
+    session: normalizeSession(state.session),
+    profile: normalizeProfile(state.profile),
+    pendingProvider
+  };
+}
+function normalizeSession(session) {
+  if (!session || typeof session !== "object") {
+    return null;
+  }
+  const candidate = session;
+  if (candidate.type !== "superior-account-session" || typeof candidate.userId !== "string" || typeof candidate.email !== "string" || typeof candidate.accessToken !== "string" || typeof candidate.createdAt !== "string") {
+    return null;
+  }
+  const provider = candidate.provider === "email-code" || superiorAccountOAuthProviders.includes(candidate.provider) ? candidate.provider : void 0;
+  const expiresAt = typeof candidate.expiresAt === "number" ? candidate.expiresAt : void 0;
+  return {
+    type: "superior-account-session",
+    userId: candidate.userId,
+    email: candidate.email,
+    ...provider ? { provider } : {},
+    accessToken: candidate.accessToken,
+    ...expiresAt ? { expiresAt } : {},
+    createdAt: candidate.createdAt
+  };
+}
+function normalizeProfile(profile) {
+  if (!profile || typeof profile !== "object") {
+    return null;
+  }
+  const candidate = profile;
+  if (candidate.type !== "superior-account-profile" || typeof candidate.userId !== "string" || typeof candidate.handle !== "string" || typeof candidate.createdAt !== "string" || typeof candidate.updatedAt !== "string") {
+    return null;
+  }
+  const connectedProviders = Array.isArray(candidate.connectedProviders) ? candidate.connectedProviders.filter(
+    (provider) => superiorAccountOAuthProviders.includes(provider)
+  ) : void 0;
+  return {
+    type: "superior-account-profile",
+    userId: candidate.userId,
+    ...typeof candidate.email === "string" ? { email: candidate.email } : {},
+    handle: candidate.handle,
+    ...typeof candidate.avatarUrl === "string" ? { avatarUrl: candidate.avatarUrl } : {},
+    ...connectedProviders ? { connectedProviders } : {},
+    ...typeof candidate.activeSporeId === "string" ? { activeSporeId: candidate.activeSporeId } : {},
+    createdAt: candidate.createdAt,
+    updatedAt: candidate.updatedAt
+  };
+}
+function getStoredAccountFilePath() {
+  return join2(getSuperiorStateDirectory(), "account-state.json");
+}
+
+// src/browserLinkStore.ts
+import { existsSync as existsSync3, mkdirSync as mkdirSync2, readFileSync as readFileSync2, writeFileSync as writeFileSync2 } from "node:fs";
+import { dirname as dirname3, join as join3 } from "node:path";
+var browserLinkFileName = "browser-link.json";
+function readBrowserLinkState() {
+  try {
+    const state = readStoredBrowserLinkState();
+    return toPublicBrowserLinkState(state);
+  } catch {
+    return {
+      status: "unpaired"
+    };
+  }
+}
+function startBrowserPairing() {
+  const pairingToken = createPairingToken();
+  writeStoredBrowserLinkState({
+    status: "pairing",
+    pairingToken,
+    updatedAt: (/* @__PURE__ */ new Date()).toISOString()
+  });
+  return {
+    pairingToken,
+    browserLinkState: {
+      status: "pairing"
+    }
+  };
+}
+function completeBrowserPairing(pairingToken, extensionId) {
+  const state = readStoredBrowserLinkState();
+  if (!state.pairingToken || state.pairingToken !== pairingToken) {
+    return null;
+  }
+  const lastSeenAt = (/* @__PURE__ */ new Date()).toISOString();
+  writeStoredBrowserLinkState({
+    status: "paired",
+    pairingToken,
+    ...extensionId ? { extensionId } : {},
+    lastSeenAt,
+    updatedAt: lastSeenAt
+  });
+  return {
+    status: "paired",
+    ...extensionId ? { extensionId } : {},
+    lastSeenAt
+  };
+}
+function touchBrowserPairing(pairingToken) {
+  const state = readStoredBrowserLinkState();
+  if (state.status !== "paired" || !state.pairingToken || state.pairingToken !== pairingToken) {
+    return null;
+  }
+  const lastSeenAt = (/* @__PURE__ */ new Date()).toISOString();
+  writeStoredBrowserLinkState({
+    ...state,
+    lastSeenAt,
+    updatedAt: lastSeenAt
+  });
+  return toPublicBrowserLinkState({
+    ...state,
+    lastSeenAt
+  });
+}
+function resetBrowserPairing() {
+  writeStoredBrowserLinkState({
+    status: "unpaired",
+    updatedAt: (/* @__PURE__ */ new Date()).toISOString()
+  });
+  return {
+    status: "unpaired"
+  };
+}
+function readStoredBrowserLinkState() {
+  const filePath = getBrowserLinkFilePath();
+  if (!existsSync3(filePath)) {
+    return {
+      status: "unpaired",
+      updatedAt: (/* @__PURE__ */ new Date()).toISOString()
+    };
+  }
+  const parsed = JSON.parse(readFileSync2(filePath, "utf8"));
+  return {
+    status: parsed.status ?? "unpaired",
+    ...typeof parsed.pairingToken === "string" ? { pairingToken: parsed.pairingToken } : {},
+    ...typeof parsed.extensionId === "string" ? { extensionId: parsed.extensionId } : {},
+    ...typeof parsed.lastSeenAt === "string" ? { lastSeenAt: parsed.lastSeenAt } : {},
+    updatedAt: typeof parsed.updatedAt === "string" ? parsed.updatedAt : (/* @__PURE__ */ new Date()).toISOString()
+  };
+}
+function writeStoredBrowserLinkState(state) {
+  const filePath = getBrowserLinkFilePath();
+  mkdirSync2(dirname3(filePath), {
+    recursive: true
+  });
+  writeFileSync2(filePath, JSON.stringify(state, null, 2), "utf8");
+}
+function toPublicBrowserLinkState(state) {
+  return {
+    status: state.status,
+    ...state.extensionId ? { extensionId: state.extensionId } : {},
+    ...state.lastSeenAt ? { lastSeenAt: state.lastSeenAt } : {}
+  };
+}
+function getBrowserLinkFilePath() {
+  return join3(getSuperiorStateDirectory(), browserLinkFileName);
+}
+
+// src/botIdentityStore.ts
+import { existsSync as existsSync4, mkdirSync as mkdirSync3, readFileSync as readFileSync3, writeFileSync as writeFileSync3 } from "node:fs";
+import { dirname as dirname4, join as join4 } from "node:path";
+function readBotIdentity() {
+  const filePath = getIdentityFilePath();
+  try {
+    if (!existsSync4(filePath)) {
+      return DEFAULT_BOT_IDENTITY;
+    }
+    const parsed = JSON.parse(readFileSync3(filePath, "utf8"));
+    return normalizeBotIdentity(parsed);
+  } catch {
+    return DEFAULT_BOT_IDENTITY;
+  }
+}
+function writeBotIdentity(bot) {
+  const now = (/* @__PURE__ */ new Date()).toISOString();
+  const normalized = normalizeBotIdentity({
+    ...bot,
+    createdAt: bot.createdAt ?? now,
+    updatedAt: now
+  });
+  const filePath = getIdentityFilePath();
+  mkdirSync3(dirname4(filePath), {
+    recursive: true
+  });
+  writeFileSync3(filePath, JSON.stringify(normalized, null, 2), "utf8");
+  return normalized;
+}
+function hasSavedBotIdentity() {
+  return existsSync4(getIdentityFilePath());
+}
+function normalizeBotIdentity(bot) {
+  const createdAt = bot.createdAt;
+  const updatedAt = bot.updatedAt;
+  const starterPresetId = bot.starterPresetId;
+  const normalized = updateBotIdentity(
+    {
+      ...DEFAULT_BOT_IDENTITY,
+      ...bot,
+      rules: Array.isArray(bot.rules) ? bot.rules : DEFAULT_BOT_IDENTITY.rules,
+      skills: Array.isArray(bot.skills) ? bot.skills : DEFAULT_BOT_IDENTITY.skills,
+      browserLinkState: bot.browserLinkState ?? DEFAULT_BOT_IDENTITY.browserLinkState
+    },
+    {
+      body: bot.body,
+      color: bot.color,
+      eye: bot.eye,
+      name: bot.name
+    }
+  );
+  return {
+    ...normalized,
+    ...starterPresetId ? { starterPresetId } : {},
+    ...createdAt ? { createdAt } : {},
+    ...updatedAt ? { updatedAt } : {}
+  };
+}
+function getIdentityFilePath() {
+  return join4(getSuperiorStateDirectory(), "bot-identity.json");
+}
+
+// src/config.ts
+import { existsSync as existsSync5, readFileSync as readFileSync4 } from "node:fs";
+import { join as join5, resolve as resolve2 } from "node:path";
+var envLoaded = false;
+var loadedOpenAIKeyPath;
+function loadNearestEnvLocal(startDirectory = process.cwd()) {
+  if (envLoaded) {
+    return;
+  }
+  envLoaded = true;
+  for (const envPath of getEnvLocalCandidates(startDirectory)) {
+    if (!existsSync5(envPath)) {
+      continue;
+    }
+    const content = readFileSync4(envPath, "utf8");
+    for (const rawLine of content.split(/\r?\n/)) {
+      const line = rawLine.trim();
+      if (!line || line.startsWith("#")) {
+        continue;
+      }
+      const equalsIndex = line.indexOf("=");
+      if (equalsIndex === -1) {
+        continue;
+      }
+      const key = line.slice(0, equalsIndex).trim();
+      const rawValue = line.slice(equalsIndex + 1).trim();
+      const value = rawValue.replace(/^["']|["']$/g, "");
+      if (key && process.env[key] === void 0) {
+        process.env[key] = value;
+        if (key === "OPENAI_API_KEY" && value) {
+          loadedOpenAIKeyPath = envPath;
+        }
+      }
+    }
+  }
+}
+function getDaemonConfig() {
+  const hadProcessOpenAIKey = Boolean(process.env.OPENAI_API_KEY);
+  loadNearestEnvLocal();
+  const port = Number.parseInt(process.env.CLAWDBOT_DAEMON_PORT ?? "5317", 10);
+  const localStateDirectory = getSuperiorStateDirectory();
+  const keyFilePath = join5(localStateDirectory, ".env.local");
+  const openaiApiKey = process.env.OPENAI_API_KEY || void 0;
+  const supabaseUrl = process.env.SUPABASE_URL || void 0;
+  const supabasePublishableKey = process.env.SUPABASE_PUBLISHABLE_KEY || void 0;
+  const accountRedirectUrl = process.env.SUPERIOR_AUTH_REDIRECT_URL || `http://${process.env.CLAWDBOT_DAEMON_HOST ?? "127.0.0.1"}:${Number.isFinite(port) ? port : 5317}/account/oauth/callback`;
+  return {
+    host: process.env.CLAWDBOT_DAEMON_HOST ?? "127.0.0.1",
+    port: Number.isFinite(port) ? port : 5317,
+    openaiApiKey,
+    openaiModel: process.env.OPENAI_MODEL || "gpt-4.1-mini",
+    localStateDirectory,
+    keyFilePath,
+    keyFilePresent: existsSync5(keyFilePath),
+    openaiConfigSource: openaiApiKey ? loadedOpenAIKeyPath || !hadProcessOpenAIKey ? "env-file" : "environment" : "missing",
+    ...supabaseUrl ? { supabaseUrl } : {},
+    ...supabasePublishableKey ? { supabasePublishableKey } : {},
+    ...accountRedirectUrl ? { accountRedirectUrl } : {},
+    version: process.env.npm_package_version ?? "0.2.0"
+  };
+}
+function getEnvLocalCandidates(startDirectory) {
+  const candidates = [
+    process.env.SUPERIOR_ENV_PATH ? resolve2(process.env.SUPERIOR_ENV_PATH) : void 0,
+    findUp(".env.local", startDirectory),
+    join5(getSuperiorStateDirectory(startDirectory), ".env.local")
+  ].filter((candidate) => Boolean(candidate));
+  const uniqueCandidates = /* @__PURE__ */ new Set();
+  for (const candidate of candidates) {
+    uniqueCandidates.add(candidate);
+  }
+  return [...uniqueCandidates];
+}
+
+// src/recentResultsStore.ts
+import { existsSync as existsSync6, mkdirSync as mkdirSync4, readFileSync as readFileSync5, writeFileSync as writeFileSync4 } from "node:fs";
+import { dirname as dirname5, join as join6 } from "node:path";
+var recentResultsFileName = "recent-results.json";
+var maxRecentResults = 8;
+function readRecentSkillResults() {
+  return {
+    type: "recent-skill-results",
+    items: readStoredRecentResults().items,
+    createdAt: (/* @__PURE__ */ new Date()).toISOString()
+  };
+}
+function rememberExplainPageResult(result) {
+  rememberRecentSkillResult({
+    type: "recent-skill-result",
+    id: `recent_${result.requestId}`,
+    requestId: result.requestId,
+    skillId: "page-explainer",
+    skillLabel: skillLabels["page-explainer"],
+    source: result.source,
+    summary: result.summary,
+    detail: result.keyPoints[0] ?? "Page explained.",
+    status: result.warnings.length > 0 ? "warning" : "ready",
+    createdAt: result.createdAt
+  });
+}
+function rememberArticleXrayResult(result) {
+  rememberRecentSkillResult({
+    type: "recent-skill-result",
+    id: `recent_${result.requestId}`,
+    requestId: result.requestId,
+    skillId: "article-xray",
+    skillLabel: skillLabels["article-xray"],
+    source: result.source,
+    summary: result.excerpt,
+    detail: `${result.quality} / ${result.stats.wordCount} words / ${result.textSource}`,
+    status: result.quality === "clean" && result.warnings.length === 0 ? "ready" : "warning",
+    createdAt: result.createdAt
+  });
+}
+function rememberRepoReaderResult(result) {
+  rememberRecentSkillResult({
+    type: "recent-skill-result",
+    id: `recent_${result.requestId}`,
+    requestId: result.requestId,
+    skillId: "repo-reader",
+    skillLabel: skillLabels["repo-reader"],
+    source: result.source,
+    summary: result.summary,
+    detail: `${result.playground.label} / ${result.environment.mode}`,
+    status: result.risks.some((risk) => risk !== "No obvious first-pass risk.") ? "warning" : "ready",
+    createdAt: result.createdAt
+  });
+}
+function rememberRecentSkillResult(item) {
+  try {
+    const stored = readStoredRecentResults();
+    const items = [item, ...stored.items.filter((existingItem) => existingItem.requestId !== item.requestId)].slice(
+      0,
+      maxRecentResults
+    );
+    writeStoredRecentResults({
+      items
+    });
+  } catch {
+  }
+}
+function readStoredRecentResults() {
+  const filePath = getRecentResultsFilePath();
+  try {
+    if (!existsSync6(filePath)) {
+      return {
+        items: []
+      };
+    }
+    const parsed = JSON.parse(readFileSync5(filePath, "utf8"));
+    return {
+      items: Array.isArray(parsed.items) ? parsed.items.filter(isRecentSkillResult).slice(0, maxRecentResults) : []
+    };
+  } catch {
+    return {
+      items: []
+    };
+  }
+}
+function writeStoredRecentResults(results) {
+  const filePath = getRecentResultsFilePath();
+  mkdirSync4(dirname5(filePath), {
+    recursive: true
+  });
+  writeFileSync4(filePath, JSON.stringify(results, null, 2), "utf8");
+}
+function getRecentResultsFilePath() {
+  return join6(getSuperiorStateDirectory(), recentResultsFileName);
+}
+function isRecentSkillResult(item) {
+  const candidate = item;
+  return candidate.type === "recent-skill-result" && typeof candidate.id === "string" && typeof candidate.requestId === "string" && typeof candidate.skillId === "string" && typeof candidate.skillLabel === "string" && typeof candidate.summary === "string" && typeof candidate.detail === "string" && (candidate.status === "ready" || candidate.status === "warning") && typeof candidate.createdAt === "string" && typeof candidate.source?.url === "string" && typeof candidate.source?.title === "string";
+}
+
+// src/repoWorkspaceStore.ts
+import { existsSync as existsSync7, mkdirSync as mkdirSync5, readFileSync as readFileSync6, writeFileSync as writeFileSync5 } from "node:fs";
+import { dirname as dirname6, join as join7 } from "node:path";
+var repoWorkspaceFileName = "repo-workspaces.json";
+var maxRepoWorkspaceRecords = 32;
+function readRepoWorkspaceRecords() {
+  return {
+    type: "repo-workspace-records",
+    items: readStoredRepoWorkspaceRecords().items,
+    createdAt: (/* @__PURE__ */ new Date()).toISOString()
+  };
+}
+function readRepoWorkspaceRecord(repoWorkspaceId) {
+  const normalizedId = repoWorkspaceId.trim().toLowerCase();
+  if (!normalizedId) {
+    return null;
+  }
+  return readStoredRepoWorkspaceRecords().items.find((item) => item.id === normalizedId) ?? null;
+}
+function rememberRepoWorkspaceRecord(result) {
+  const stored = readStoredRepoWorkspaceRecords();
+  const id = createRepoWorkspaceId(result);
+  const existingRecord = stored.items.find((item) => item.id === id);
+  const now = result.createdAt;
+  const record = {
+    type: "repo-workspace-record",
+    id,
+    source: result.source,
+    repository: result.repository,
+    presentation: result.presentation,
+    environment: result.environment,
+    playground: result.playground,
+    stack: result.stack,
+    risks: result.risks,
+    nextMoves: result.nextMoves,
+    ...existingRecord?.localPath ? { localPath: existingRecord.localPath } : {},
+    ...existingRecord?.profilePath ? { profilePath: existingRecord.profilePath } : {},
+    ...existingRecord?.lastBrowserSessionId ? { lastBrowserSessionId: existingRecord.lastBrowserSessionId } : {},
+    ...existingRecord?.lastBrowserEventSummary ? { lastBrowserEventSummary: existingRecord.lastBrowserEventSummary } : {},
+    ...existingRecord?.lastBrowserInspection ? { lastBrowserInspection: existingRecord.lastBrowserInspection } : {},
+    nextMove: result.nextMoves[0] ?? result.playground.primaryLoop[0] ?? "Start Playpen",
+    notes: existingRecord?.notes ?? [],
+    createdAt: existingRecord?.createdAt ?? now,
+    updatedAt: now
+  };
+  const items = [record, ...stored.items.filter((item) => item.id !== id)].slice(0, maxRepoWorkspaceRecords);
+  writeStoredRepoWorkspaceRecords({
+    items
+  });
+  return record;
+}
+function rememberRepoWorkspaceBrowserSession(repoWorkspaceId, details) {
+  const stored = readStoredRepoWorkspaceRecords();
+  const normalizedId = repoWorkspaceId.trim().toLowerCase();
+  const existingRecord = stored.items.find((item) => item.id === normalizedId);
+  if (!existingRecord) {
+    return null;
+  }
+  const record = {
+    ...existingRecord,
+    profilePath: details.profilePath,
+    lastBrowserSessionId: details.sessionId,
+    lastBrowserEventSummary: details.lastBrowserEventSummary,
+    ...details.lastBrowserInspection ? { lastBrowserInspection: details.lastBrowserInspection } : existingRecord.lastBrowserInspection ? { lastBrowserInspection: existingRecord.lastBrowserInspection } : {},
+    nextMove: details.lastBrowserEventSummary,
+    updatedAt: (/* @__PURE__ */ new Date()).toISOString()
+  };
+  const items = [record, ...stored.items.filter((item) => item.id !== normalizedId)].slice(0, maxRepoWorkspaceRecords);
+  writeStoredRepoWorkspaceRecords({
+    items
+  });
+  return record;
+}
+function readStoredRepoWorkspaceRecords() {
+  const filePath = getRepoWorkspaceFilePath();
+  try {
+    if (!existsSync7(filePath)) {
+      return {
+        items: []
+      };
+    }
+    const parsed = JSON.parse(readFileSync6(filePath, "utf8"));
+    return {
+      items: Array.isArray(parsed.items) ? parsed.items.filter(isRepoWorkspaceRecord).slice(0, maxRepoWorkspaceRecords) : []
+    };
+  } catch {
+    return {
+      items: []
+    };
+  }
+}
+function writeStoredRepoWorkspaceRecords(records) {
+  const filePath = getRepoWorkspaceFilePath();
+  mkdirSync5(dirname6(filePath), {
+    recursive: true
+  });
+  writeFileSync5(filePath, JSON.stringify(records, null, 2), "utf8");
+}
+function getRepoWorkspaceFilePath() {
+  return join7(getSuperiorStateDirectory(), "repos", repoWorkspaceFileName);
+}
+function createRepoWorkspaceId(result) {
+  return `${result.repository.owner}/${result.repository.name}`.toLowerCase();
+}
+function isRepoWorkspaceRecord(item) {
+  const candidate = item;
+  return candidate.type === "repo-workspace-record" && typeof candidate.id === "string" && typeof candidate.source?.url === "string" && typeof candidate.source?.title === "string" && typeof candidate.repository?.owner === "string" && typeof candidate.repository?.name === "string" && typeof candidate.presentation?.primary === "string" && typeof candidate.environment?.mode === "string" && typeof candidate.playground?.label === "string" && Array.isArray(candidate.stack) && Array.isArray(candidate.risks) && Array.isArray(candidate.nextMoves) && Array.isArray(candidate.notes) && typeof candidate.createdAt === "string" && typeof candidate.updatedAt === "string";
+}
+
+// src/browserRuntime.ts
+import { spawn } from "node:child_process";
+import { existsSync as existsSync8, mkdirSync as mkdirSync6, readdirSync } from "node:fs";
+import { createServer } from "node:net";
+import { dirname as dirname7, join as join8, parse as parse2, resolve as resolve3 } from "node:path";
+var sessionTokenTtlMs = 5 * 60 * 1e3;
+var maxBrowserEvents = 60;
+var activeRuntime = null;
+var lastSessionId;
+var browserEvents = [];
+var BrowserRuntimeError = class extends Error {
+  constructor(code, message) {
+    super(message);
+    this.code = code;
+  }
+  code;
+};
+function getSuperiorBrowserState() {
+  const status = activeRuntime ? activeRuntime.session.status : findBrowserExecutable() ? "closed" : "missing-browser";
+  return {
+    type: "superior-browser-state",
+    status,
+    ...activeRuntime ? { activeSession: toPublicSession(activeRuntime.session) } : {},
+    createdAt: (/* @__PURE__ */ new Date()).toISOString()
+  };
+}
+function getSuperiorBrowserEvents() {
+  const sessionId = activeRuntime?.session.sessionId ?? lastSessionId;
+  const items = sessionId ? browserEvents.filter((event) => event.sessionId === sessionId) : browserEvents;
+  return {
+    type: "superior-browser-events",
+    ...sessionId ? { sessionId } : {},
+    items,
+    createdAt: (/* @__PURE__ */ new Date()).toISOString()
+  };
+}
+async function inspectSuperiorBrowser() {
+  const session = activeRuntime?.session;
+  if (!session) {
+    throw new BrowserRuntimeError("not_running", "Start a playpen before inspecting SUPERIOR Browser.");
+  }
+  const inspection = await readSuperiorBrowserInspection(session);
+  session.inspection = inspection;
+  maybeRecordInspectionEvent(session, inspection);
+  return {
+    type: "superior-browser-inspect-result",
+    state: getSuperiorBrowserState(),
+    inspection,
+    createdAt: (/* @__PURE__ */ new Date()).toISOString()
+  };
+}
+function reportSuperiorBrowserActivePage(report) {
+  const session = activeRuntime?.session;
+  if (!session) {
+    throw new BrowserRuntimeError("not_running", "Start a playpen before reporting an active page.");
+  }
+  if (session.status !== "paired" || report.pairingToken !== session.pairingToken) {
+    throw new BrowserRuntimeError("unauthorized", "SUPERIOR Browser active page report was not paired.");
+  }
+  const inspection = {
+    type: "superior-browser-inspection",
+    status: "ready",
+    inspectedAt: (/* @__PURE__ */ new Date()).toISOString(),
+    extensionPaired: true,
+    ...session.browserKind ? { browserKind: session.browserKind } : {},
+    currentUrl: report.page.url,
+    pageTitle: report.page.title || report.page.url,
+    ...typeof report.page.tabId === "number" ? { tabId: String(report.page.tabId) } : {},
+    consoleErrorCount: session.inspection?.consoleErrorCount ?? 0,
+    networkFailureCount: session.inspection?.networkFailureCount ?? 0,
+    note: "extension active tab"
+  };
+  session.inspection = inspection;
+  maybeRecordInspectionEvent(session, inspection, "Page focused");
+  return {
+    type: "superior-browser-active-page-result",
+    inspection,
+    state: getSuperiorBrowserState(),
+    createdAt: (/* @__PURE__ */ new Date()).toISOString()
+  };
+}
+async function startSuperiorBrowser(request) {
+  const repoWorkspace = readRepoWorkspaceRecord(request.repoWorkspaceId);
+  if (!repoWorkspace) {
+    throw new BrowserRuntimeError("unknown_repo", "Read this repo before starting a playpen.");
+  }
+  const browser = findBrowserExecutable();
+  if (!browser) {
+    activeRuntime = null;
+    throw new BrowserRuntimeError("missing_browser", "Install Chrome or Edge, or set SUPERIOR_BROWSER_PATH.");
+  }
+  const extensionPath = findExtensionFolder();
+  if (!extensionPath) {
+    throw new BrowserRuntimeError("missing_extension", "Build the SUPERIOR extension before starting a playpen.");
+  }
+  await stopSuperiorBrowser();
+  const profilePath = getProfilePath(repoWorkspace.id);
+  const debugPort = await allocateLocalPort();
+  const sessionId = createLocalId("browser_session");
+  const sessionToken = createLocalId("browser_token");
+  const pairing = startBrowserPairing();
+  const startedAt = (/* @__PURE__ */ new Date()).toISOString();
+  const mode = getSessionMode(repoWorkspace);
+  const homeUrl = `http://127.0.0.1:${getDaemonPort()}/browser-session/${encodeURIComponent(sessionId)}/home`;
+  const session = {
+    sessionId,
+    repoWorkspaceId: repoWorkspace.id,
+    repoTitle: repoWorkspace.source.title,
+    mode,
+    status: "starting",
+    browserKind: browser.kind,
+    browserPath: browser.path,
+    profilePath,
+    debugPort,
+    homeUrl,
+    repoUrl: repoWorkspace.source.url,
+    playpenLabel: repoWorkspace.playground.label,
+    startedAt,
+    bot: request.bot,
+    sessionToken,
+    sessionTokenExpiresAt: Date.now() + sessionTokenTtlMs,
+    pairingToken: pairing.pairingToken,
+    attached: false
+  };
+  mkdirSync6(profilePath, {
+    recursive: true
+  });
+  const args = [
+    `--user-data-dir=${profilePath}`,
+    `--remote-debugging-port=${debugPort}`,
+    `--disable-extensions-except=${extensionPath}`,
+    `--load-extension=${extensionPath}`,
+    "--no-first-run",
+    "--disable-default-apps",
+    homeUrl,
+    repoWorkspace.source.url
+  ];
+  const child = spawn(browser.path, args, {
+    stdio: "ignore",
+    detached: false,
+    windowsHide: false
+  });
+  if (child.pid) {
+    session.processId = child.pid;
+  }
+  activeRuntime = {
+    session,
+    child
+  };
+  recordBrowserEvent(session, "started", "Started", `${browser.kind} profile opened`);
+  recordBrowserEvent(session, "repo_opened", "Repo opened", repoWorkspace.source.url);
+  child.once("spawn", () => {
+    if (activeRuntime?.session.sessionId === sessionId) {
+      activeRuntime.session.status = "ready";
+    }
+  });
+  child.once("error", (error) => {
+    if (activeRuntime?.session.sessionId === sessionId) {
+      activeRuntime.session.status = "failed";
+      activeRuntime.session.error = error.message;
+      recordBrowserEvent(activeRuntime.session, "failed", "Failed", error.message);
+    }
+  });
+  child.once("exit", () => {
+    if (activeRuntime?.session.sessionId === sessionId) {
+      recordBrowserEvent(activeRuntime.session, "stopped", "Stopped", "Browser process closed");
+      lastSessionId = sessionId;
+      activeRuntime = null;
+    }
+  });
+  child.unref();
+  await waitForSpawnTick();
+  if (session.status === "failed") {
+    await stopSuperiorBrowser();
+    throw new BrowserRuntimeError("launch_failed", session.error ?? "SUPERIOR Browser could not start.");
+  }
+  if (session.status === "starting") {
+    session.status = "ready";
+  }
+  scheduleSuperiorBrowserInspection(sessionId);
+  return {
+    type: "superior-browser-start-result",
+    requestId: request.requestId,
+    state: getSuperiorBrowserState(),
+    createdAt: (/* @__PURE__ */ new Date()).toISOString()
+  };
+}
+async function stopSuperiorBrowser() {
+  if (!activeRuntime) {
+    return getSuperiorBrowserState();
+  }
+  const runtime = activeRuntime;
+  const shouldResetPairing = !runtime.session.attached;
+  recordBrowserEvent(runtime.session, "stopped", "Stopped", "Browser process stopped");
+  lastSessionId = runtime.session.sessionId;
+  activeRuntime = null;
+  if (!runtime.child.killed) {
+    runtime.child.kill();
+  }
+  if (shouldResetPairing) {
+    resetBrowserPairing();
+  }
+  return getSuperiorBrowserState();
+}
+function renderSuperiorBrowserHome(sessionId) {
+  const session = activeRuntime?.session;
+  if (!session || session.sessionId !== sessionId) {
+    return null;
+  }
+  const iconSvg = createBotIconSvg(session.bot, 128);
+  recordBrowserEvent(session, "home_loaded", "Home loaded", "Robot room opened");
+  const data = {
+    sessionId: session.sessionId,
+    sessionToken: session.sessionToken,
+    sessionTokenExpiresAt: new Date(session.sessionTokenExpiresAt).toISOString(),
+    repoWorkspaceId: session.repoWorkspaceId,
+    repoTitle: session.repoTitle,
+    playpenLabel: session.playpenLabel,
+    mode: session.mode
+  };
+  const safeDataJson = JSON.stringify(data).replace(/</g, "\\u003c");
+  const favicon = `data:image/svg+xml,${encodeURIComponent(iconSvg)}`;
+  return `<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>SUPERIOR Browser</title>
+  <link rel="icon" href="${favicon}" />
+  <style>
+    :root {
+      color-scheme: light;
+      font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      background: #d9b88f;
+      color: #2d211a;
+    }
+
+    body {
+      min-height: 100vh;
+      margin: 0;
+      display: grid;
+      place-items: center;
+      background:
+        radial-gradient(circle at 48% 22%, rgba(255, 246, 224, 0.44), transparent 28%),
+        linear-gradient(180deg, #ecd2aa 0%, #c99a6c 100%);
+    }
+
+    main {
+      width: min(720px, calc(100vw - 40px));
+      display: grid;
+      grid-template-columns: 150px minmax(0, 1fr);
+      gap: 22px;
+      align-items: center;
+      padding: 28px;
+      border-radius: 22px 20px 24px 19px;
+      background: rgba(255, 243, 219, 0.66);
+      box-shadow:
+        inset 0 2px 0 rgba(255, 248, 229, 0.8),
+        inset 0 -7px 0 rgba(96, 62, 37, 0.12),
+        0 22px 48px rgba(74, 49, 32, 0.26);
+    }
+
+    .bot {
+      display: grid;
+      place-items: center;
+      aspect-ratio: 1;
+      border-radius: 26px 24px 28px 22px;
+      background: rgba(111, 78, 53, 0.14);
+      box-shadow: inset 0 0 0 1px rgba(91, 57, 36, 0.16);
+    }
+
+    .bot svg {
+      width: 112px;
+      height: 112px;
+      filter: drop-shadow(0 12px 10px rgba(75, 45, 24, 0.22));
+    }
+
+    .plate {
+      display: grid;
+      gap: 12px;
+    }
+
+    h1 {
+      margin: 0;
+      font-size: clamp(32px, 6vw, 56px);
+      line-height: .92;
+      letter-spacing: 0;
+    }
+
+    p {
+      margin: 0;
+      color: #594331;
+      font-size: 15px;
+      line-height: 1.45;
+    }
+
+    dl {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 8px;
+      margin: 8px 0 0;
+    }
+
+    div.stat {
+      min-width: 0;
+      padding: 10px;
+      border-radius: 12px 13px 11px 14px;
+      background: rgba(255, 248, 229, 0.56);
+      box-shadow: inset 0 0 0 1px rgba(111, 70, 34, 0.12);
+    }
+
+    dt {
+      color: #724f38;
+      font-size: 11px;
+      font-weight: 900;
+      text-transform: uppercase;
+    }
+
+    dd {
+      margin: 4px 0 0;
+      overflow-wrap: anywhere;
+      font-size: 13px;
+      font-weight: 900;
+    }
+
+    @media (max-width: 620px) {
+      main {
+        grid-template-columns: 1fr;
+      }
+
+      .bot {
+        max-width: 180px;
+      }
+
+      dl {
+        grid-template-columns: 1fr;
+      }
+    }
+  </style>
+</head>
+<body>
+  <main>
+    <div class="bot" aria-hidden="true">${iconSvg}</div>
+    <section class="plate" aria-label="SUPERIOR Browser session">
+      <h1>${escapeHtml(session.bot.name)}</h1>
+      <p>SUPERIOR Browser is attached to this repo playpen.</p>
+      <dl>
+        <div class="stat"><dt>Repo</dt><dd>${escapeHtml(session.repoTitle)}</dd></div>
+        <div class="stat"><dt>Playpen</dt><dd>${escapeHtml(session.playpenLabel)}</dd></div>
+        <div class="stat"><dt>Status</dt><dd id="superior-attach-status">attaching</dd></div>
+      </dl>
+    </section>
+  </main>
+  <script id="superior-session-data" type="application/json">${safeDataJson}</script>
+</body>
+</html>`;
+}
+function attachSuperiorBrowserSession(sessionId, request) {
+  const session = activeRuntime?.session;
+  const now = (/* @__PURE__ */ new Date()).toISOString();
+  if (!session || session.sessionId !== sessionId) {
+    throw new BrowserRuntimeError("not_running", "SUPERIOR Browser session is not running.");
+  }
+  if (session.attached || Date.now() > session.sessionTokenExpiresAt || request.sessionToken !== session.sessionToken) {
+    throw new BrowserRuntimeError("unauthorized", "SUPERIOR Browser session token expired.");
+  }
+  const browserLinkState = completeBrowserPairing(session.pairingToken, request.extensionId);
+  if (!browserLinkState || browserLinkState.status !== "paired" || !browserLinkState.lastSeenAt) {
+    throw new BrowserRuntimeError("unauthorized", "SUPERIOR Browser could not pair this extension.");
+  }
+  session.attached = true;
+  session.status = "paired";
+  session.pairedAt = now;
+  recordBrowserEvent(session, "extension_paired", "Extension paired", request.extensionId ?? "controlled profile");
+  scheduleSuperiorBrowserInspection(session.sessionId, 500);
+  return {
+    type: "superior-browser-attach-result",
+    requestId: request.requestId,
+    pairingToken: session.pairingToken,
+    bot: session.bot,
+    browserLinkState: {
+      status: "paired",
+      ...browserLinkState.extensionId ? { extensionId: browserLinkState.extensionId } : {},
+      lastSeenAt: browserLinkState.lastSeenAt
+    },
+    createdAt: now
+  };
+}
+function rememberSuperiorBrowserSkillRun(skillLabel, pageTitle, pageUrl) {
+  const session = activeRuntime?.session;
+  if (!session || session.status !== "paired") {
+    return;
+  }
+  recordBrowserEvent(session, "skill_ran", skillLabel, pageTitle || pageUrl);
+}
+function findBrowserExecutable() {
+  const envPath = process.env.SUPERIOR_BROWSER_PATH?.trim();
+  if (envPath && existsSync8(envPath)) {
+    return {
+      kind: getBrowserKindFromPath(envPath),
+      path: envPath
+    };
+  }
+  for (const candidate of getBrowserCandidates()) {
+    if (existsSync8(candidate.path) && isBrowserCandidateUsable(candidate)) {
+      return candidate;
+    }
+  }
+  return null;
+}
+function getProfilePath(repoWorkspaceId) {
+  const safeId = repoWorkspaceId.toLowerCase().replace(/[^a-z0-9._-]+/g, "-").replace(/^-+|-+$/g, "");
+  return join8(getSuperiorStateDirectory(), "browser-profiles", safeId || "repo");
+}
+function findExtensionFolder(startDirectory = process.cwd()) {
+  const envPath = process.env.SUPERIOR_EXTENSION_PATH?.trim();
+  if (envPath && hasManifest(envPath)) {
+    return resolve3(envPath);
+  }
+  const workspaceRoot = findUpDirectory("pnpm-workspace.yaml", startDirectory);
+  if (workspaceRoot) {
+    const extensionDist = join8(workspaceRoot, "apps", "extension", "dist");
+    if (hasManifest(extensionDist)) {
+      return extensionDist;
+    }
+  }
+  for (const resourceRoot of getResourceRoots(startDirectory)) {
+    const extensionFolder = join8(resourceRoot, "extension");
+    if (hasManifest(extensionFolder)) {
+      return extensionFolder;
+    }
+  }
+  return null;
+}
+function toPublicSession(session) {
+  return {
+    sessionId: session.sessionId,
+    repoWorkspaceId: session.repoWorkspaceId,
+    repoTitle: session.repoTitle,
+    mode: session.mode,
+    status: session.status,
+    ...session.browserKind ? { browserKind: session.browserKind } : {},
+    ...session.browserPath ? { browserPath: session.browserPath } : {},
+    profilePath: session.profilePath,
+    ...session.debugPort ? { debugPort: session.debugPort } : {},
+    ...session.processId ? { processId: session.processId } : {},
+    homeUrl: session.homeUrl,
+    repoUrl: session.repoUrl,
+    playpenLabel: session.playpenLabel,
+    startedAt: session.startedAt,
+    ...session.pairedAt ? { pairedAt: session.pairedAt } : {},
+    ...session.inspection ? { inspection: session.inspection } : {},
+    ...session.error ? { error: session.error } : {}
+  };
+}
+function getSessionMode(repoWorkspace) {
+  if (repoWorkspace.playground.kind === "extension-lab") {
+    return "extension-lab";
+  }
+  if (repoWorkspace.playground.kind === "repo-map") {
+    return "repo-map";
+  }
+  return "superior-browser";
+}
+function getBrowserCandidates() {
+  const candidates = [];
+  if (process.platform === "win32") {
+    const programFiles = process.env.ProgramFiles;
+    const programFilesX86 = process.env["ProgramFiles(x86)"];
+    const localAppData = process.env.LOCALAPPDATA;
+    pushCandidate(candidates, "chrome", programFiles, "Google", "Chrome", "Application", "chrome.exe");
+    pushCandidate(candidates, "chrome", programFilesX86, "Google", "Chrome", "Application", "chrome.exe");
+    pushCandidate(candidates, "chrome", localAppData, "Google", "Chrome", "Application", "chrome.exe");
+    pushCandidate(candidates, "edge", programFiles, "Microsoft", "Edge", "Application", "msedge.exe");
+    pushCandidate(candidates, "edge", programFilesX86, "Microsoft", "Edge", "Application", "msedge.exe");
+    pushCandidate(candidates, "edge", localAppData, "Microsoft", "Edge", "Application", "msedge.exe");
+    return candidates;
+  }
+  if (process.platform === "darwin") {
+    candidates.push(
+      {
+        kind: "chrome",
+        path: "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome"
+      },
+      {
+        kind: "edge",
+        path: "/Applications/Microsoft Edge.app/Contents/MacOS/Microsoft Edge"
+      }
+    );
+    return candidates;
+  }
+  candidates.push(
+    {
+      kind: "chrome",
+      path: "/usr/bin/google-chrome"
+    },
+    {
+      kind: "chrome",
+      path: "/usr/bin/chromium"
+    },
+    {
+      kind: "edge",
+      path: "/usr/bin/microsoft-edge"
+    }
+  );
+  return candidates;
+}
+function pushCandidate(candidates, kind, root, ...parts) {
+  if (root) {
+    candidates.push({
+      kind,
+      path: join8(root, ...parts)
+    });
+  }
+}
+function getBrowserKindFromPath(path2) {
+  return path2.toLowerCase().includes("edge") || path2.toLowerCase().includes("msedge") ? "edge" : "chrome";
+}
+function isBrowserCandidateUsable(browser) {
+  if (browser.kind !== "chrome") {
+    return true;
+  }
+  const majorVersion = getInstalledBrowserMajorVersion(browser.path);
+  if (!majorVersion) {
+    return true;
+  }
+  return majorVersion < 137;
+}
+function getInstalledBrowserMajorVersion(browserPath) {
+  const applicationFolder = dirname7(browserPath);
+  try {
+    const majorVersions = readdirSync(applicationFolder, {
+      withFileTypes: true
+    }).filter((entry) => entry.isDirectory()).map((entry) => /^(\d+)\./.exec(entry.name)?.[1]).filter((majorVersion) => Boolean(majorVersion)).map((majorVersion) => Number.parseInt(majorVersion, 10)).filter(Number.isFinite);
+    return majorVersions.length > 0 ? Math.max(...majorVersions) : null;
+  } catch {
+    return null;
+  }
+}
+function getResourceRoots(startDirectory) {
+  const roots = /* @__PURE__ */ new Set();
+  const resolvedStart = resolve3(startDirectory);
+  roots.add(resolvedStart);
+  roots.add(join8(resolvedStart, "resources"));
+  roots.add(dirname7(resolvedStart));
+  const parsed = parse2(resolvedStart);
+  if (parsed.dir) {
+    roots.add(parsed.dir);
+  }
+  return [...roots];
+}
+function hasManifest(folder) {
+  return existsSync8(join8(folder, "manifest.json"));
+}
+function recordBrowserEvent(session, kind, label, detail) {
+  const event = {
+    type: "superior-browser-event",
+    id: createLocalId("browser_event"),
+    sessionId: session.sessionId,
+    repoWorkspaceId: session.repoWorkspaceId,
+    kind,
+    label,
+    ...detail ? { detail } : {},
+    createdAt: (/* @__PURE__ */ new Date()).toISOString()
+  };
+  browserEvents = [...browserEvents, event].slice(-maxBrowserEvents);
+  lastSessionId = session.sessionId;
+  rememberRepoWorkspaceBrowserSession(session.repoWorkspaceId, {
+    sessionId: session.sessionId,
+    profilePath: session.profilePath,
+    lastBrowserEventSummary: label,
+    ...session.inspection ? { lastBrowserInspection: session.inspection } : {}
+  });
+}
+function scheduleSuperiorBrowserInspection(sessionId, delayMs = 1200) {
+  const timeout = setTimeout(() => {
+    if (activeRuntime?.session.sessionId === sessionId) {
+      void inspectSuperiorBrowser().catch(() => void 0);
+    }
+  }, delayMs);
+  timeout.unref?.();
+}
+async function readSuperiorBrowserInspection(session) {
+  const base = {
+    type: "superior-browser-inspection",
+    inspectedAt: (/* @__PURE__ */ new Date()).toISOString(),
+    extensionPaired: session.attached,
+    ...session.browserKind ? { browserKind: session.browserKind } : {},
+    consoleErrorCount: 0,
+    networkFailureCount: 0
+  };
+  if (!session.debugPort) {
+    return {
+      ...base,
+      status: "unavailable",
+      note: "No debug port."
+    };
+  }
+  try {
+    const targets = await fetchDebugTargets(session.debugPort);
+    const target = pickSuperiorBrowserDebugTarget(targets, session, session.inspection?.currentUrl);
+    if (!target) {
+      return {
+        ...base,
+        status: "unavailable",
+        note: "No page target."
+      };
+    }
+    const counts = target.webSocketDebuggerUrl ? await collectDebugProtocolCounts(target.webSocketDebuggerUrl).catch(() => ({
+      consoleErrorCount: 0,
+      networkFailureCount: 0
+    })) : {
+      consoleErrorCount: 0,
+      networkFailureCount: 0
+    };
+    return {
+      ...base,
+      status: "ready",
+      ...target.url ? { currentUrl: target.url } : {},
+      ...target.title ? { pageTitle: target.title } : {},
+      ...target.id ? { tabId: target.id } : {},
+      consoleErrorCount: counts.consoleErrorCount,
+      networkFailureCount: counts.networkFailureCount
+    };
+  } catch (error) {
+    return {
+      ...base,
+      status: "failed",
+      note: error instanceof Error ? error.message : "DevTools inspection failed."
+    };
+  }
+}
+function pickSuperiorBrowserDebugTarget(targets, session, preferredUrl) {
+  const pageTargets = targets.filter((target) => isInspectablePageTarget(target));
+  const preferredTarget = preferredUrl ? pageTargets.find((target) => isSameBrowserTarget(target.url, preferredUrl)) : void 0;
+  const repoTarget = pageTargets.find((target) => isRepoTarget(target, session.repoUrl));
+  const nonHomeTarget = pageTargets.find((target) => !isRobotHomeTarget(target, session.sessionId));
+  return preferredTarget ?? repoTarget ?? nonHomeTarget ?? pageTargets[0] ?? null;
+}
+function maybeRecordInspectionEvent(session, inspection, readyLabel = "Page inspected") {
+  const signature = [
+    inspection.status,
+    inspection.currentUrl ?? "",
+    inspection.pageTitle ?? "",
+    inspection.consoleErrorCount,
+    inspection.networkFailureCount,
+    inspection.extensionPaired ? "paired" : "unpaired"
+  ].join("|");
+  if (session.lastInspectionEventSignature === signature) {
+    return;
+  }
+  session.lastInspectionEventSignature = signature;
+  const label = inspection.status === "ready" ? readyLabel : "Inspect blocked";
+  const detail = inspection.status === "ready" ? [
+    inspection.pageTitle ?? inspection.currentUrl ?? "page",
+    `${inspection.consoleErrorCount} console`,
+    `${inspection.networkFailureCount} network`
+  ].join(" / ") : inspection.note;
+  recordBrowserEvent(session, "page_inspected", label, detail);
+}
+async function fetchDebugTargets(port) {
+  const response = await fetchWithTimeout(`http://127.0.0.1:${port}/json/list`, 900);
+  if (!response.ok) {
+    throw new Error(`DevTools target list returned ${response.status}.`);
+  }
+  const payload = await response.json();
+  return Array.isArray(payload) ? payload.filter(isDebugTarget) : [];
+}
+async function fetchWithTimeout(url, timeoutMs) {
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), timeoutMs);
+  timeout.unref?.();
+  try {
+    return await fetch(url, {
+      signal: controller.signal
+    });
+  } finally {
+    clearTimeout(timeout);
+  }
+}
+async function collectDebugProtocolCounts(webSocketDebuggerUrl) {
+  if (typeof WebSocket === "undefined") {
+    return {
+      consoleErrorCount: 0,
+      networkFailureCount: 0
+    };
+  }
+  return new Promise((resolveCounts) => {
+    const counts = {
+      consoleErrorCount: 0,
+      networkFailureCount: 0
+    };
+    let commandId = 1;
+    let finished = false;
+    let inspectTimeout;
+    let hardTimeout;
+    let socket = null;
+    function finish() {
+      if (finished) {
+        return;
+      }
+      finished = true;
+      if (inspectTimeout) {
+        clearTimeout(inspectTimeout);
+      }
+      if (hardTimeout) {
+        clearTimeout(hardTimeout);
+      }
+      try {
+        socket?.close();
+      } catch {
+      }
+      resolveCounts(counts);
+    }
+    function send(method) {
+      if (socket?.readyState === 1) {
+        socket.send(
+          JSON.stringify({
+            id: commandId++,
+            method
+          })
+        );
+      }
+    }
+    try {
+      socket = new WebSocket(webSocketDebuggerUrl);
+    } catch {
+      resolveCounts(counts);
+      return;
+    }
+    hardTimeout = setTimeout(finish, 1300);
+    hardTimeout.unref?.();
+    socket.addEventListener("open", () => {
+      send("Runtime.enable");
+      send("Log.enable");
+      send("Network.enable");
+      inspectTimeout = setTimeout(finish, 750);
+      inspectTimeout.unref?.();
+    });
+    socket.addEventListener("message", (event) => {
+      countDebugProtocolMessage(event.data, counts);
+    });
+    socket.addEventListener("error", finish);
+    socket.addEventListener("close", finish);
+  });
+}
+function countDebugProtocolMessage(data, counts) {
+  const text = typeof data === "string" ? data : "";
+  if (!text) {
+    return;
+  }
+  try {
+    const message = JSON.parse(text);
+    if (message.method === "Runtime.exceptionThrown") {
+      counts.consoleErrorCount += 1;
+      return;
+    }
+    if (message.method === "Runtime.consoleAPICalled" && message.params?.type === "error") {
+      counts.consoleErrorCount += 1;
+      return;
+    }
+    if (message.method === "Log.entryAdded") {
+      const entry = message.params?.entry;
+      if (entry?.level === "error") {
+        counts.consoleErrorCount += 1;
+      }
+      return;
+    }
+    if (message.method === "Network.loadingFailed") {
+      counts.networkFailureCount += 1;
+    }
+  } catch {
+    return;
+  }
+}
+function isDebugTarget(value) {
+  const target = value;
+  return typeof target === "object" && target !== null && (target.id === void 0 || typeof target.id === "string") && (target.type === void 0 || typeof target.type === "string") && (target.url === void 0 || typeof target.url === "string") && (target.title === void 0 || typeof target.title === "string") && (target.webSocketDebuggerUrl === void 0 || typeof target.webSocketDebuggerUrl === "string");
+}
+function isInspectablePageTarget(target) {
+  if (target.type !== "page" || !target.url) {
+    return false;
+  }
+  return !["devtools://", "chrome://", "edge://", "chrome-extension://"].some((prefix) => target.url?.startsWith(prefix));
+}
+function isRepoTarget(target, repoUrl) {
+  if (!target.url) {
+    return false;
+  }
+  const normalizedRepoUrl = normalizeUrlForComparison(repoUrl);
+  return isSameBrowserTarget(target.url, repoUrl) || normalizeUrlForComparison(target.url).startsWith(`${normalizedRepoUrl}/`);
+}
+function isSameBrowserTarget(targetUrl, expectedUrl) {
+  if (!targetUrl) {
+    return false;
+  }
+  return normalizeUrlForComparison(targetUrl) === normalizeUrlForComparison(expectedUrl);
+}
+function isRobotHomeTarget(target, sessionId) {
+  return Boolean(target.url?.includes(`/browser-session/${encodeURIComponent(sessionId)}/home`));
+}
+function normalizeUrlForComparison(value) {
+  return value.replace(/\/+$/, "").toLowerCase();
+}
+function getDaemonPort() {
+  const port = Number.parseInt(process.env.CLAWDBOT_DAEMON_PORT ?? "5317", 10);
+  return Number.isFinite(port) ? port : 5317;
+}
+async function allocateLocalPort() {
+  return new Promise((resolvePort, rejectPort) => {
+    const server2 = createServer();
+    server2.once("error", rejectPort);
+    server2.listen(0, "127.0.0.1", () => {
+      const address = server2.address();
+      const port = typeof address === "object" && address ? address.port : 0;
+      server2.close(() => {
+        resolvePort(port);
+      });
+    });
+  });
+}
+function waitForSpawnTick() {
+  return new Promise((resolveTick) => {
+    setTimeout(resolveTick, 80);
+  });
+}
+function escapeHtml(value) {
+  return value.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#39;");
+}
+
+// src/functions/catalog.ts
+function skillFunction(skillId, override) {
+  const skill = skillCatalog[skillId];
+  return {
+    type: "superior-function-definition",
+    id: skillId,
+    label: skill.label,
+    shortLabel: skill.shortLabel,
+    status: "runnable",
+    runnerKind: override.runnerKind,
+    surfaces: override.surfaces,
+    permissions: override.permissions,
+    skillId,
+    slot: skill.slot,
+    category: skill.category,
+    attachment: skill.attachment,
+    effect: skill.effect
+  };
+}
+var superiorFunctionCatalog = {
+  "page-explainer": skillFunction("page-explainer", {
+    runnerKind: "model",
+    surfaces: ["extension", "browser-runtime"],
+    permissions: ["browser-pairing", "model-provider"]
+  }),
+  "article-xray": skillFunction("article-xray", {
+    runnerKind: "local",
+    surfaces: ["extension", "browser-runtime"],
+    permissions: ["browser-pairing"]
+  }),
+  "repo-reader": skillFunction("repo-reader", {
+    runnerKind: "repo",
+    surfaces: ["workshop"],
+    permissions: ["repo-network"]
+  }),
+  "superior-browser-start": {
+    type: "superior-function-definition",
+    id: "superior-browser-start",
+    label: "Start Playpen",
+    shortLabel: "Start",
+    status: "runnable",
+    runnerKind: "browser",
+    surfaces: ["workshop"],
+    permissions: ["browser-runtime"],
+    attachment: "Clay launch key",
+    effect: "Starts the robot browser."
+  },
+  "superior-browser-stop": {
+    type: "superior-function-definition",
+    id: "superior-browser-stop",
+    label: "Stop Playpen",
+    shortLabel: "Stop",
+    status: "runnable",
+    runnerKind: "browser",
+    surfaces: ["workshop"],
+    permissions: ["browser-runtime"],
+    attachment: "Clay stop peg",
+    effect: "Stops the robot browser."
+  },
+  "custom-skill-import-proposal": {
+    type: "superior-function-definition",
+    id: "custom-skill-import-proposal",
+    label: "Custom Part Scan",
+    shortLabel: "Scan",
+    status: "proposal",
+    runnerKind: "proposal",
+    surfaces: ["workshop"],
+    permissions: ["local-files"],
+    attachment: "Blank clay socket",
+    effect: "Scans a JS/TS folder."
+  }
+};
+function readSuperiorFunctionCatalog() {
+  return {
+    type: "superior-function-catalog",
+    items: Object.values(superiorFunctionCatalog),
+    createdAt: (/* @__PURE__ */ new Date()).toISOString()
+  };
+}
+function getSuperiorFunctionDefinition(functionId) {
+  return superiorFunctionCatalog[functionId];
+}
+
+// src/functions/runEventsStore.ts
+var maxStoredRuns = 24;
+var runSummaries = [];
+var runEvents = /* @__PURE__ */ new Map();
+function rememberFunctionRun(summary, events) {
+  const existingIndex = runSummaries.findIndex((item) => item.runId === summary.runId);
+  if (existingIndex >= 0) {
+    runSummaries.splice(existingIndex, 1);
+  }
+  runSummaries.unshift(summary);
+  runEvents.set(summary.runId, events);
+  while (runSummaries.length > maxStoredRuns) {
+    const removed = runSummaries.pop();
+    if (removed) {
+      runEvents.delete(removed.runId);
+    }
+  }
+}
+function readRecentFunctionRuns() {
+  return {
+    type: "superior-function-runs",
+    items: [...runSummaries],
+    createdAt: (/* @__PURE__ */ new Date()).toISOString()
+  };
+}
+function readFunctionRunEvents(runId) {
+  return {
+    type: "superior-function-run-events",
+    runId,
+    items: runEvents.get(runId) ?? [],
+    createdAt: (/* @__PURE__ */ new Date()).toISOString()
+  };
 }
 
 // src/articleXray.ts
@@ -573,273 +2392,9 @@ function roundRatio(value) {
   return Math.round(value * 100) / 100;
 }
 
-// src/browserLinkStore.ts
-import { existsSync as existsSync2, mkdirSync, readFileSync, writeFileSync } from "node:fs";
-import { dirname as dirname2, join as join2 } from "node:path";
-
-// src/localPaths.ts
-import { existsSync } from "node:fs";
-import { homedir, platform } from "node:os";
-import { dirname, join, parse, resolve } from "node:path";
-function getSuperiorStateDirectory(startDirectory = process.cwd()) {
-  if (process.env.CLAWDBOT_STATE_DIR) {
-    return resolve(process.env.CLAWDBOT_STATE_DIR);
-  }
-  const workspaceRoot = findUpDirectory("pnpm-workspace.yaml", startDirectory);
-  if (workspaceRoot) {
-    return join(workspaceRoot, ".clawdbot");
-  }
-  return getUserStateDirectory();
-}
-function findUp(fileName, startDirectory) {
-  const directory = findUpDirectory(fileName, startDirectory);
-  return directory ? join(directory, fileName) : void 0;
-}
-function findUpDirectory(fileName, startDirectory) {
-  let current = resolve(startDirectory);
-  const root = parse(current).root;
-  while (true) {
-    const candidate = join(current, fileName);
-    if (existsSync(candidate)) {
-      return current;
-    }
-    if (current === root) {
-      return void 0;
-    }
-    current = dirname(current);
-  }
-}
-function getUserStateDirectory() {
-  if (platform() === "win32") {
-    return join(process.env.APPDATA ?? join(homedir(), "AppData", "Roaming"), "SUPERIOR", ".clawdbot");
-  }
-  if (platform() === "darwin") {
-    return join(homedir(), "Library", "Application Support", "SUPERIOR", ".clawdbot");
-  }
-  return join(process.env.XDG_STATE_HOME ?? join(homedir(), ".local", "state"), "superior");
-}
-
-// src/browserLinkStore.ts
-var browserLinkFileName = "browser-link.json";
-function readBrowserLinkState() {
-  try {
-    const state = readStoredBrowserLinkState();
-    return toPublicBrowserLinkState(state);
-  } catch {
-    return {
-      status: "unpaired"
-    };
-  }
-}
-function startBrowserPairing() {
-  const pairingToken = createPairingToken();
-  writeStoredBrowserLinkState({
-    status: "pairing",
-    pairingToken,
-    updatedAt: (/* @__PURE__ */ new Date()).toISOString()
-  });
-  return {
-    pairingToken,
-    browserLinkState: {
-      status: "pairing"
-    }
-  };
-}
-function completeBrowserPairing(pairingToken, extensionId) {
-  const state = readStoredBrowserLinkState();
-  if (!state.pairingToken || state.pairingToken !== pairingToken) {
-    return null;
-  }
-  const lastSeenAt = (/* @__PURE__ */ new Date()).toISOString();
-  writeStoredBrowserLinkState({
-    status: "paired",
-    pairingToken,
-    ...extensionId ? { extensionId } : {},
-    lastSeenAt,
-    updatedAt: lastSeenAt
-  });
-  return {
-    status: "paired",
-    ...extensionId ? { extensionId } : {},
-    lastSeenAt
-  };
-}
-function touchBrowserPairing(pairingToken) {
-  const state = readStoredBrowserLinkState();
-  if (state.status !== "paired" || !state.pairingToken || state.pairingToken !== pairingToken) {
-    return null;
-  }
-  const lastSeenAt = (/* @__PURE__ */ new Date()).toISOString();
-  writeStoredBrowserLinkState({
-    ...state,
-    lastSeenAt,
-    updatedAt: lastSeenAt
-  });
-  return toPublicBrowserLinkState({
-    ...state,
-    lastSeenAt
-  });
-}
-function resetBrowserPairing() {
-  writeStoredBrowserLinkState({
-    status: "unpaired",
-    updatedAt: (/* @__PURE__ */ new Date()).toISOString()
-  });
-  return {
-    status: "unpaired"
-  };
-}
-function readStoredBrowserLinkState() {
-  const filePath = getBrowserLinkFilePath();
-  if (!existsSync2(filePath)) {
-    return {
-      status: "unpaired",
-      updatedAt: (/* @__PURE__ */ new Date()).toISOString()
-    };
-  }
-  const parsed = JSON.parse(readFileSync(filePath, "utf8"));
-  return {
-    status: parsed.status ?? "unpaired",
-    ...typeof parsed.pairingToken === "string" ? { pairingToken: parsed.pairingToken } : {},
-    ...typeof parsed.extensionId === "string" ? { extensionId: parsed.extensionId } : {},
-    ...typeof parsed.lastSeenAt === "string" ? { lastSeenAt: parsed.lastSeenAt } : {},
-    updatedAt: typeof parsed.updatedAt === "string" ? parsed.updatedAt : (/* @__PURE__ */ new Date()).toISOString()
-  };
-}
-function writeStoredBrowserLinkState(state) {
-  const filePath = getBrowserLinkFilePath();
-  mkdirSync(dirname2(filePath), {
-    recursive: true
-  });
-  writeFileSync(filePath, JSON.stringify(state, null, 2), "utf8");
-}
-function toPublicBrowserLinkState(state) {
-  return {
-    status: state.status,
-    ...state.extensionId ? { extensionId: state.extensionId } : {},
-    ...state.lastSeenAt ? { lastSeenAt: state.lastSeenAt } : {}
-  };
-}
-function getBrowserLinkFilePath() {
-  return join2(getSuperiorStateDirectory(), browserLinkFileName);
-}
-
-// src/botIdentityStore.ts
-import { existsSync as existsSync3, mkdirSync as mkdirSync2, readFileSync as readFileSync2, writeFileSync as writeFileSync2 } from "node:fs";
-import { dirname as dirname3, join as join3 } from "node:path";
-function readBotIdentity() {
-  const filePath = getIdentityFilePath();
-  try {
-    if (!existsSync3(filePath)) {
-      return DEFAULT_BOT_IDENTITY;
-    }
-    const parsed = JSON.parse(readFileSync2(filePath, "utf8"));
-    return normalizeBotIdentity(parsed);
-  } catch {
-    return DEFAULT_BOT_IDENTITY;
-  }
-}
-function writeBotIdentity(bot) {
-  const normalized = normalizeBotIdentity(bot);
-  const filePath = getIdentityFilePath();
-  mkdirSync2(dirname3(filePath), {
-    recursive: true
-  });
-  writeFileSync2(filePath, JSON.stringify(normalized, null, 2), "utf8");
-  return normalized;
-}
-function normalizeBotIdentity(bot) {
-  return updateBotIdentity(
-    {
-      ...DEFAULT_BOT_IDENTITY,
-      ...bot,
-      rules: Array.isArray(bot.rules) ? bot.rules : DEFAULT_BOT_IDENTITY.rules,
-      skills: Array.isArray(bot.skills) ? bot.skills : DEFAULT_BOT_IDENTITY.skills,
-      browserLinkState: bot.browserLinkState ?? DEFAULT_BOT_IDENTITY.browserLinkState
-    },
-    {
-      body: bot.body,
-      color: bot.color,
-      eye: bot.eye,
-      name: bot.name
-    }
-  );
-}
-function getIdentityFilePath() {
-  return join3(getSuperiorStateDirectory(), "bot-identity.json");
-}
-
-// src/config.ts
-import { existsSync as existsSync4, readFileSync as readFileSync3 } from "node:fs";
-import { join as join4, resolve as resolve2 } from "node:path";
-var envLoaded = false;
-var loadedOpenAIKeyPath;
-function loadNearestEnvLocal(startDirectory = process.cwd()) {
-  if (envLoaded) {
-    return;
-  }
-  envLoaded = true;
-  for (const envPath of getEnvLocalCandidates(startDirectory)) {
-    if (!existsSync4(envPath)) {
-      continue;
-    }
-    const content = readFileSync3(envPath, "utf8");
-    for (const rawLine of content.split(/\r?\n/)) {
-      const line = rawLine.trim();
-      if (!line || line.startsWith("#")) {
-        continue;
-      }
-      const equalsIndex = line.indexOf("=");
-      if (equalsIndex === -1) {
-        continue;
-      }
-      const key = line.slice(0, equalsIndex).trim();
-      const rawValue = line.slice(equalsIndex + 1).trim();
-      const value = rawValue.replace(/^["']|["']$/g, "");
-      if (key && process.env[key] === void 0) {
-        process.env[key] = value;
-        if (key === "OPENAI_API_KEY" && value) {
-          loadedOpenAIKeyPath = envPath;
-        }
-      }
-    }
-  }
-}
-function getDaemonConfig() {
-  const hadProcessOpenAIKey = Boolean(process.env.OPENAI_API_KEY);
-  loadNearestEnvLocal();
-  const port = Number.parseInt(process.env.CLAWDBOT_DAEMON_PORT ?? "5317", 10);
-  const localStateDirectory = getSuperiorStateDirectory();
-  const keyFilePath = join4(localStateDirectory, ".env.local");
-  const openaiApiKey = process.env.OPENAI_API_KEY || void 0;
-  return {
-    host: process.env.CLAWDBOT_DAEMON_HOST ?? "127.0.0.1",
-    port: Number.isFinite(port) ? port : 5317,
-    openaiApiKey,
-    openaiModel: process.env.OPENAI_MODEL || "gpt-4.1-mini",
-    localStateDirectory,
-    keyFilePath,
-    keyFilePresent: existsSync4(keyFilePath),
-    openaiConfigSource: openaiApiKey ? loadedOpenAIKeyPath || !hadProcessOpenAIKey ? "env-file" : "environment" : "missing",
-    version: process.env.npm_package_version ?? "0.2.0"
-  };
-}
-function getEnvLocalCandidates(startDirectory) {
-  const candidates = [
-    process.env.SUPERIOR_ENV_PATH ? resolve2(process.env.SUPERIOR_ENV_PATH) : void 0,
-    findUp(".env.local", startDirectory),
-    join4(getSuperiorStateDirectory(startDirectory), ".env.local")
-  ].filter((candidate) => Boolean(candidate));
-  const uniqueCandidates = /* @__PURE__ */ new Set();
-  for (const candidate of candidates) {
-    uniqueCandidates.add(candidate);
-  }
-  return [...uniqueCandidates];
-}
-
 // src/customSkillImport.ts
 import { readdir, readFile, stat } from "node:fs/promises";
-import { basename, extname, join as join5, relative, resolve as resolve3, sep } from "node:path";
+import { basename, extname, join as join9, relative, resolve as resolve4, sep } from "node:path";
 var ignoredDirectories = /* @__PURE__ */ new Set([
   ".git",
   ".next",
@@ -865,7 +2420,7 @@ async function proposeCustomSkillImport(request) {
   if (!folderPath) {
     throw new CustomSkillImportScanError("bad_request", "Drop a JS/TS project folder, not an empty path.");
   }
-  const sourceFolder = resolve3(folderPath);
+  const sourceFolder = resolve4(folderPath);
   const folderStat = await stat(sourceFolder).catch(() => void 0);
   if (!folderStat) {
     throw new CustomSkillImportScanError("not_found", "That folder does not exist on this machine.");
@@ -918,7 +2473,7 @@ async function proposeCustomSkillImport(request) {
 }
 async function readPackageJson(sourceFolder) {
   try {
-    const rawPackage = await readFile(join5(sourceFolder, "package.json"), "utf8");
+    const rawPackage = await readFile(join9(sourceFolder, "package.json"), "utf8");
     return JSON.parse(rawPackage);
   } catch {
     return null;
@@ -940,7 +2495,7 @@ async function scanFileSignals(sourceFolder) {
       if (entry.isSymbolicLink()) {
         continue;
       }
-      const fullPath = join5(currentFolder, entry.name);
+      const fullPath = join9(currentFolder, entry.name);
       const relativePath = toPortablePath(relative(sourceFolder, fullPath));
       if (entry.isDirectory()) {
         if (!ignoredDirectories.has(entry.name)) {
@@ -1130,7 +2685,7 @@ function toPortablePath(path2) {
   return sep === "/" ? path2 : path2.replaceAll(sep, "/");
 }
 
-// ../../node_modules/.pnpm/openai@6.39.0/node_modules/openai/internal/tslib.mjs
+// ../../node_modules/.pnpm/openai@6.39.0_ws@8.21.0/node_modules/openai/internal/tslib.mjs
 function __classPrivateFieldSet(receiver, state, value, kind, f) {
   if (kind === "m")
     throw new TypeError("Private method is not writable");
@@ -1148,7 +2703,7 @@ function __classPrivateFieldGet(receiver, state, kind, f) {
   return kind === "m" ? f : kind === "a" ? f.call(receiver) : f ? f.value : state.get(receiver);
 }
 
-// ../../node_modules/.pnpm/openai@6.39.0/node_modules/openai/internal/utils/uuid.mjs
+// ../../node_modules/.pnpm/openai@6.39.0_ws@8.21.0/node_modules/openai/internal/utils/uuid.mjs
 var uuid4 = function() {
   const { crypto: crypto2 } = globalThis;
   if (crypto2?.randomUUID) {
@@ -1160,7 +2715,7 @@ var uuid4 = function() {
   return "10000000-1000-4000-8000-100000000000".replace(/[018]/g, (c) => (+c ^ randomByte() & 15 >> +c / 4).toString(16));
 };
 
-// ../../node_modules/.pnpm/openai@6.39.0/node_modules/openai/internal/errors.mjs
+// ../../node_modules/.pnpm/openai@6.39.0_ws@8.21.0/node_modules/openai/internal/errors.mjs
 function isAbortError(err) {
   return typeof err === "object" && err !== null && // Spec-compliant fetch implementations
   ("name" in err && err.name === "AbortError" || // Expo fetch
@@ -1191,7 +2746,7 @@ var castToError = (err) => {
   return new Error(err);
 };
 
-// ../../node_modules/.pnpm/openai@6.39.0/node_modules/openai/core/error.mjs
+// ../../node_modules/.pnpm/openai@6.39.0_ws@8.21.0/node_modules/openai/core/error.mjs
 var OpenAIError = class extends Error {
 };
 var APIError = class _APIError extends OpenAIError {
@@ -1325,7 +2880,7 @@ var SubjectTokenProviderError = class extends OpenAIError {
   }
 };
 
-// ../../node_modules/.pnpm/openai@6.39.0/node_modules/openai/internal/utils/values.mjs
+// ../../node_modules/.pnpm/openai@6.39.0_ws@8.21.0/node_modules/openai/internal/utils/values.mjs
 var startsWithSchemeRegexp = /^[a-z][a-z0-9+.-]*:/i;
 var isAbsoluteURL = (url) => {
   return startsWithSchemeRegexp.test(url);
@@ -1368,13 +2923,13 @@ var safeJSON = (text) => {
   }
 };
 
-// ../../node_modules/.pnpm/openai@6.39.0/node_modules/openai/internal/utils/sleep.mjs
+// ../../node_modules/.pnpm/openai@6.39.0_ws@8.21.0/node_modules/openai/internal/utils/sleep.mjs
 var sleep = (ms) => new Promise((resolve5) => setTimeout(resolve5, ms));
 
-// ../../node_modules/.pnpm/openai@6.39.0/node_modules/openai/version.mjs
+// ../../node_modules/.pnpm/openai@6.39.0_ws@8.21.0/node_modules/openai/version.mjs
 var VERSION = "6.39.0";
 
-// ../../node_modules/.pnpm/openai@6.39.0/node_modules/openai/internal/detect-platform.mjs
+// ../../node_modules/.pnpm/openai@6.39.0_ws@8.21.0/node_modules/openai/internal/detect-platform.mjs
 var isRunningInBrowser = () => {
   return (
     // @ts-ignore
@@ -1508,7 +3063,7 @@ var getPlatformHeaders = () => {
   return _platformHeaders ?? (_platformHeaders = getPlatformProperties());
 };
 
-// ../../node_modules/.pnpm/openai@6.39.0/node_modules/openai/internal/shims.mjs
+// ../../node_modules/.pnpm/openai@6.39.0_ws@8.21.0/node_modules/openai/internal/shims.mjs
 function getDefaultFetch() {
   if (typeof fetch !== "undefined") {
     return fetch;
@@ -1580,7 +3135,7 @@ async function CancelReadableStream(stream) {
   await cancelPromise;
 }
 
-// ../../node_modules/.pnpm/openai@6.39.0/node_modules/openai/internal/request-options.mjs
+// ../../node_modules/.pnpm/openai@6.39.0_ws@8.21.0/node_modules/openai/internal/request-options.mjs
 var FallbackEncoder = ({ headers, body }) => {
   return {
     bodyHeaders: {
@@ -1590,7 +3145,7 @@ var FallbackEncoder = ({ headers, body }) => {
   };
 };
 
-// ../../node_modules/.pnpm/openai@6.39.0/node_modules/openai/internal/qs/formats.mjs
+// ../../node_modules/.pnpm/openai@6.39.0_ws@8.21.0/node_modules/openai/internal/qs/formats.mjs
 var default_format = "RFC3986";
 var default_formatter = (v) => String(v);
 var formatters = {
@@ -1599,7 +3154,7 @@ var formatters = {
 };
 var RFC1738 = "RFC1738";
 
-// ../../node_modules/.pnpm/openai@6.39.0/node_modules/openai/internal/qs/utils.mjs
+// ../../node_modules/.pnpm/openai@6.39.0_ws@8.21.0/node_modules/openai/internal/qs/utils.mjs
 var has = (obj, key) => (has = Object.hasOwn ?? Function.prototype.call.bind(Object.prototype.hasOwnProperty), has(obj, key));
 var hex_table = /* @__PURE__ */ (() => {
   const array = [];
@@ -1678,7 +3233,7 @@ function maybe_map(val, fn) {
   return fn(val);
 }
 
-// ../../node_modules/.pnpm/openai@6.39.0/node_modules/openai/internal/qs/stringify.mjs
+// ../../node_modules/.pnpm/openai@6.39.0_ws@8.21.0/node_modules/openai/internal/qs/stringify.mjs
 var array_prefix_generators = {
   brackets(prefix) {
     return String(prefix) + "[]";
@@ -1956,12 +3511,12 @@ function stringify(object, opts = {}) {
   return joined.length > 0 ? prefix + joined : "";
 }
 
-// ../../node_modules/.pnpm/openai@6.39.0/node_modules/openai/internal/utils/query.mjs
+// ../../node_modules/.pnpm/openai@6.39.0_ws@8.21.0/node_modules/openai/internal/utils/query.mjs
 function stringifyQuery(query) {
   return stringify(query, { arrayFormat: "brackets" });
 }
 
-// ../../node_modules/.pnpm/openai@6.39.0/node_modules/openai/internal/utils/bytes.mjs
+// ../../node_modules/.pnpm/openai@6.39.0_ws@8.21.0/node_modules/openai/internal/utils/bytes.mjs
 function concatBytes(buffers) {
   let length = 0;
   for (const buffer of buffers) {
@@ -1986,7 +3541,7 @@ function decodeUTF8(bytes) {
   return (decodeUTF8_ ?? (decoder = new globalThis.TextDecoder(), decodeUTF8_ = decoder.decode.bind(decoder)))(bytes);
 }
 
-// ../../node_modules/.pnpm/openai@6.39.0/node_modules/openai/internal/decoders/line.mjs
+// ../../node_modules/.pnpm/openai@6.39.0_ws@8.21.0/node_modules/openai/internal/decoders/line.mjs
 var _LineDecoder_buffer;
 var _LineDecoder_carriageReturnIndex;
 var LineDecoder = class {
@@ -2063,7 +3618,7 @@ function findDoubleNewlineIndex(buffer) {
   return -1;
 }
 
-// ../../node_modules/.pnpm/openai@6.39.0/node_modules/openai/internal/utils/log.mjs
+// ../../node_modules/.pnpm/openai@6.39.0_ws@8.21.0/node_modules/openai/internal/utils/log.mjs
 var levelNumbers = {
   off: 0,
   error: 200,
@@ -2136,7 +3691,7 @@ var formatRequestDetails = (details) => {
   return details;
 };
 
-// ../../node_modules/.pnpm/openai@6.39.0/node_modules/openai/core/streaming.mjs
+// ../../node_modules/.pnpm/openai@6.39.0_ws@8.21.0/node_modules/openai/core/streaming.mjs
 var _Stream_client;
 var Stream = class _Stream {
   constructor(iterator, controller, client) {
@@ -2394,7 +3949,7 @@ function partition(str2, delimiter) {
   return [str2, "", ""];
 }
 
-// ../../node_modules/.pnpm/openai@6.39.0/node_modules/openai/internal/parse.mjs
+// ../../node_modules/.pnpm/openai@6.39.0_ws@8.21.0/node_modules/openai/internal/parse.mjs
 async function defaultParseResponse(client, props) {
   const { response, requestLogID, retryOfRequestLogID, startTime } = props;
   const body = await (async () => {
@@ -2444,7 +3999,7 @@ function addRequestID(value, response) {
   });
 }
 
-// ../../node_modules/.pnpm/openai@6.39.0/node_modules/openai/core/api-promise.mjs
+// ../../node_modules/.pnpm/openai@6.39.0_ws@8.21.0/node_modules/openai/core/api-promise.mjs
 var _APIPromise_client;
 var APIPromise = class _APIPromise extends Promise {
   constructor(client, responsePromise, parseResponse2 = defaultParseResponse) {
@@ -2507,7 +4062,7 @@ var APIPromise = class _APIPromise extends Promise {
 };
 _APIPromise_client = /* @__PURE__ */ new WeakMap();
 
-// ../../node_modules/.pnpm/openai@6.39.0/node_modules/openai/core/pagination.mjs
+// ../../node_modules/.pnpm/openai@6.39.0_ws@8.21.0/node_modules/openai/core/pagination.mjs
 var _AbstractPage_client;
 var AbstractPage = class {
   constructor(client, response, body, options) {
@@ -2668,7 +4223,7 @@ var NextCursorPage = class extends AbstractPage {
   }
 };
 
-// ../../node_modules/.pnpm/openai@6.39.0/node_modules/openai/auth/workload-identity-auth.mjs
+// ../../node_modules/.pnpm/openai@6.39.0_ws@8.21.0/node_modules/openai/auth/workload-identity-auth.mjs
 var SUBJECT_TOKEN_TYPES = {
   jwt: "urn:ietf:params:oauth:token-type:jwt",
   id: "urn:ietf:params:oauth:token-type:id_token"
@@ -2756,7 +4311,7 @@ var WorkloadIdentityAuth = class {
   }
 };
 
-// ../../node_modules/.pnpm/openai@6.39.0/node_modules/openai/internal/uploads.mjs
+// ../../node_modules/.pnpm/openai@6.39.0_ws@8.21.0/node_modules/openai/internal/uploads.mjs
 var checkFileSupport = () => {
   if (typeof File === "undefined") {
     const { process: process2 } = globalThis;
@@ -2847,7 +4402,7 @@ var addFormValue = async (form, key, value) => {
   }
 };
 
-// ../../node_modules/.pnpm/openai@6.39.0/node_modules/openai/internal/to-file.mjs
+// ../../node_modules/.pnpm/openai@6.39.0_ws@8.21.0/node_modules/openai/internal/to-file.mjs
 var isBlobLike = (value) => value != null && typeof value === "object" && typeof value.size === "number" && typeof value.type === "string" && typeof value.text === "function" && typeof value.slice === "function" && typeof value.arrayBuffer === "function";
 var isFileLike = (value) => value != null && typeof value === "object" && typeof value.name === "string" && typeof value.lastModified === "number" && isBlobLike(value);
 var isResponseLike = (value) => value != null && typeof value === "object" && typeof value.url === "string" && typeof value.blob === "function";
@@ -2899,14 +4454,14 @@ function propsForError(value) {
   return `; props: [${props.map((p) => `"${p}"`).join(", ")}]`;
 }
 
-// ../../node_modules/.pnpm/openai@6.39.0/node_modules/openai/core/resource.mjs
+// ../../node_modules/.pnpm/openai@6.39.0_ws@8.21.0/node_modules/openai/core/resource.mjs
 var APIResource = class {
   constructor(client) {
     this._client = client;
   }
 };
 
-// ../../node_modules/.pnpm/openai@6.39.0/node_modules/openai/internal/utils/path.mjs
+// ../../node_modules/.pnpm/openai@6.39.0_ws@8.21.0/node_modules/openai/internal/utils/path.mjs
 function encodeURIPath(str2) {
   return str2.replace(/[^A-Za-z0-9\-._~!$&'()*+,;=:@]+/g, encodeURIComponent);
 }
@@ -2961,7 +4516,7 @@ ${underline}`);
 };
 var path = /* @__PURE__ */ createPathTagFunction(encodeURIPath);
 
-// ../../node_modules/.pnpm/openai@6.39.0/node_modules/openai/resources/chat/completions/messages.mjs
+// ../../node_modules/.pnpm/openai@6.39.0_ws@8.21.0/node_modules/openai/resources/chat/completions/messages.mjs
 var Messages = class extends APIResource {
   /**
    * Get the messages in a stored chat completion. Only Chat Completions that have
@@ -2982,7 +4537,7 @@ var Messages = class extends APIResource {
   }
 };
 
-// ../../node_modules/.pnpm/openai@6.39.0/node_modules/openai/lib/parser.mjs
+// ../../node_modules/.pnpm/openai@6.39.0_ws@8.21.0/node_modules/openai/lib/parser.mjs
 function isChatCompletionFunctionTool(tool) {
   return tool !== void 0 && "function" in tool && tool.function !== void 0;
 }
@@ -3089,7 +4644,7 @@ function validateInputTools(tools) {
   }
 }
 
-// ../../node_modules/.pnpm/openai@6.39.0/node_modules/openai/lib/chatCompletionUtils.mjs
+// ../../node_modules/.pnpm/openai@6.39.0_ws@8.21.0/node_modules/openai/lib/chatCompletionUtils.mjs
 var isAssistantMessage = (message) => {
   return message?.role === "assistant";
 };
@@ -3097,7 +4652,7 @@ var isToolMessage = (message) => {
   return message?.role === "tool";
 };
 
-// ../../node_modules/.pnpm/openai@6.39.0/node_modules/openai/lib/EventStream.mjs
+// ../../node_modules/.pnpm/openai@6.39.0_ws@8.21.0/node_modules/openai/lib/EventStream.mjs
 var _EventStream_instances;
 var _EventStream_connectedPromise;
 var _EventStream_resolveConnectedPromise;
@@ -3286,12 +4841,12 @@ _EventStream_connectedPromise = /* @__PURE__ */ new WeakMap(), _EventStream_reso
   return this._emit("error", new OpenAIError(String(error)));
 };
 
-// ../../node_modules/.pnpm/openai@6.39.0/node_modules/openai/lib/RunnableFunction.mjs
+// ../../node_modules/.pnpm/openai@6.39.0_ws@8.21.0/node_modules/openai/lib/RunnableFunction.mjs
 function isRunnableFunctionWithParse(fn) {
   return typeof fn.parse === "function";
 }
 
-// ../../node_modules/.pnpm/openai@6.39.0/node_modules/openai/lib/AbstractChatCompletionRunner.mjs
+// ../../node_modules/.pnpm/openai@6.39.0_ws@8.21.0/node_modules/openai/lib/AbstractChatCompletionRunner.mjs
 var _AbstractChatCompletionRunner_instances;
 var _AbstractChatCompletionRunner_getFinalContent;
 var _AbstractChatCompletionRunner_getFinalMessage;
@@ -3561,7 +5116,7 @@ _AbstractChatCompletionRunner_instances = /* @__PURE__ */ new WeakSet(), _Abstra
   return typeof rawContent === "string" ? rawContent : rawContent === void 0 ? "undefined" : JSON.stringify(rawContent);
 };
 
-// ../../node_modules/.pnpm/openai@6.39.0/node_modules/openai/lib/ChatCompletionRunner.mjs
+// ../../node_modules/.pnpm/openai@6.39.0_ws@8.21.0/node_modules/openai/lib/ChatCompletionRunner.mjs
 var ChatCompletionRunner = class _ChatCompletionRunner extends AbstractChatCompletionRunner {
   static runTools(client, params, options) {
     const runner = new _ChatCompletionRunner();
@@ -3580,7 +5135,7 @@ var ChatCompletionRunner = class _ChatCompletionRunner extends AbstractChatCompl
   }
 };
 
-// ../../node_modules/.pnpm/openai@6.39.0/node_modules/openai/_vendor/partial-json-parser/parser.mjs
+// ../../node_modules/.pnpm/openai@6.39.0_ws@8.21.0/node_modules/openai/_vendor/partial-json-parser/parser.mjs
 var STR = 1;
 var NUM = 2;
 var ARR = 4;
@@ -3792,7 +5347,7 @@ var _parseJSON = (jsonString, allow) => {
 };
 var partialParse = (input) => parseJSON(input, Allow.ALL ^ Allow.NUM);
 
-// ../../node_modules/.pnpm/openai@6.39.0/node_modules/openai/lib/ChatCompletionStream.mjs
+// ../../node_modules/.pnpm/openai@6.39.0_ws@8.21.0/node_modules/openai/lib/ChatCompletionStream.mjs
 var _ChatCompletionStream_instances;
 var _ChatCompletionStream_params;
 var _ChatCompletionStream_choiceEventStates;
@@ -4272,7 +5827,7 @@ function assertIsEmpty(obj) {
 function assertNever(_x) {
 }
 
-// ../../node_modules/.pnpm/openai@6.39.0/node_modules/openai/lib/ChatCompletionStreamingRunner.mjs
+// ../../node_modules/.pnpm/openai@6.39.0_ws@8.21.0/node_modules/openai/lib/ChatCompletionStreamingRunner.mjs
 var ChatCompletionStreamingRunner = class _ChatCompletionStreamingRunner extends ChatCompletionStream {
   static fromReadableStream(stream) {
     const runner = new _ChatCompletionStreamingRunner(null);
@@ -4293,7 +5848,7 @@ var ChatCompletionStreamingRunner = class _ChatCompletionStreamingRunner extends
   }
 };
 
-// ../../node_modules/.pnpm/openai@6.39.0/node_modules/openai/resources/chat/completions/completions.mjs
+// ../../node_modules/.pnpm/openai@6.39.0_ws@8.21.0/node_modules/openai/resources/chat/completions/completions.mjs
 var Completions = class extends APIResource {
   constructor() {
     super(...arguments);
@@ -4403,7 +5958,7 @@ var Completions = class extends APIResource {
 };
 Completions.Messages = Messages;
 
-// ../../node_modules/.pnpm/openai@6.39.0/node_modules/openai/resources/chat/chat.mjs
+// ../../node_modules/.pnpm/openai@6.39.0_ws@8.21.0/node_modules/openai/resources/chat/chat.mjs
 var Chat = class extends APIResource {
   constructor() {
     super(...arguments);
@@ -4412,7 +5967,7 @@ var Chat = class extends APIResource {
 };
 Chat.Completions = Completions;
 
-// ../../node_modules/.pnpm/openai@6.39.0/node_modules/openai/resources/admin/organization/admin-api-keys.mjs
+// ../../node_modules/.pnpm/openai@6.39.0_ws@8.21.0/node_modules/openai/resources/admin/organization/admin-api-keys.mjs
 var AdminAPIKeys = class extends APIResource {
   /**
    * Create an organization admin API key
@@ -4486,7 +6041,7 @@ var AdminAPIKeys = class extends APIResource {
   }
 };
 
-// ../../node_modules/.pnpm/openai@6.39.0/node_modules/openai/resources/admin/organization/audit-logs.mjs
+// ../../node_modules/.pnpm/openai@6.39.0_ws@8.21.0/node_modules/openai/resources/admin/organization/audit-logs.mjs
 var AuditLogs = class extends APIResource {
   /**
    * List user actions and configuration changes within this organization.
@@ -4508,7 +6063,7 @@ var AuditLogs = class extends APIResource {
   }
 };
 
-// ../../node_modules/.pnpm/openai@6.39.0/node_modules/openai/resources/admin/organization/certificates.mjs
+// ../../node_modules/.pnpm/openai@6.39.0_ws@8.21.0/node_modules/openai/resources/admin/organization/certificates.mjs
 var Certificates = class extends APIResource {
   /**
    * Upload a certificate to the organization. This does **not** automatically
@@ -4645,7 +6200,7 @@ var Certificates = class extends APIResource {
   }
 };
 
-// ../../node_modules/.pnpm/openai@6.39.0/node_modules/openai/resources/admin/organization/data-retention.mjs
+// ../../node_modules/.pnpm/openai@6.39.0_ws@8.21.0/node_modules/openai/resources/admin/organization/data-retention.mjs
 var DataRetention = class extends APIResource {
   /**
    * Retrieves organization data retention controls.
@@ -4682,7 +6237,7 @@ var DataRetention = class extends APIResource {
   }
 };
 
-// ../../node_modules/.pnpm/openai@6.39.0/node_modules/openai/resources/admin/organization/invites.mjs
+// ../../node_modules/.pnpm/openai@6.39.0_ws@8.21.0/node_modules/openai/resources/admin/organization/invites.mjs
 var Invites = class extends APIResource {
   /**
    * Create an invite for a user to the organization. The invite must be accepted by
@@ -4758,7 +6313,7 @@ var Invites = class extends APIResource {
   }
 };
 
-// ../../node_modules/.pnpm/openai@6.39.0/node_modules/openai/resources/admin/organization/roles.mjs
+// ../../node_modules/.pnpm/openai@6.39.0_ws@8.21.0/node_modules/openai/resources/admin/organization/roles.mjs
 var Roles = class extends APIResource {
   /**
    * Creates a custom role for the organization.
@@ -4847,7 +6402,7 @@ var Roles = class extends APIResource {
   }
 };
 
-// ../../node_modules/.pnpm/openai@6.39.0/node_modules/openai/resources/admin/organization/spend-alerts.mjs
+// ../../node_modules/.pnpm/openai@6.39.0_ws@8.21.0/node_modules/openai/resources/admin/organization/spend-alerts.mjs
 var SpendAlerts = class extends APIResource {
   /**
    * Creates an organization spend alert.
@@ -4933,7 +6488,7 @@ var SpendAlerts = class extends APIResource {
   }
 };
 
-// ../../node_modules/.pnpm/openai@6.39.0/node_modules/openai/resources/admin/organization/usage.mjs
+// ../../node_modules/.pnpm/openai@6.39.0_ws@8.21.0/node_modules/openai/resources/admin/organization/usage.mjs
 var Usage = class extends APIResource {
   /**
    * Get audio speeches usage details for the organization.
@@ -5135,7 +6690,7 @@ var Usage = class extends APIResource {
   }
 };
 
-// ../../node_modules/.pnpm/openai@6.39.0/node_modules/openai/resources/admin/organization/groups/roles.mjs
+// ../../node_modules/.pnpm/openai@6.39.0_ws@8.21.0/node_modules/openai/resources/admin/organization/groups/roles.mjs
 var Roles2 = class extends APIResource {
   /**
    * Assigns an organization role to a group within the organization.
@@ -5212,7 +6767,7 @@ var Roles2 = class extends APIResource {
   }
 };
 
-// ../../node_modules/.pnpm/openai@6.39.0/node_modules/openai/resources/admin/organization/groups/users.mjs
+// ../../node_modules/.pnpm/openai@6.39.0_ws@8.21.0/node_modules/openai/resources/admin/organization/groups/users.mjs
 var Users = class extends APIResource {
   /**
    * Adds a user to a group.
@@ -5289,7 +6844,7 @@ var Users = class extends APIResource {
   }
 };
 
-// ../../node_modules/.pnpm/openai@6.39.0/node_modules/openai/resources/admin/organization/groups/groups.mjs
+// ../../node_modules/.pnpm/openai@6.39.0_ws@8.21.0/node_modules/openai/resources/admin/organization/groups/groups.mjs
 var Groups = class extends APIResource {
   constructor() {
     super(...arguments);
@@ -5386,7 +6941,7 @@ var Groups = class extends APIResource {
 Groups.Users = Users;
 Groups.Roles = Roles2;
 
-// ../../node_modules/.pnpm/openai@6.39.0/node_modules/openai/resources/admin/organization/projects/api-keys.mjs
+// ../../node_modules/.pnpm/openai@6.39.0_ws@8.21.0/node_modules/openai/resources/admin/organization/projects/api-keys.mjs
 var APIKeys = class extends APIResource {
   /**
    * Retrieves an API key in the project.
@@ -5447,7 +7002,7 @@ var APIKeys = class extends APIResource {
   }
 };
 
-// ../../node_modules/.pnpm/openai@6.39.0/node_modules/openai/resources/admin/organization/projects/certificates.mjs
+// ../../node_modules/.pnpm/openai@6.39.0_ws@8.21.0/node_modules/openai/resources/admin/organization/projects/certificates.mjs
 var Certificates2 = class extends APIResource {
   /**
    * List certificates for this project.
@@ -5504,7 +7059,7 @@ var Certificates2 = class extends APIResource {
   }
 };
 
-// ../../node_modules/.pnpm/openai@6.39.0/node_modules/openai/resources/admin/organization/projects/data-retention.mjs
+// ../../node_modules/.pnpm/openai@6.39.0_ws@8.21.0/node_modules/openai/resources/admin/organization/projects/data-retention.mjs
 var DataRetention2 = class extends APIResource {
   /**
    * Retrieves project data retention controls.
@@ -5544,7 +7099,7 @@ var DataRetention2 = class extends APIResource {
   }
 };
 
-// ../../node_modules/.pnpm/openai@6.39.0/node_modules/openai/resources/admin/organization/projects/hosted-tool-permissions.mjs
+// ../../node_modules/.pnpm/openai@6.39.0_ws@8.21.0/node_modules/openai/resources/admin/organization/projects/hosted-tool-permissions.mjs
 var HostedToolPermissions = class extends APIResource {
   /**
    * Returns hosted tool permissions for a project.
@@ -5583,7 +7138,7 @@ var HostedToolPermissions = class extends APIResource {
   }
 };
 
-// ../../node_modules/.pnpm/openai@6.39.0/node_modules/openai/resources/admin/organization/projects/model-permissions.mjs
+// ../../node_modules/.pnpm/openai@6.39.0_ws@8.21.0/node_modules/openai/resources/admin/organization/projects/model-permissions.mjs
 var ModelPermissions = class extends APIResource {
   /**
    * Returns model permissions for a project.
@@ -5640,7 +7195,7 @@ var ModelPermissions = class extends APIResource {
   }
 };
 
-// ../../node_modules/.pnpm/openai@6.39.0/node_modules/openai/resources/admin/organization/projects/rate-limits.mjs
+// ../../node_modules/.pnpm/openai@6.39.0_ws@8.21.0/node_modules/openai/resources/admin/organization/projects/rate-limits.mjs
 var RateLimits = class extends APIResource {
   /**
    * Returns the rate limits per model for a project.
@@ -5680,7 +7235,7 @@ var RateLimits = class extends APIResource {
   }
 };
 
-// ../../node_modules/.pnpm/openai@6.39.0/node_modules/openai/resources/admin/organization/projects/roles.mjs
+// ../../node_modules/.pnpm/openai@6.39.0_ws@8.21.0/node_modules/openai/resources/admin/organization/projects/roles.mjs
 var Roles3 = class extends APIResource {
   /**
    * Creates a custom role for a project.
@@ -5781,7 +7336,7 @@ var Roles3 = class extends APIResource {
   }
 };
 
-// ../../node_modules/.pnpm/openai@6.39.0/node_modules/openai/resources/admin/organization/projects/service-accounts.mjs
+// ../../node_modules/.pnpm/openai@6.39.0_ws@8.21.0/node_modules/openai/resources/admin/organization/projects/service-accounts.mjs
 var ServiceAccounts = class extends APIResource {
   /**
    * Creates a new service account in the project. This also returns an unredacted
@@ -5875,7 +7430,7 @@ var ServiceAccounts = class extends APIResource {
   }
 };
 
-// ../../node_modules/.pnpm/openai@6.39.0/node_modules/openai/resources/admin/organization/projects/spend-alerts.mjs
+// ../../node_modules/.pnpm/openai@6.39.0_ws@8.21.0/node_modules/openai/resources/admin/organization/projects/spend-alerts.mjs
 var SpendAlerts2 = class extends APIResource {
   /**
    * Creates a project spend alert.
@@ -5970,7 +7525,7 @@ var SpendAlerts2 = class extends APIResource {
   }
 };
 
-// ../../node_modules/.pnpm/openai@6.39.0/node_modules/openai/resources/admin/organization/projects/groups/roles.mjs
+// ../../node_modules/.pnpm/openai@6.39.0_ws@8.21.0/node_modules/openai/resources/admin/organization/projects/groups/roles.mjs
 var Roles4 = class extends APIResource {
   /**
    * Assigns a project role to a group within a project.
@@ -6050,7 +7605,7 @@ var Roles4 = class extends APIResource {
   }
 };
 
-// ../../node_modules/.pnpm/openai@6.39.0/node_modules/openai/resources/admin/organization/projects/groups/groups.mjs
+// ../../node_modules/.pnpm/openai@6.39.0_ws@8.21.0/node_modules/openai/resources/admin/organization/projects/groups/groups.mjs
 var Groups2 = class extends APIResource {
   constructor() {
     super(...arguments);
@@ -6133,7 +7688,7 @@ var Groups2 = class extends APIResource {
 };
 Groups2.Roles = Roles4;
 
-// ../../node_modules/.pnpm/openai@6.39.0/node_modules/openai/resources/admin/organization/projects/users/roles.mjs
+// ../../node_modules/.pnpm/openai@6.39.0_ws@8.21.0/node_modules/openai/resources/admin/organization/projects/users/roles.mjs
 var Roles5 = class extends APIResource {
   /**
    * Assigns a project role to a user within a project.
@@ -6213,7 +7768,7 @@ var Roles5 = class extends APIResource {
   }
 };
 
-// ../../node_modules/.pnpm/openai@6.39.0/node_modules/openai/resources/admin/organization/projects/users/users.mjs
+// ../../node_modules/.pnpm/openai@6.39.0_ws@8.21.0/node_modules/openai/resources/admin/organization/projects/users/users.mjs
 var Users2 = class extends APIResource {
   constructor() {
     super(...arguments);
@@ -6319,7 +7874,7 @@ var Users2 = class extends APIResource {
 };
 Users2.Roles = Roles5;
 
-// ../../node_modules/.pnpm/openai@6.39.0/node_modules/openai/resources/admin/organization/projects/projects.mjs
+// ../../node_modules/.pnpm/openai@6.39.0_ws@8.21.0/node_modules/openai/resources/admin/organization/projects/projects.mjs
 var Projects = class extends APIResource {
   constructor() {
     super(...arguments);
@@ -6438,7 +7993,7 @@ Projects.DataRetention = DataRetention2;
 Projects.SpendAlerts = SpendAlerts2;
 Projects.Certificates = Certificates2;
 
-// ../../node_modules/.pnpm/openai@6.39.0/node_modules/openai/resources/admin/organization/users/roles.mjs
+// ../../node_modules/.pnpm/openai@6.39.0_ws@8.21.0/node_modules/openai/resources/admin/organization/users/roles.mjs
 var Roles6 = class extends APIResource {
   /**
    * Assigns an organization role to a user within the organization.
@@ -6515,7 +8070,7 @@ var Roles6 = class extends APIResource {
   }
 };
 
-// ../../node_modules/.pnpm/openai@6.39.0/node_modules/openai/resources/admin/organization/users/users.mjs
+// ../../node_modules/.pnpm/openai@6.39.0_ws@8.21.0/node_modules/openai/resources/admin/organization/users/users.mjs
 var Users3 = class extends APIResource {
   constructor() {
     super(...arguments);
@@ -6589,7 +8144,7 @@ var Users3 = class extends APIResource {
 };
 Users3.Roles = Roles6;
 
-// ../../node_modules/.pnpm/openai@6.39.0/node_modules/openai/resources/admin/organization/organization.mjs
+// ../../node_modules/.pnpm/openai@6.39.0_ws@8.21.0/node_modules/openai/resources/admin/organization/organization.mjs
 var Organization = class extends APIResource {
   constructor() {
     super(...arguments);
@@ -6618,7 +8173,7 @@ Organization.SpendAlerts = SpendAlerts;
 Organization.Certificates = Certificates;
 Organization.Projects = Projects;
 
-// ../../node_modules/.pnpm/openai@6.39.0/node_modules/openai/resources/admin/admin.mjs
+// ../../node_modules/.pnpm/openai@6.39.0_ws@8.21.0/node_modules/openai/resources/admin/admin.mjs
 var Admin = class extends APIResource {
   constructor() {
     super(...arguments);
@@ -6627,7 +8182,7 @@ var Admin = class extends APIResource {
 };
 Admin.Organization = Organization;
 
-// ../../node_modules/.pnpm/openai@6.39.0/node_modules/openai/internal/headers.mjs
+// ../../node_modules/.pnpm/openai@6.39.0_ws@8.21.0/node_modules/openai/internal/headers.mjs
 var brand_privateNullableHeaders = /* @__PURE__ */ Symbol("brand.privateNullableHeaders");
 function* iterateHeaders(headers) {
   if (!headers)
@@ -6690,7 +8245,7 @@ var buildHeaders = (newHeaders) => {
   return { [brand_privateNullableHeaders]: true, values: targetHeaders, nulls: nullHeaders };
 };
 
-// ../../node_modules/.pnpm/openai@6.39.0/node_modules/openai/resources/audio/speech.mjs
+// ../../node_modules/.pnpm/openai@6.39.0_ws@8.21.0/node_modules/openai/resources/audio/speech.mjs
 var Speech = class extends APIResource {
   /**
    * Generates audio from the input text.
@@ -6720,7 +8275,7 @@ var Speech = class extends APIResource {
   }
 };
 
-// ../../node_modules/.pnpm/openai@6.39.0/node_modules/openai/resources/audio/transcriptions.mjs
+// ../../node_modules/.pnpm/openai@6.39.0_ws@8.21.0/node_modules/openai/resources/audio/transcriptions.mjs
 var Transcriptions = class extends APIResource {
   create(body, options) {
     return this._client.post("/audio/transcriptions", multipartFormRequestOptions({
@@ -6733,14 +8288,14 @@ var Transcriptions = class extends APIResource {
   }
 };
 
-// ../../node_modules/.pnpm/openai@6.39.0/node_modules/openai/resources/audio/translations.mjs
+// ../../node_modules/.pnpm/openai@6.39.0_ws@8.21.0/node_modules/openai/resources/audio/translations.mjs
 var Translations = class extends APIResource {
   create(body, options) {
     return this._client.post("/audio/translations", multipartFormRequestOptions({ body, ...options, __metadata: { model: body.model }, __security: { bearerAuth: true } }, this._client));
   }
 };
 
-// ../../node_modules/.pnpm/openai@6.39.0/node_modules/openai/resources/audio/audio.mjs
+// ../../node_modules/.pnpm/openai@6.39.0_ws@8.21.0/node_modules/openai/resources/audio/audio.mjs
 var Audio = class extends APIResource {
   constructor() {
     super(...arguments);
@@ -6753,7 +8308,7 @@ Audio.Transcriptions = Transcriptions;
 Audio.Translations = Translations;
 Audio.Speech = Speech;
 
-// ../../node_modules/.pnpm/openai@6.39.0/node_modules/openai/resources/batches.mjs
+// ../../node_modules/.pnpm/openai@6.39.0_ws@8.21.0/node_modules/openai/resources/batches.mjs
 var Batches = class extends APIResource {
   /**
    * Creates and executes a batch from an uploaded file of requests
@@ -6790,7 +8345,7 @@ var Batches = class extends APIResource {
   }
 };
 
-// ../../node_modules/.pnpm/openai@6.39.0/node_modules/openai/resources/beta/assistants.mjs
+// ../../node_modules/.pnpm/openai@6.39.0_ws@8.21.0/node_modules/openai/resources/beta/assistants.mjs
 var Assistants = class extends APIResource {
   /**
    * Create an assistant with a model and instructions.
@@ -6857,7 +8412,7 @@ var Assistants = class extends APIResource {
   }
 };
 
-// ../../node_modules/.pnpm/openai@6.39.0/node_modules/openai/resources/beta/realtime/sessions.mjs
+// ../../node_modules/.pnpm/openai@6.39.0_ws@8.21.0/node_modules/openai/resources/beta/realtime/sessions.mjs
 var Sessions = class extends APIResource {
   /**
    * Create an ephemeral API token for use in client-side applications with the
@@ -6884,7 +8439,7 @@ var Sessions = class extends APIResource {
   }
 };
 
-// ../../node_modules/.pnpm/openai@6.39.0/node_modules/openai/resources/beta/realtime/transcription-sessions.mjs
+// ../../node_modules/.pnpm/openai@6.39.0_ws@8.21.0/node_modules/openai/resources/beta/realtime/transcription-sessions.mjs
 var TranscriptionSessions = class extends APIResource {
   /**
    * Create an ephemeral API token for use in client-side applications with the
@@ -6911,7 +8466,7 @@ var TranscriptionSessions = class extends APIResource {
   }
 };
 
-// ../../node_modules/.pnpm/openai@6.39.0/node_modules/openai/resources/beta/realtime/realtime.mjs
+// ../../node_modules/.pnpm/openai@6.39.0_ws@8.21.0/node_modules/openai/resources/beta/realtime/realtime.mjs
 var Realtime = class extends APIResource {
   constructor() {
     super(...arguments);
@@ -6922,7 +8477,7 @@ var Realtime = class extends APIResource {
 Realtime.Sessions = Sessions;
 Realtime.TranscriptionSessions = TranscriptionSessions;
 
-// ../../node_modules/.pnpm/openai@6.39.0/node_modules/openai/resources/beta/chatkit/sessions.mjs
+// ../../node_modules/.pnpm/openai@6.39.0_ws@8.21.0/node_modules/openai/resources/beta/chatkit/sessions.mjs
 var Sessions2 = class extends APIResource {
   /**
    * Create a ChatKit session.
@@ -6964,7 +8519,7 @@ var Sessions2 = class extends APIResource {
   }
 };
 
-// ../../node_modules/.pnpm/openai@6.39.0/node_modules/openai/resources/beta/chatkit/threads.mjs
+// ../../node_modules/.pnpm/openai@6.39.0_ws@8.21.0/node_modules/openai/resources/beta/chatkit/threads.mjs
 var Threads = class extends APIResource {
   /**
    * Retrieve a ChatKit thread by its identifier.
@@ -7041,7 +8596,7 @@ var Threads = class extends APIResource {
   }
 };
 
-// ../../node_modules/.pnpm/openai@6.39.0/node_modules/openai/resources/beta/chatkit/chatkit.mjs
+// ../../node_modules/.pnpm/openai@6.39.0_ws@8.21.0/node_modules/openai/resources/beta/chatkit/chatkit.mjs
 var ChatKit = class extends APIResource {
   constructor() {
     super(...arguments);
@@ -7052,7 +8607,7 @@ var ChatKit = class extends APIResource {
 ChatKit.Sessions = Sessions2;
 ChatKit.Threads = Threads;
 
-// ../../node_modules/.pnpm/openai@6.39.0/node_modules/openai/resources/beta/threads/messages.mjs
+// ../../node_modules/.pnpm/openai@6.39.0_ws@8.21.0/node_modules/openai/resources/beta/threads/messages.mjs
 var Messages2 = class extends APIResource {
   /**
    * Create a message.
@@ -7122,7 +8677,7 @@ var Messages2 = class extends APIResource {
   }
 };
 
-// ../../node_modules/.pnpm/openai@6.39.0/node_modules/openai/resources/beta/threads/runs/steps.mjs
+// ../../node_modules/.pnpm/openai@6.39.0_ws@8.21.0/node_modules/openai/resources/beta/threads/runs/steps.mjs
 var Steps = class extends APIResource {
   /**
    * Retrieves a run step.
@@ -7154,7 +8709,7 @@ var Steps = class extends APIResource {
   }
 };
 
-// ../../node_modules/.pnpm/openai@6.39.0/node_modules/openai/internal/utils/base64.mjs
+// ../../node_modules/.pnpm/openai@6.39.0_ws@8.21.0/node_modules/openai/internal/utils/base64.mjs
 var toFloat32Array = (base64Str) => {
   if (typeof Buffer !== "undefined") {
     const buf = Buffer.from(base64Str, "base64");
@@ -7170,7 +8725,7 @@ var toFloat32Array = (base64Str) => {
   }
 };
 
-// ../../node_modules/.pnpm/openai@6.39.0/node_modules/openai/internal/utils/env.mjs
+// ../../node_modules/.pnpm/openai@6.39.0_ws@8.21.0/node_modules/openai/internal/utils/env.mjs
 var readEnv = (env) => {
   if (typeof globalThis.process !== "undefined") {
     return globalThis.process.env?.[env]?.trim() || void 0;
@@ -7181,7 +8736,7 @@ var readEnv = (env) => {
   return void 0;
 };
 
-// ../../node_modules/.pnpm/openai@6.39.0/node_modules/openai/lib/AssistantStream.mjs
+// ../../node_modules/.pnpm/openai@6.39.0_ws@8.21.0/node_modules/openai/lib/AssistantStream.mjs
 var _AssistantStream_instances;
 var _a;
 var _AssistantStream_events;
@@ -7720,7 +9275,7 @@ _a = AssistantStream, _AssistantStream_addEvent = function _AssistantStream_addE
 function assertNever2(_x) {
 }
 
-// ../../node_modules/.pnpm/openai@6.39.0/node_modules/openai/resources/beta/threads/runs/runs.mjs
+// ../../node_modules/.pnpm/openai@6.39.0_ws@8.21.0/node_modules/openai/resources/beta/threads/runs/runs.mjs
 var Runs = class extends APIResource {
   constructor() {
     super(...arguments);
@@ -7893,7 +9448,7 @@ var Runs = class extends APIResource {
 };
 Runs.Steps = Steps;
 
-// ../../node_modules/.pnpm/openai@6.39.0/node_modules/openai/resources/beta/threads/threads.mjs
+// ../../node_modules/.pnpm/openai@6.39.0_ws@8.21.0/node_modules/openai/resources/beta/threads/threads.mjs
 var Threads2 = class extends APIResource {
   constructor() {
     super(...arguments);
@@ -7979,7 +9534,7 @@ var Threads2 = class extends APIResource {
 Threads2.Runs = Runs;
 Threads2.Messages = Messages2;
 
-// ../../node_modules/.pnpm/openai@6.39.0/node_modules/openai/resources/beta/beta.mjs
+// ../../node_modules/.pnpm/openai@6.39.0_ws@8.21.0/node_modules/openai/resources/beta/beta.mjs
 var Beta = class extends APIResource {
   constructor() {
     super(...arguments);
@@ -7994,7 +9549,7 @@ Beta.ChatKit = ChatKit;
 Beta.Assistants = Assistants;
 Beta.Threads = Threads2;
 
-// ../../node_modules/.pnpm/openai@6.39.0/node_modules/openai/resources/completions.mjs
+// ../../node_modules/.pnpm/openai@6.39.0_ws@8.21.0/node_modules/openai/resources/completions.mjs
 var Completions2 = class extends APIResource {
   create(body, options) {
     return this._client.post("/completions", {
@@ -8006,7 +9561,7 @@ var Completions2 = class extends APIResource {
   }
 };
 
-// ../../node_modules/.pnpm/openai@6.39.0/node_modules/openai/resources/containers/files/content.mjs
+// ../../node_modules/.pnpm/openai@6.39.0_ws@8.21.0/node_modules/openai/resources/containers/files/content.mjs
 var Content = class extends APIResource {
   /**
    * Retrieve Container File Content
@@ -8022,7 +9577,7 @@ var Content = class extends APIResource {
   }
 };
 
-// ../../node_modules/.pnpm/openai@6.39.0/node_modules/openai/resources/containers/files/files.mjs
+// ../../node_modules/.pnpm/openai@6.39.0_ws@8.21.0/node_modules/openai/resources/containers/files/files.mjs
 var Files = class extends APIResource {
   constructor() {
     super(...arguments);
@@ -8071,7 +9626,7 @@ var Files = class extends APIResource {
 };
 Files.Content = Content;
 
-// ../../node_modules/.pnpm/openai@6.39.0/node_modules/openai/resources/containers/containers.mjs
+// ../../node_modules/.pnpm/openai@6.39.0_ws@8.21.0/node_modules/openai/resources/containers/containers.mjs
 var Containers = class extends APIResource {
   constructor() {
     super(...arguments);
@@ -8115,7 +9670,7 @@ var Containers = class extends APIResource {
 };
 Containers.Files = Files;
 
-// ../../node_modules/.pnpm/openai@6.39.0/node_modules/openai/resources/conversations/items.mjs
+// ../../node_modules/.pnpm/openai@6.39.0_ws@8.21.0/node_modules/openai/resources/conversations/items.mjs
 var Items = class extends APIResource {
   /**
    * Create items in a conversation with the given ID.
@@ -8158,7 +9713,7 @@ var Items = class extends APIResource {
   }
 };
 
-// ../../node_modules/.pnpm/openai@6.39.0/node_modules/openai/resources/conversations/conversations.mjs
+// ../../node_modules/.pnpm/openai@6.39.0_ws@8.21.0/node_modules/openai/resources/conversations/conversations.mjs
 var Conversations = class extends APIResource {
   constructor() {
     super(...arguments);
@@ -8201,7 +9756,7 @@ var Conversations = class extends APIResource {
 };
 Conversations.Items = Items;
 
-// ../../node_modules/.pnpm/openai@6.39.0/node_modules/openai/resources/embeddings.mjs
+// ../../node_modules/.pnpm/openai@6.39.0_ws@8.21.0/node_modules/openai/resources/embeddings.mjs
 var Embeddings = class extends APIResource {
   /**
    * Creates an embedding vector representing the input text.
@@ -8245,7 +9800,7 @@ var Embeddings = class extends APIResource {
   }
 };
 
-// ../../node_modules/.pnpm/openai@6.39.0/node_modules/openai/resources/evals/runs/output-items.mjs
+// ../../node_modules/.pnpm/openai@6.39.0_ws@8.21.0/node_modules/openai/resources/evals/runs/output-items.mjs
 var OutputItems = class extends APIResource {
   /**
    * Get an evaluation run output item by ID.
@@ -8266,7 +9821,7 @@ var OutputItems = class extends APIResource {
   }
 };
 
-// ../../node_modules/.pnpm/openai@6.39.0/node_modules/openai/resources/evals/runs/runs.mjs
+// ../../node_modules/.pnpm/openai@6.39.0_ws@8.21.0/node_modules/openai/resources/evals/runs/runs.mjs
 var Runs2 = class extends APIResource {
   constructor() {
     super(...arguments);
@@ -8327,7 +9882,7 @@ var Runs2 = class extends APIResource {
 };
 Runs2.OutputItems = OutputItems;
 
-// ../../node_modules/.pnpm/openai@6.39.0/node_modules/openai/resources/evals/evals.mjs
+// ../../node_modules/.pnpm/openai@6.39.0_ws@8.21.0/node_modules/openai/resources/evals/evals.mjs
 var Evals = class extends APIResource {
   constructor() {
     super(...arguments);
@@ -8375,7 +9930,7 @@ var Evals = class extends APIResource {
 };
 Evals.Runs = Runs2;
 
-// ../../node_modules/.pnpm/openai@6.39.0/node_modules/openai/resources/files.mjs
+// ../../node_modules/.pnpm/openai@6.39.0_ws@8.21.0/node_modules/openai/resources/files.mjs
 var Files2 = class extends APIResource {
   /**
    * Upload a file that can be used across various endpoints. Individual files can be
@@ -8462,11 +10017,11 @@ var Files2 = class extends APIResource {
   }
 };
 
-// ../../node_modules/.pnpm/openai@6.39.0/node_modules/openai/resources/fine-tuning/methods.mjs
+// ../../node_modules/.pnpm/openai@6.39.0_ws@8.21.0/node_modules/openai/resources/fine-tuning/methods.mjs
 var Methods = class extends APIResource {
 };
 
-// ../../node_modules/.pnpm/openai@6.39.0/node_modules/openai/resources/fine-tuning/alpha/graders.mjs
+// ../../node_modules/.pnpm/openai@6.39.0_ws@8.21.0/node_modules/openai/resources/fine-tuning/alpha/graders.mjs
 var Graders = class extends APIResource {
   /**
    * Run a grader.
@@ -8518,7 +10073,7 @@ var Graders = class extends APIResource {
   }
 };
 
-// ../../node_modules/.pnpm/openai@6.39.0/node_modules/openai/resources/fine-tuning/alpha/alpha.mjs
+// ../../node_modules/.pnpm/openai@6.39.0_ws@8.21.0/node_modules/openai/resources/fine-tuning/alpha/alpha.mjs
 var Alpha = class extends APIResource {
   constructor() {
     super(...arguments);
@@ -8527,7 +10082,7 @@ var Alpha = class extends APIResource {
 };
 Alpha.Graders = Graders;
 
-// ../../node_modules/.pnpm/openai@6.39.0/node_modules/openai/resources/fine-tuning/checkpoints/permissions.mjs
+// ../../node_modules/.pnpm/openai@6.39.0_ws@8.21.0/node_modules/openai/resources/fine-tuning/checkpoints/permissions.mjs
 var Permissions = class extends APIResource {
   /**
    * **NOTE:** Calling this endpoint requires an [admin API key](../admin-api-keys).
@@ -8607,7 +10162,7 @@ var Permissions = class extends APIResource {
   }
 };
 
-// ../../node_modules/.pnpm/openai@6.39.0/node_modules/openai/resources/fine-tuning/checkpoints/checkpoints.mjs
+// ../../node_modules/.pnpm/openai@6.39.0_ws@8.21.0/node_modules/openai/resources/fine-tuning/checkpoints/checkpoints.mjs
 var Checkpoints = class extends APIResource {
   constructor() {
     super(...arguments);
@@ -8616,7 +10171,7 @@ var Checkpoints = class extends APIResource {
 };
 Checkpoints.Permissions = Permissions;
 
-// ../../node_modules/.pnpm/openai@6.39.0/node_modules/openai/resources/fine-tuning/jobs/checkpoints.mjs
+// ../../node_modules/.pnpm/openai@6.39.0_ws@8.21.0/node_modules/openai/resources/fine-tuning/jobs/checkpoints.mjs
 var Checkpoints2 = class extends APIResource {
   /**
    * List checkpoints for a fine-tuning job.
@@ -8636,7 +10191,7 @@ var Checkpoints2 = class extends APIResource {
   }
 };
 
-// ../../node_modules/.pnpm/openai@6.39.0/node_modules/openai/resources/fine-tuning/jobs/jobs.mjs
+// ../../node_modules/.pnpm/openai@6.39.0_ws@8.21.0/node_modules/openai/resources/fine-tuning/jobs/jobs.mjs
 var Jobs = class extends APIResource {
   constructor() {
     super(...arguments);
@@ -8765,7 +10320,7 @@ var Jobs = class extends APIResource {
 };
 Jobs.Checkpoints = Checkpoints2;
 
-// ../../node_modules/.pnpm/openai@6.39.0/node_modules/openai/resources/fine-tuning/fine-tuning.mjs
+// ../../node_modules/.pnpm/openai@6.39.0_ws@8.21.0/node_modules/openai/resources/fine-tuning/fine-tuning.mjs
 var FineTuning = class extends APIResource {
   constructor() {
     super(...arguments);
@@ -8780,11 +10335,11 @@ FineTuning.Jobs = Jobs;
 FineTuning.Checkpoints = Checkpoints;
 FineTuning.Alpha = Alpha;
 
-// ../../node_modules/.pnpm/openai@6.39.0/node_modules/openai/resources/graders/grader-models.mjs
+// ../../node_modules/.pnpm/openai@6.39.0_ws@8.21.0/node_modules/openai/resources/graders/grader-models.mjs
 var GraderModels = class extends APIResource {
 };
 
-// ../../node_modules/.pnpm/openai@6.39.0/node_modules/openai/resources/graders/graders.mjs
+// ../../node_modules/.pnpm/openai@6.39.0_ws@8.21.0/node_modules/openai/resources/graders/graders.mjs
 var Graders2 = class extends APIResource {
   constructor() {
     super(...arguments);
@@ -8793,7 +10348,7 @@ var Graders2 = class extends APIResource {
 };
 Graders2.GraderModels = GraderModels;
 
-// ../../node_modules/.pnpm/openai@6.39.0/node_modules/openai/resources/images.mjs
+// ../../node_modules/.pnpm/openai@6.39.0_ws@8.21.0/node_modules/openai/resources/images.mjs
 var Images = class extends APIResource {
   /**
    * Creates a variation of a given image. This endpoint only supports `dall-e-2`.
@@ -8821,7 +10376,7 @@ var Images = class extends APIResource {
   }
 };
 
-// ../../node_modules/.pnpm/openai@6.39.0/node_modules/openai/resources/models.mjs
+// ../../node_modules/.pnpm/openai@6.39.0_ws@8.21.0/node_modules/openai/resources/models.mjs
 var Models = class extends APIResource {
   /**
    * Retrieves a model instance, providing basic information about the model such as
@@ -8846,7 +10401,7 @@ var Models = class extends APIResource {
   }
 };
 
-// ../../node_modules/.pnpm/openai@6.39.0/node_modules/openai/resources/moderations.mjs
+// ../../node_modules/.pnpm/openai@6.39.0_ws@8.21.0/node_modules/openai/resources/moderations.mjs
 var Moderations = class extends APIResource {
   /**
    * Classifies if text and/or image inputs are potentially harmful. Learn more in
@@ -8857,7 +10412,7 @@ var Moderations = class extends APIResource {
   }
 };
 
-// ../../node_modules/.pnpm/openai@6.39.0/node_modules/openai/resources/realtime/calls.mjs
+// ../../node_modules/.pnpm/openai@6.39.0_ws@8.21.0/node_modules/openai/resources/realtime/calls.mjs
 var Calls = class extends APIResource {
   /**
    * Accept an incoming SIP call and configure the realtime session that will handle
@@ -8929,7 +10484,7 @@ var Calls = class extends APIResource {
   }
 };
 
-// ../../node_modules/.pnpm/openai@6.39.0/node_modules/openai/resources/realtime/client-secrets.mjs
+// ../../node_modules/.pnpm/openai@6.39.0_ws@8.21.0/node_modules/openai/resources/realtime/client-secrets.mjs
 var ClientSecrets = class extends APIResource {
   /**
    * Create a Realtime client secret with an associated session configuration.
@@ -8963,7 +10518,7 @@ var ClientSecrets = class extends APIResource {
   }
 };
 
-// ../../node_modules/.pnpm/openai@6.39.0/node_modules/openai/resources/realtime/realtime.mjs
+// ../../node_modules/.pnpm/openai@6.39.0_ws@8.21.0/node_modules/openai/resources/realtime/realtime.mjs
 var Realtime2 = class extends APIResource {
   constructor() {
     super(...arguments);
@@ -8974,7 +10529,7 @@ var Realtime2 = class extends APIResource {
 Realtime2.ClientSecrets = ClientSecrets;
 Realtime2.Calls = Calls;
 
-// ../../node_modules/.pnpm/openai@6.39.0/node_modules/openai/lib/ResponsesParser.mjs
+// ../../node_modules/.pnpm/openai@6.39.0_ws@8.21.0/node_modules/openai/lib/ResponsesParser.mjs
 function maybeParseResponse(response, params) {
   if (!params || !hasAutoParseableInput2(params)) {
     return {
@@ -9095,7 +10650,7 @@ function addOutputText(rsp) {
   rsp.output_text = texts.join("");
 }
 
-// ../../node_modules/.pnpm/openai@6.39.0/node_modules/openai/lib/responses/ResponseStream.mjs
+// ../../node_modules/.pnpm/openai@6.39.0_ws@8.21.0/node_modules/openai/lib/responses/ResponseStream.mjs
 var _ResponseStream_instances;
 var _ResponseStream_params;
 var _ResponseStream_currentResponseSnapshot;
@@ -9357,7 +10912,7 @@ function finalizeResponse(snapshot, params) {
   return maybeParseResponse(snapshot, params);
 }
 
-// ../../node_modules/.pnpm/openai@6.39.0/node_modules/openai/resources/responses/input-items.mjs
+// ../../node_modules/.pnpm/openai@6.39.0_ws@8.21.0/node_modules/openai/resources/responses/input-items.mjs
 var InputItems = class extends APIResource {
   /**
    * Returns a list of input items for a given response.
@@ -9377,7 +10932,7 @@ var InputItems = class extends APIResource {
   }
 };
 
-// ../../node_modules/.pnpm/openai@6.39.0/node_modules/openai/resources/responses/input-tokens.mjs
+// ../../node_modules/.pnpm/openai@6.39.0_ws@8.21.0/node_modules/openai/resources/responses/input-tokens.mjs
 var InputTokens = class extends APIResource {
   /**
    * Returns input token counts of the request.
@@ -9399,7 +10954,7 @@ var InputTokens = class extends APIResource {
   }
 };
 
-// ../../node_modules/.pnpm/openai@6.39.0/node_modules/openai/resources/responses/responses.mjs
+// ../../node_modules/.pnpm/openai@6.39.0_ws@8.21.0/node_modules/openai/resources/responses/responses.mjs
 var Responses = class extends APIResource {
   constructor() {
     super(...arguments);
@@ -9498,7 +11053,7 @@ var Responses = class extends APIResource {
 Responses.InputItems = InputItems;
 Responses.InputTokens = InputTokens;
 
-// ../../node_modules/.pnpm/openai@6.39.0/node_modules/openai/resources/skills/content.mjs
+// ../../node_modules/.pnpm/openai@6.39.0_ws@8.21.0/node_modules/openai/resources/skills/content.mjs
 var Content2 = class extends APIResource {
   /**
    * Download a skill zip bundle by its ID.
@@ -9513,7 +11068,7 @@ var Content2 = class extends APIResource {
   }
 };
 
-// ../../node_modules/.pnpm/openai@6.39.0/node_modules/openai/resources/skills/versions/content.mjs
+// ../../node_modules/.pnpm/openai@6.39.0_ws@8.21.0/node_modules/openai/resources/skills/versions/content.mjs
 var Content3 = class extends APIResource {
   /**
    * Download a skill version zip bundle.
@@ -9529,7 +11084,7 @@ var Content3 = class extends APIResource {
   }
 };
 
-// ../../node_modules/.pnpm/openai@6.39.0/node_modules/openai/resources/skills/versions/versions.mjs
+// ../../node_modules/.pnpm/openai@6.39.0_ws@8.21.0/node_modules/openai/resources/skills/versions/versions.mjs
 var Versions = class extends APIResource {
   constructor() {
     super(...arguments);
@@ -9574,7 +11129,7 @@ var Versions = class extends APIResource {
 };
 Versions.Content = Content3;
 
-// ../../node_modules/.pnpm/openai@6.39.0/node_modules/openai/resources/skills/skills.mjs
+// ../../node_modules/.pnpm/openai@6.39.0_ws@8.21.0/node_modules/openai/resources/skills/skills.mjs
 var Skills = class extends APIResource {
   constructor() {
     super(...arguments);
@@ -9623,7 +11178,7 @@ var Skills = class extends APIResource {
 Skills.Content = Content2;
 Skills.Versions = Versions;
 
-// ../../node_modules/.pnpm/openai@6.39.0/node_modules/openai/resources/uploads/parts.mjs
+// ../../node_modules/.pnpm/openai@6.39.0_ws@8.21.0/node_modules/openai/resources/uploads/parts.mjs
 var Parts = class extends APIResource {
   /**
    * Adds a
@@ -9643,7 +11198,7 @@ var Parts = class extends APIResource {
   }
 };
 
-// ../../node_modules/.pnpm/openai@6.39.0/node_modules/openai/resources/uploads/uploads.mjs
+// ../../node_modules/.pnpm/openai@6.39.0_ws@8.21.0/node_modules/openai/resources/uploads/uploads.mjs
 var Uploads = class extends APIResource {
   constructor() {
     super(...arguments);
@@ -9713,7 +11268,7 @@ var Uploads = class extends APIResource {
 };
 Uploads.Parts = Parts;
 
-// ../../node_modules/.pnpm/openai@6.39.0/node_modules/openai/lib/Util.mjs
+// ../../node_modules/.pnpm/openai@6.39.0_ws@8.21.0/node_modules/openai/lib/Util.mjs
 var allSettledWithThrow = async (promises) => {
   const results = await Promise.allSettled(promises);
   const rejected = results.filter((result) => result.status === "rejected");
@@ -9732,7 +11287,7 @@ var allSettledWithThrow = async (promises) => {
   return values;
 };
 
-// ../../node_modules/.pnpm/openai@6.39.0/node_modules/openai/resources/vector-stores/file-batches.mjs
+// ../../node_modules/.pnpm/openai@6.39.0_ws@8.21.0/node_modules/openai/resources/vector-stores/file-batches.mjs
 var FileBatches = class extends APIResource {
   /**
    * Create a vector store file batch.
@@ -9857,7 +11412,7 @@ var FileBatches = class extends APIResource {
   }
 };
 
-// ../../node_modules/.pnpm/openai@6.39.0/node_modules/openai/resources/vector-stores/files.mjs
+// ../../node_modules/.pnpm/openai@6.39.0_ws@8.21.0/node_modules/openai/resources/vector-stores/files.mjs
 var Files3 = class extends APIResource {
   /**
    * Create a vector store file by attaching a
@@ -9998,7 +11553,7 @@ var Files3 = class extends APIResource {
   }
 };
 
-// ../../node_modules/.pnpm/openai@6.39.0/node_modules/openai/resources/vector-stores/vector-stores.mjs
+// ../../node_modules/.pnpm/openai@6.39.0_ws@8.21.0/node_modules/openai/resources/vector-stores/vector-stores.mjs
 var VectorStores = class extends APIResource {
   constructor() {
     super(...arguments);
@@ -10075,7 +11630,7 @@ var VectorStores = class extends APIResource {
 VectorStores.Files = Files3;
 VectorStores.FileBatches = FileBatches;
 
-// ../../node_modules/.pnpm/openai@6.39.0/node_modules/openai/resources/videos.mjs
+// ../../node_modules/.pnpm/openai@6.39.0_ws@8.21.0/node_modules/openai/resources/videos.mjs
 var Videos = class extends APIResource {
   /**
    * Create a new video generation job from a prompt and optional reference assets.
@@ -10155,7 +11710,7 @@ var Videos = class extends APIResource {
   }
 };
 
-// ../../node_modules/.pnpm/openai@6.39.0/node_modules/openai/resources/webhooks/webhooks.mjs
+// ../../node_modules/.pnpm/openai@6.39.0_ws@8.21.0/node_modules/openai/resources/webhooks/webhooks.mjs
 var _Webhooks_instances;
 var _Webhooks_validateSecret;
 var _Webhooks_getRequiredHeader;
@@ -10234,7 +11789,7 @@ _Webhooks_instances = /* @__PURE__ */ new WeakSet(), _Webhooks_validateSecret = 
   return value;
 };
 
-// ../../node_modules/.pnpm/openai@6.39.0/node_modules/openai/client.mjs
+// ../../node_modules/.pnpm/openai@6.39.0_ws@8.21.0/node_modules/openai/client.mjs
 var _OpenAI_instances;
 var _a2;
 var _OpenAI_encoder;
@@ -10942,106 +12497,6 @@ function ensureStringArray(value) {
     return [];
   }
   return value.filter((item) => typeof item === "string");
-}
-
-// src/recentResultsStore.ts
-import { existsSync as existsSync5, mkdirSync as mkdirSync3, readFileSync as readFileSync4, writeFileSync as writeFileSync3 } from "node:fs";
-import { dirname as dirname4, join as join6 } from "node:path";
-var recentResultsFileName = "recent-results.json";
-var maxRecentResults = 8;
-function readRecentSkillResults() {
-  return {
-    type: "recent-skill-results",
-    items: readStoredRecentResults().items,
-    createdAt: (/* @__PURE__ */ new Date()).toISOString()
-  };
-}
-function rememberExplainPageResult(result) {
-  rememberRecentSkillResult({
-    type: "recent-skill-result",
-    id: `recent_${result.requestId}`,
-    requestId: result.requestId,
-    skillId: "page-explainer",
-    skillLabel: skillLabels["page-explainer"],
-    source: result.source,
-    summary: result.summary,
-    detail: result.keyPoints[0] ?? "Page explained.",
-    status: result.warnings.length > 0 ? "warning" : "ready",
-    createdAt: result.createdAt
-  });
-}
-function rememberArticleXrayResult(result) {
-  rememberRecentSkillResult({
-    type: "recent-skill-result",
-    id: `recent_${result.requestId}`,
-    requestId: result.requestId,
-    skillId: "article-xray",
-    skillLabel: skillLabels["article-xray"],
-    source: result.source,
-    summary: result.excerpt,
-    detail: `${result.quality} / ${result.stats.wordCount} words / ${result.textSource}`,
-    status: result.quality === "clean" && result.warnings.length === 0 ? "ready" : "warning",
-    createdAt: result.createdAt
-  });
-}
-function rememberRepoReaderResult(result) {
-  rememberRecentSkillResult({
-    type: "recent-skill-result",
-    id: `recent_${result.requestId}`,
-    requestId: result.requestId,
-    skillId: "repo-reader",
-    skillLabel: skillLabels["repo-reader"],
-    source: result.source,
-    summary: result.summary,
-    detail: `${result.playground.label} / ${result.environment.mode}`,
-    status: result.risks.some((risk) => risk !== "No obvious first-pass risk.") ? "warning" : "ready",
-    createdAt: result.createdAt
-  });
-}
-function rememberRecentSkillResult(item) {
-  try {
-    const stored = readStoredRecentResults();
-    const items = [item, ...stored.items.filter((existingItem) => existingItem.requestId !== item.requestId)].slice(
-      0,
-      maxRecentResults
-    );
-    writeStoredRecentResults({
-      items
-    });
-  } catch {
-  }
-}
-function readStoredRecentResults() {
-  const filePath = getRecentResultsFilePath();
-  try {
-    if (!existsSync5(filePath)) {
-      return {
-        items: []
-      };
-    }
-    const parsed = JSON.parse(readFileSync4(filePath, "utf8"));
-    return {
-      items: Array.isArray(parsed.items) ? parsed.items.filter(isRecentSkillResult).slice(0, maxRecentResults) : []
-    };
-  } catch {
-    return {
-      items: []
-    };
-  }
-}
-function writeStoredRecentResults(results) {
-  const filePath = getRecentResultsFilePath();
-  mkdirSync3(dirname4(filePath), {
-    recursive: true
-  });
-  writeFileSync3(filePath, JSON.stringify(results, null, 2), "utf8");
-}
-function getRecentResultsFilePath() {
-  return join6(getSuperiorStateDirectory(), recentResultsFileName);
-}
-function isRecentSkillResult(item) {
-  const candidate = item;
-  return candidate.type === "recent-skill-result" && typeof candidate.id === "string" && typeof candidate.requestId === "string" && typeof candidate.skillId === "string" && typeof candidate.skillLabel === "string" && typeof candidate.summary === "string" && typeof candidate.detail === "string" && (candidate.status === "ready" || candidate.status === "warning") && typeof candidate.createdAt === "string" && typeof candidate.source?.url === "string" && typeof candidate.source?.title === "string";
 }
 
 // src/repoReader.ts
@@ -11818,907 +13273,408 @@ function environmentSummary(surface) {
   return "Use learn mode first: read docs, map entrypoints, then decide whether it can run.";
 }
 
-// src/repoWorkspaceStore.ts
-import { existsSync as existsSync6, mkdirSync as mkdirSync4, readFileSync as readFileSync5, writeFileSync as writeFileSync4 } from "node:fs";
-import { dirname as dirname5, join as join7 } from "node:path";
-var repoWorkspaceFileName = "repo-workspaces.json";
-var maxRepoWorkspaceRecords = 32;
-function readRepoWorkspaceRecords() {
+// src/functions/runner.ts
+async function runSuperiorFunction(request, context) {
+  const runId = createLocalId("run");
+  const events = [];
+  const definition = getSuperiorFunctionDefinition(request.functionId);
+  addEvent(events, runId, request, "queued", "Queued");
+  if (!definition) {
+    return failRun(request, runId, events, void 0, "unknown_function", "That robot part is not registered.");
+  }
+  addEvent(events, runId, request, "validated", "Validated");
+  try {
+    const result = await runFunctionAdapter(definition, request, context, runId, events);
+    addEvent(events, runId, request, "result_saved", "Result saved", getResultSummary(definition.id, result));
+    return completeRun(request, runId, events, definition, result);
+  } catch (error) {
+    return failRun(
+      request,
+      runId,
+      events,
+      definition,
+      getFunctionErrorCode(error),
+      getFunctionErrorMessage(error, definition)
+    );
+  }
+}
+function isSuperiorFunctionError(output) {
+  return output.type === "superior-function-error";
+}
+async function runFunctionAdapter(definition, request, context, runId, events) {
+  addEvent(events, runId, request, "running", "Running", definition.label);
+  if (definition.surfaces.includes("workshop") && !context.trustedLocalOrigin) {
+    throw new FunctionRunError("missing_permission", "This function only accepts local Workshop requests.");
+  }
+  switch (definition.id) {
+    case "article-xray":
+      return runArticleXrayAdapter(request, context, runId, events);
+    case "page-explainer":
+      return runPageExplainerAdapter(request, context, runId, events);
+    case "repo-reader":
+      return runRepoReaderAdapter(request);
+    case "superior-browser-start":
+      return runBrowserStartAdapter(request);
+    case "superior-browser-stop":
+      return runBrowserStopAdapter();
+    case "custom-skill-import-proposal":
+      return runCustomSkillImportAdapter(request);
+    default:
+      throw new FunctionRunError("unknown_function", "That robot part is not registered.");
+  }
+}
+function runArticleXrayAdapter(request, context, runId, events) {
+  const payload = requireArticleXrayRequest(request.input);
+  requirePairing(payload.pairingToken, context);
+  addEvent(events, runId, request, "browser_context_received", "Browser context received", payload.page.title);
+  if (!hasArticleContent(payload)) {
+    throw new FunctionRunError("empty_input", "SUPERIOR needs selected text, readable article blocks, or page text.");
+  }
+  const result = runArticleXray(payload);
+  rememberArticleXrayResult(result);
+  rememberSuperiorBrowserSkillRun("Article X-Ray", result.source.title, result.source.url);
+  return result;
+}
+async function runPageExplainerAdapter(request, context, runId, events) {
+  const payload = requireExplainPageRequest(request.input);
+  requirePairing(payload.pairingToken, context);
+  addEvent(events, runId, request, "browser_context_received", "Browser context received", payload.page.title);
+  if (!hasUsablePageText(payload.page)) {
+    throw new FunctionRunError("empty_input", "SUPERIOR needs selected text or readable page text.");
+  }
+  addEvent(events, runId, request, "model_called", "Model called", context.config.openaiModel);
+  const result = await explainPageWithOpenAI(payload, context.config);
+  rememberExplainPageResult(result);
+  rememberSuperiorBrowserSkillRun("Page Explainer", result.source.title, result.source.url);
+  return result;
+}
+async function runRepoReaderAdapter(request) {
+  const payload = requireRepoReaderRequest(request.input);
+  const result = await runRepoReader(payload);
+  rememberRepoReaderResult(result);
+  rememberRepoWorkspaceRecord(result);
+  return result;
+}
+async function runBrowserStartAdapter(request) {
+  return startSuperiorBrowser(requireSuperiorBrowserStartRequest(request.input));
+}
+async function runBrowserStopAdapter() {
   return {
-    type: "repo-workspace-records",
-    items: readStoredRepoWorkspaceRecords().items,
+    type: "superior-browser-stop-result",
+    state: await stopSuperiorBrowser(),
     createdAt: (/* @__PURE__ */ new Date()).toISOString()
   };
 }
-function readRepoWorkspaceRecord(repoWorkspaceId) {
-  const normalizedId = repoWorkspaceId.trim().toLowerCase();
-  if (!normalizedId) {
-    return null;
-  }
-  return readStoredRepoWorkspaceRecords().items.find((item) => item.id === normalizedId) ?? null;
+async function runCustomSkillImportAdapter(request) {
+  return proposeCustomSkillImport(requireCustomSkillImportRequest(request.input));
 }
-function rememberRepoWorkspaceRecord(result) {
-  const stored = readStoredRepoWorkspaceRecords();
-  const id = createRepoWorkspaceId(result);
-  const existingRecord = stored.items.find((item) => item.id === id);
-  const now = result.createdAt;
-  const record = {
-    type: "repo-workspace-record",
-    id,
-    source: result.source,
-    repository: result.repository,
-    presentation: result.presentation,
-    environment: result.environment,
-    playground: result.playground,
-    stack: result.stack,
-    risks: result.risks,
-    nextMoves: result.nextMoves,
-    ...existingRecord?.localPath ? { localPath: existingRecord.localPath } : {},
-    ...existingRecord?.profilePath ? { profilePath: existingRecord.profilePath } : {},
-    ...existingRecord?.lastBrowserSessionId ? { lastBrowserSessionId: existingRecord.lastBrowserSessionId } : {},
-    ...existingRecord?.lastBrowserEventSummary ? { lastBrowserEventSummary: existingRecord.lastBrowserEventSummary } : {},
-    ...existingRecord?.lastBrowserInspection ? { lastBrowserInspection: existingRecord.lastBrowserInspection } : {},
-    nextMove: result.nextMoves[0] ?? result.playground.primaryLoop[0] ?? "Start Playpen",
-    notes: existingRecord?.notes ?? [],
-    createdAt: existingRecord?.createdAt ?? now,
-    updatedAt: now
+function completeRun(request, runId, events, definition, result) {
+  const createdAt = (/* @__PURE__ */ new Date()).toISOString();
+  const botReaction = createBotReaction(definition, runId, "success", getResultSummary(definition.id, result));
+  rememberFunctionRun(
+    {
+      type: "superior-function-run-summary",
+      runId,
+      requestId: request.requestId,
+      functionId: definition.id,
+      label: definition.label,
+      status: "completed",
+      summary: getResultSummary(definition.id, result),
+      botReaction,
+      createdAt
+    },
+    events
+  );
+  return {
+    type: "superior-function-run-result",
+    requestId: request.requestId,
+    runId,
+    functionId: definition.id,
+    status: "completed",
+    result,
+    events,
+    botReaction,
+    createdAt
   };
-  const items = [record, ...stored.items.filter((item) => item.id !== id)].slice(0, maxRepoWorkspaceRecords);
-  writeStoredRepoWorkspaceRecords({
-    items
-  });
-  return record;
 }
-function rememberRepoWorkspaceBrowserSession(repoWorkspaceId, details) {
-  const stored = readStoredRepoWorkspaceRecords();
-  const normalizedId = repoWorkspaceId.trim().toLowerCase();
-  const existingRecord = stored.items.find((item) => item.id === normalizedId);
-  if (!existingRecord) {
-    return null;
+function failRun(request, runId, events, definition, code, message) {
+  const createdAt = (/* @__PURE__ */ new Date()).toISOString();
+  const botReaction = definition ? createBotReaction(definition, runId, "failure", message) : void 0;
+  addEvent(events, runId, request, "failed", "Failed", message);
+  if (definition && botReaction) {
+    rememberFunctionRun(
+      {
+        type: "superior-function-run-summary",
+        runId,
+        requestId: request.requestId,
+        functionId: definition.id,
+        label: definition.label,
+        status: "failed",
+        summary: message,
+        botReaction,
+        createdAt
+      },
+      events
+    );
   }
-  const record = {
-    ...existingRecord,
-    profilePath: details.profilePath,
-    lastBrowserSessionId: details.sessionId,
-    lastBrowserEventSummary: details.lastBrowserEventSummary,
-    ...details.lastBrowserInspection ? { lastBrowserInspection: details.lastBrowserInspection } : existingRecord.lastBrowserInspection ? { lastBrowserInspection: existingRecord.lastBrowserInspection } : {},
-    nextMove: details.lastBrowserEventSummary,
-    updatedAt: (/* @__PURE__ */ new Date()).toISOString()
+  return {
+    type: "superior-function-error",
+    requestId: request.requestId,
+    runId,
+    ...definition ? { functionId: definition.id } : {},
+    code,
+    message,
+    events,
+    ...botReaction ? { botReaction } : {},
+    createdAt
   };
-  const items = [record, ...stored.items.filter((item) => item.id !== normalizedId)].slice(0, maxRepoWorkspaceRecords);
-  writeStoredRepoWorkspaceRecords({
-    items
-  });
-  return record;
 }
-function readStoredRepoWorkspaceRecords() {
-  const filePath = getRepoWorkspaceFilePath();
-  try {
-    if (!existsSync6(filePath)) {
-      return {
-        items: []
-      };
-    }
-    const parsed = JSON.parse(readFileSync5(filePath, "utf8"));
-    return {
-      items: Array.isArray(parsed.items) ? parsed.items.filter(isRepoWorkspaceRecord).slice(0, maxRepoWorkspaceRecords) : []
-    };
-  } catch {
-    return {
-      items: []
-    };
+function addEvent(events, runId, request, kind, label, detail) {
+  events.push({
+    type: "superior-function-run-event",
+    id: createLocalId("function_event"),
+    runId,
+    requestId: request.requestId,
+    functionId: request.functionId,
+    kind,
+    label,
+    ...detail ? { detail } : {},
+    createdAt: (/* @__PURE__ */ new Date()).toISOString()
+  });
+}
+function createBotReaction(definition, runId, state, detail) {
+  return {
+    type: "superior-bot-reaction",
+    state,
+    pulseKey: `${runId}:${definition.id}:${state}`,
+    label: state === "success" ? `${definition.shortLabel} clicked` : `${definition.shortLabel} jammed`,
+    detail,
+    ...definition.skillId ? { skillId: definition.skillId } : {},
+    ...definition.slot ? { slot: definition.slot } : {},
+    createdAt: (/* @__PURE__ */ new Date()).toISOString()
+  };
+}
+function requirePairing(payloadToken, context) {
+  const token = payloadToken?.trim();
+  if (!token || context.pairingHeaderToken !== token || !touchBrowserPairing(token)) {
+    throw new FunctionRunError("unauthorized", "Pair the extension from SUPERIOR before running this skill.");
   }
 }
-function writeStoredRepoWorkspaceRecords(records) {
-  const filePath = getRepoWorkspaceFilePath();
-  mkdirSync4(dirname5(filePath), {
-    recursive: true
-  });
-  writeFileSync4(filePath, JSON.stringify(records, null, 2), "utf8");
+function requireArticleXrayRequest(input) {
+  const payload = input;
+  if (payload.type !== "article-xray" || typeof payload.requestId !== "string" || typeof payload.pairingToken !== "string" || typeof payload.page?.url !== "string" || typeof payload.page.title !== "string") {
+    throw new FunctionRunError("bad_request", "Expected an Article X-Ray function input.");
+  }
+  return payload;
 }
-function getRepoWorkspaceFilePath() {
-  return join7(getSuperiorStateDirectory(), "repos", repoWorkspaceFileName);
+function requireExplainPageRequest(input) {
+  const payload = input;
+  if (payload.type !== "explain-page" || typeof payload.requestId !== "string" || typeof payload.pairingToken !== "string" || typeof payload.page?.url !== "string" || typeof payload.page.title !== "string") {
+    throw new FunctionRunError("bad_request", "Expected a Page Explainer function input.");
+  }
+  return payload;
 }
-function createRepoWorkspaceId(result) {
-  return `${result.repository.owner}/${result.repository.name}`.toLowerCase();
+function requireRepoReaderRequest(input) {
+  const payload = input;
+  if (payload.type !== "repo-reader" || typeof payload.requestId !== "string" || typeof payload.repoUrl !== "string") {
+    throw new FunctionRunError("bad_request", "Expected a Repo Reader function input.");
+  }
+  return payload;
 }
-function isRepoWorkspaceRecord(item) {
-  const candidate = item;
-  return candidate.type === "repo-workspace-record" && typeof candidate.id === "string" && typeof candidate.source?.url === "string" && typeof candidate.source?.title === "string" && typeof candidate.repository?.owner === "string" && typeof candidate.repository?.name === "string" && typeof candidate.presentation?.primary === "string" && typeof candidate.environment?.mode === "string" && typeof candidate.playground?.label === "string" && Array.isArray(candidate.stack) && Array.isArray(candidate.risks) && Array.isArray(candidate.nextMoves) && Array.isArray(candidate.notes) && typeof candidate.createdAt === "string" && typeof candidate.updatedAt === "string";
+function requireSuperiorBrowserStartRequest(input) {
+  const payload = input;
+  if (payload.type !== "superior-browser-start" || typeof payload.requestId !== "string" || typeof payload.repoWorkspaceId !== "string") {
+    throw new FunctionRunError("bad_request", "Expected a SUPERIOR Browser start function input.");
+  }
+  return payload;
 }
-
-// src/browserRuntime.ts
-import { spawn } from "node:child_process";
-import { existsSync as existsSync7, mkdirSync as mkdirSync5, readdirSync } from "node:fs";
-import { createServer } from "node:net";
-import { dirname as dirname6, join as join8, parse as parse2, resolve as resolve4 } from "node:path";
-var sessionTokenTtlMs = 5 * 60 * 1e3;
-var maxBrowserEvents = 60;
-var activeRuntime = null;
-var lastSessionId;
-var browserEvents = [];
-var BrowserRuntimeError = class extends Error {
+function requireCustomSkillImportRequest(input) {
+  const payload = input;
+  if (payload.type !== "custom-skill-import" || typeof payload.requestId !== "string" || typeof payload.folderPath !== "string") {
+    throw new FunctionRunError("bad_request", "Expected a custom skill import function input.");
+  }
+  return payload;
+}
+function getResultSummary(functionId, result) {
+  const payload = result;
+  if (typeof payload.summary === "string") {
+    return payload.summary;
+  }
+  if (typeof payload.excerpt === "string") {
+    return payload.excerpt;
+  }
+  if (typeof payload.headline === "string") {
+    return payload.headline;
+  }
+  if (typeof payload.projectName === "string") {
+    return payload.projectName;
+  }
+  if (typeof payload.state?.status === "string") {
+    return payload.state.status;
+  }
+  if (typeof payload.status === "string") {
+    return payload.status;
+  }
+  return skillLabels[functionId] ?? functionId;
+}
+function getFunctionErrorCode(error) {
+  if (error instanceof FunctionRunError) {
+    return error.code;
+  }
+  if (error instanceof MissingOpenAIConfigError) {
+    return "missing_config";
+  }
+  if (error instanceof RepoReaderError) {
+    return error.code === "not_found" || error.code === "rate_limited" ? error.code : "runner_failed";
+  }
+  if (error instanceof BrowserRuntimeError) {
+    return error.code;
+  }
+  if (error instanceof CustomSkillImportScanError) {
+    return error.code === "not_found" ? "not_found" : error.code === "scan_failed" ? "runner_failed" : "bad_request";
+  }
+  return "runner_failed";
+}
+function getFunctionErrorMessage(error, definition) {
+  if (error instanceof Error) {
+    return error.message;
+  }
+  return `${definition.label} failed.`;
+}
+var FunctionRunError = class extends Error {
   constructor(code, message) {
     super(message);
     this.code = code;
   }
   code;
 };
-function getSuperiorBrowserState() {
-  const status = activeRuntime ? activeRuntime.session.status : findBrowserExecutable() ? "closed" : "missing-browser";
+
+// src/modelProviderStore.ts
+import { spawn as spawn2, spawnSync } from "node:child_process";
+import { existsSync as existsSync9, mkdirSync as mkdirSync7, readFileSync as readFileSync7, writeFileSync as writeFileSync6 } from "node:fs";
+import { dirname as dirname8, join as join10 } from "node:path";
+function readModelProviderState(config2) {
+  const stored = readStoredModelProvider(config2);
+  const ollamaStatus = detectOllamaStatus();
+  const openAiKeyStatus = readOpenAiKeyStatus(config2);
+  const modelProvider = stored?.modelProvider ?? inferModelProvider(ollamaStatus, openAiKeyStatus);
   return {
-    type: "superior-browser-state",
-    status,
-    ...activeRuntime ? { activeSession: toPublicSession(activeRuntime.session) } : {},
+    type: "superior-model-provider-state",
+    modelProvider,
+    ollamaStatus,
+    openAiKeyStatus,
+    ...stored?.selectedAt ? { selectedAt: stored.selectedAt } : {},
+    detail: describeModelProvider(modelProvider, ollamaStatus, openAiKeyStatus),
     createdAt: (/* @__PURE__ */ new Date()).toISOString()
   };
 }
-function getSuperiorBrowserEvents() {
-  const sessionId = activeRuntime?.session.sessionId ?? lastSessionId;
-  const items = sessionId ? browserEvents.filter((event) => event.sessionId === sessionId) : browserEvents;
-  return {
-    type: "superior-browser-events",
-    ...sessionId ? { sessionId } : {},
-    items,
-    createdAt: (/* @__PURE__ */ new Date()).toISOString()
+function selectModelProvider(config2, provider) {
+  const stored = {
+    modelProvider: provider,
+    selectedAt: (/* @__PURE__ */ new Date()).toISOString()
   };
-}
-async function inspectSuperiorBrowser() {
-  const session = activeRuntime?.session;
-  if (!session) {
-    throw new BrowserRuntimeError("not_running", "Start a playpen before inspecting SUPERIOR Browser.");
-  }
-  const inspection = await readSuperiorBrowserInspection(session);
-  session.inspection = inspection;
-  maybeRecordInspectionEvent(session, inspection);
-  return {
-    type: "superior-browser-inspect-result",
-    state: getSuperiorBrowserState(),
-    inspection,
-    createdAt: (/* @__PURE__ */ new Date()).toISOString()
-  };
-}
-async function startSuperiorBrowser(request) {
-  const repoWorkspace = readRepoWorkspaceRecord(request.repoWorkspaceId);
-  if (!repoWorkspace) {
-    throw new BrowserRuntimeError("unknown_repo", "Read this repo before starting a playpen.");
-  }
-  const browser = findBrowserExecutable();
-  if (!browser) {
-    activeRuntime = null;
-    throw new BrowserRuntimeError("missing_browser", "Install Chrome or Edge, or set SUPERIOR_BROWSER_PATH.");
-  }
-  const extensionPath = findExtensionFolder();
-  if (!extensionPath) {
-    throw new BrowserRuntimeError("missing_extension", "Build the SUPERIOR extension before starting a playpen.");
-  }
-  await stopSuperiorBrowser();
-  const profilePath = getProfilePath(repoWorkspace.id);
-  const debugPort = await allocateLocalPort();
-  const sessionId = createLocalId("browser_session");
-  const sessionToken = createLocalId("browser_token");
-  const pairing = startBrowserPairing();
-  const startedAt = (/* @__PURE__ */ new Date()).toISOString();
-  const mode = getSessionMode(repoWorkspace);
-  const homeUrl = `http://127.0.0.1:${getDaemonPort()}/browser-session/${encodeURIComponent(sessionId)}/home`;
-  const session = {
-    sessionId,
-    repoWorkspaceId: repoWorkspace.id,
-    repoTitle: repoWorkspace.source.title,
-    mode,
-    status: "starting",
-    browserKind: browser.kind,
-    browserPath: browser.path,
-    profilePath,
-    debugPort,
-    homeUrl,
-    repoUrl: repoWorkspace.source.url,
-    playpenLabel: repoWorkspace.playground.label,
-    startedAt,
-    bot: request.bot,
-    sessionToken,
-    sessionTokenExpiresAt: Date.now() + sessionTokenTtlMs,
-    pairingToken: pairing.pairingToken,
-    attached: false
-  };
-  mkdirSync5(profilePath, {
+  const filePath = getModelProviderFilePath(config2);
+  mkdirSync7(dirname8(filePath), {
     recursive: true
   });
-  const args = [
-    `--user-data-dir=${profilePath}`,
-    `--remote-debugging-port=${debugPort}`,
-    `--disable-extensions-except=${extensionPath}`,
-    `--load-extension=${extensionPath}`,
-    "--no-first-run",
-    "--disable-default-apps",
-    homeUrl,
-    repoWorkspace.source.url
-  ];
-  const child = spawn(browser.path, args, {
+  writeFileSync6(filePath, JSON.stringify(stored, null, 2), "utf8");
+  return readModelProviderState(config2);
+}
+function saveOpenAiKey(config2, apiKey, model) {
+  const trimmedKey = apiKey.trim();
+  if (!trimmedKey) {
+    throw new Error("Paste an OpenAI key before saving BYOK.");
+  }
+  mkdirSync7(dirname8(config2.keyFilePath), {
+    recursive: true
+  });
+  const lines = [`OPENAI_API_KEY=${trimmedKey}`, `OPENAI_MODEL=${model?.trim() || config2.openaiModel}`];
+  writeFileSync6(config2.keyFilePath, `${lines.join("\n")}
+`, "utf8");
+  process.env.OPENAI_API_KEY = trimmedKey;
+  process.env.OPENAI_MODEL = model?.trim() || config2.openaiModel;
+  config2.openaiApiKey = trimmedKey;
+  config2.openaiModel = model?.trim() || config2.openaiModel;
+  config2.keyFilePresent = true;
+  config2.openaiConfigSource = "env-file";
+  return selectModelProvider(config2, "openai-byok");
+}
+function startOllamaIfAvailable(config2) {
+  const command = resolveOllamaCommand();
+  if (!command) {
+    return selectModelProvider(config2, "ollama");
+  }
+  spawn2(command, ["serve"], {
+    detached: true,
     stdio: "ignore",
-    detached: false,
-    windowsHide: false
-  });
-  if (child.pid) {
-    session.processId = child.pid;
-  }
-  activeRuntime = {
-    session,
-    child
-  };
-  recordBrowserEvent(session, "started", "Started", `${browser.kind} profile opened`);
-  recordBrowserEvent(session, "repo_opened", "Repo opened", repoWorkspace.source.url);
-  child.once("spawn", () => {
-    if (activeRuntime?.session.sessionId === sessionId) {
-      activeRuntime.session.status = "ready";
-    }
-  });
-  child.once("error", (error) => {
-    if (activeRuntime?.session.sessionId === sessionId) {
-      activeRuntime.session.status = "failed";
-      activeRuntime.session.error = error.message;
-      recordBrowserEvent(activeRuntime.session, "failed", "Failed", error.message);
-    }
-  });
-  child.once("exit", () => {
-    if (activeRuntime?.session.sessionId === sessionId) {
-      recordBrowserEvent(activeRuntime.session, "stopped", "Stopped", "Browser process closed");
-      lastSessionId = sessionId;
-      activeRuntime = null;
-    }
-  });
-  child.unref();
-  await waitForSpawnTick();
-  if (session.status === "failed") {
-    await stopSuperiorBrowser();
-    throw new BrowserRuntimeError("launch_failed", session.error ?? "SUPERIOR Browser could not start.");
-  }
-  if (session.status === "starting") {
-    session.status = "ready";
-  }
-  scheduleSuperiorBrowserInspection(sessionId);
-  return {
-    type: "superior-browser-start-result",
-    requestId: request.requestId,
-    state: getSuperiorBrowserState(),
-    createdAt: (/* @__PURE__ */ new Date()).toISOString()
-  };
+    windowsHide: true
+  }).unref();
+  return selectModelProvider(config2, "ollama");
 }
-async function stopSuperiorBrowser() {
-  if (!activeRuntime) {
-    return getSuperiorBrowserState();
+function inferModelProvider(ollamaStatus, openAiKeyStatus) {
+  if (ollamaStatus === "available") {
+    return "ollama";
   }
-  const runtime = activeRuntime;
-  const shouldResetPairing = !runtime.session.attached;
-  recordBrowserEvent(runtime.session, "stopped", "Stopped", "Browser process stopped");
-  lastSessionId = runtime.session.sessionId;
-  activeRuntime = null;
-  if (!runtime.child.killed) {
-    runtime.child.kill();
+  if (openAiKeyStatus === "ready" || openAiKeyStatus === "saved") {
+    return "openai-byok";
   }
-  if (shouldResetPairing) {
-    resetBrowserPairing();
-  }
-  return getSuperiorBrowserState();
+  return "missing";
 }
-function renderSuperiorBrowserHome(sessionId) {
-  const session = activeRuntime?.session;
-  if (!session || session.sessionId !== sessionId) {
-    return null;
+function describeModelProvider(provider, ollamaStatus, openAiKeyStatus) {
+  if (provider === "ollama") {
+    return ollamaStatus === "available" ? "local Ollama available" : "install or start Ollama";
   }
-  const iconSvg = createBotIconSvg(session.bot, 128);
-  recordBrowserEvent(session, "home_loaded", "Home loaded", "Robot room opened");
-  const data = {
-    sessionId: session.sessionId,
-    sessionToken: session.sessionToken,
-    sessionTokenExpiresAt: new Date(session.sessionTokenExpiresAt).toISOString(),
-    repoWorkspaceId: session.repoWorkspaceId,
-    repoTitle: session.repoTitle,
-    playpenLabel: session.playpenLabel,
-    mode: session.mode
-  };
-  const safeDataJson = JSON.stringify(data).replace(/</g, "\\u003c");
-  const favicon = `data:image/svg+xml,${encodeURIComponent(iconSvg)}`;
-  return `<!doctype html>
-<html lang="en">
-<head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>SUPERIOR Browser</title>
-  <link rel="icon" href="${favicon}" />
-  <style>
-    :root {
-      color-scheme: light;
-      font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
-      background: #d9b88f;
-      color: #2d211a;
-    }
-
-    body {
-      min-height: 100vh;
-      margin: 0;
-      display: grid;
-      place-items: center;
-      background:
-        radial-gradient(circle at 48% 22%, rgba(255, 246, 224, 0.44), transparent 28%),
-        linear-gradient(180deg, #ecd2aa 0%, #c99a6c 100%);
-    }
-
-    main {
-      width: min(720px, calc(100vw - 40px));
-      display: grid;
-      grid-template-columns: 150px minmax(0, 1fr);
-      gap: 22px;
-      align-items: center;
-      padding: 28px;
-      border-radius: 22px 20px 24px 19px;
-      background: rgba(255, 243, 219, 0.66);
-      box-shadow:
-        inset 0 2px 0 rgba(255, 248, 229, 0.8),
-        inset 0 -7px 0 rgba(96, 62, 37, 0.12),
-        0 22px 48px rgba(74, 49, 32, 0.26);
-    }
-
-    .bot {
-      display: grid;
-      place-items: center;
-      aspect-ratio: 1;
-      border-radius: 26px 24px 28px 22px;
-      background: rgba(111, 78, 53, 0.14);
-      box-shadow: inset 0 0 0 1px rgba(91, 57, 36, 0.16);
-    }
-
-    .bot svg {
-      width: 112px;
-      height: 112px;
-      filter: drop-shadow(0 12px 10px rgba(75, 45, 24, 0.22));
-    }
-
-    .plate {
-      display: grid;
-      gap: 12px;
-    }
-
-    h1 {
-      margin: 0;
-      font-size: clamp(32px, 6vw, 56px);
-      line-height: .92;
-      letter-spacing: 0;
-    }
-
-    p {
-      margin: 0;
-      color: #594331;
-      font-size: 15px;
-      line-height: 1.45;
-    }
-
-    dl {
-      display: grid;
-      grid-template-columns: repeat(3, minmax(0, 1fr));
-      gap: 8px;
-      margin: 8px 0 0;
-    }
-
-    div.stat {
-      min-width: 0;
-      padding: 10px;
-      border-radius: 12px 13px 11px 14px;
-      background: rgba(255, 248, 229, 0.56);
-      box-shadow: inset 0 0 0 1px rgba(111, 70, 34, 0.12);
-    }
-
-    dt {
-      color: #724f38;
-      font-size: 11px;
-      font-weight: 900;
-      text-transform: uppercase;
-    }
-
-    dd {
-      margin: 4px 0 0;
-      overflow-wrap: anywhere;
-      font-size: 13px;
-      font-weight: 900;
-    }
-
-    @media (max-width: 620px) {
-      main {
-        grid-template-columns: 1fr;
-      }
-
-      .bot {
-        max-width: 180px;
-      }
-
-      dl {
-        grid-template-columns: 1fr;
-      }
-    }
-  </style>
-</head>
-<body>
-  <main>
-    <div class="bot" aria-hidden="true">${iconSvg}</div>
-    <section class="plate" aria-label="SUPERIOR Browser session">
-      <h1>${escapeHtml(session.bot.name)}</h1>
-      <p>SUPERIOR Browser is attached to this repo playpen.</p>
-      <dl>
-        <div class="stat"><dt>Repo</dt><dd>${escapeHtml(session.repoTitle)}</dd></div>
-        <div class="stat"><dt>Playpen</dt><dd>${escapeHtml(session.playpenLabel)}</dd></div>
-        <div class="stat"><dt>Status</dt><dd id="superior-attach-status">attaching</dd></div>
-      </dl>
-    </section>
-  </main>
-  <script id="superior-session-data" type="application/json">${safeDataJson}</script>
-</body>
-</html>`;
+  if (provider === "openai-byok") {
+    return openAiKeyStatus === "ready" ? "OpenAI BYOK ready" : "OpenAI key saved for daemon restart";
+  }
+  return "choose local Ollama or OpenAI BYOK";
 }
-function attachSuperiorBrowserSession(sessionId, request) {
-  const session = activeRuntime?.session;
-  const now = (/* @__PURE__ */ new Date()).toISOString();
-  if (!session || session.sessionId !== sessionId) {
-    throw new BrowserRuntimeError("not_running", "SUPERIOR Browser session is not running.");
+function readOpenAiKeyStatus(config2) {
+  if (config2.openaiApiKey) {
+    return "ready";
   }
-  if (session.attached || Date.now() > session.sessionTokenExpiresAt || request.sessionToken !== session.sessionToken) {
-    throw new BrowserRuntimeError("unauthorized", "SUPERIOR Browser session token expired.");
+  if (!existsSync9(config2.keyFilePath)) {
+    return "missing";
   }
-  const browserLinkState = completeBrowserPairing(session.pairingToken, request.extensionId);
-  if (!browserLinkState || browserLinkState.status !== "paired" || !browserLinkState.lastSeenAt) {
-    throw new BrowserRuntimeError("unauthorized", "SUPERIOR Browser could not pair this extension.");
-  }
-  session.attached = true;
-  session.status = "paired";
-  session.pairedAt = now;
-  recordBrowserEvent(session, "extension_paired", "Extension paired", request.extensionId ?? "controlled profile");
-  scheduleSuperiorBrowserInspection(session.sessionId, 500);
-  return {
-    type: "superior-browser-attach-result",
-    requestId: request.requestId,
-    pairingToken: session.pairingToken,
-    bot: session.bot,
-    browserLinkState: {
-      status: "paired",
-      ...browserLinkState.extensionId ? { extensionId: browserLinkState.extensionId } : {},
-      lastSeenAt: browserLinkState.lastSeenAt
-    },
-    createdAt: now
-  };
-}
-function rememberSuperiorBrowserSkillRun(skillLabel, pageTitle, pageUrl) {
-  const session = activeRuntime?.session;
-  if (!session || session.status !== "paired") {
-    return;
-  }
-  recordBrowserEvent(session, "skill_ran", skillLabel, pageTitle || pageUrl);
-}
-function findBrowserExecutable() {
-  const envPath = process.env.SUPERIOR_BROWSER_PATH?.trim();
-  if (envPath && existsSync7(envPath)) {
-    return {
-      kind: getBrowserKindFromPath(envPath),
-      path: envPath
-    };
-  }
-  for (const candidate of getBrowserCandidates()) {
-    if (existsSync7(candidate.path) && isBrowserCandidateUsable(candidate)) {
-      return candidate;
-    }
-  }
-  return null;
-}
-function getProfilePath(repoWorkspaceId) {
-  const safeId = repoWorkspaceId.toLowerCase().replace(/[^a-z0-9._-]+/g, "-").replace(/^-+|-+$/g, "");
-  return join8(getSuperiorStateDirectory(), "browser-profiles", safeId || "repo");
-}
-function findExtensionFolder(startDirectory = process.cwd()) {
-  const envPath = process.env.SUPERIOR_EXTENSION_PATH?.trim();
-  if (envPath && hasManifest(envPath)) {
-    return resolve4(envPath);
-  }
-  const workspaceRoot = findUpDirectory("pnpm-workspace.yaml", startDirectory);
-  if (workspaceRoot) {
-    const extensionDist = join8(workspaceRoot, "apps", "extension", "dist");
-    if (hasManifest(extensionDist)) {
-      return extensionDist;
-    }
-  }
-  for (const resourceRoot of getResourceRoots(startDirectory)) {
-    const extensionFolder = join8(resourceRoot, "extension");
-    if (hasManifest(extensionFolder)) {
-      return extensionFolder;
-    }
-  }
-  return null;
-}
-function toPublicSession(session) {
-  return {
-    sessionId: session.sessionId,
-    repoWorkspaceId: session.repoWorkspaceId,
-    repoTitle: session.repoTitle,
-    mode: session.mode,
-    status: session.status,
-    ...session.browserKind ? { browserKind: session.browserKind } : {},
-    ...session.browserPath ? { browserPath: session.browserPath } : {},
-    profilePath: session.profilePath,
-    ...session.debugPort ? { debugPort: session.debugPort } : {},
-    ...session.processId ? { processId: session.processId } : {},
-    homeUrl: session.homeUrl,
-    repoUrl: session.repoUrl,
-    playpenLabel: session.playpenLabel,
-    startedAt: session.startedAt,
-    ...session.pairedAt ? { pairedAt: session.pairedAt } : {},
-    ...session.inspection ? { inspection: session.inspection } : {},
-    ...session.error ? { error: session.error } : {}
-  };
-}
-function getSessionMode(repoWorkspace) {
-  if (repoWorkspace.playground.kind === "extension-lab") {
-    return "extension-lab";
-  }
-  if (repoWorkspace.playground.kind === "repo-map") {
-    return "repo-map";
-  }
-  return "superior-browser";
-}
-function getBrowserCandidates() {
-  const candidates = [];
-  if (process.platform === "win32") {
-    const programFiles = process.env.ProgramFiles;
-    const programFilesX86 = process.env["ProgramFiles(x86)"];
-    const localAppData = process.env.LOCALAPPDATA;
-    pushCandidate(candidates, "chrome", programFiles, "Google", "Chrome", "Application", "chrome.exe");
-    pushCandidate(candidates, "chrome", programFilesX86, "Google", "Chrome", "Application", "chrome.exe");
-    pushCandidate(candidates, "chrome", localAppData, "Google", "Chrome", "Application", "chrome.exe");
-    pushCandidate(candidates, "edge", programFiles, "Microsoft", "Edge", "Application", "msedge.exe");
-    pushCandidate(candidates, "edge", programFilesX86, "Microsoft", "Edge", "Application", "msedge.exe");
-    pushCandidate(candidates, "edge", localAppData, "Microsoft", "Edge", "Application", "msedge.exe");
-    return candidates;
-  }
-  if (process.platform === "darwin") {
-    candidates.push(
-      {
-        kind: "chrome",
-        path: "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome"
-      },
-      {
-        kind: "edge",
-        path: "/Applications/Microsoft Edge.app/Contents/MacOS/Microsoft Edge"
-      }
-    );
-    return candidates;
-  }
-  candidates.push(
-    {
-      kind: "chrome",
-      path: "/usr/bin/google-chrome"
-    },
-    {
-      kind: "chrome",
-      path: "/usr/bin/chromium"
-    },
-    {
-      kind: "edge",
-      path: "/usr/bin/microsoft-edge"
-    }
-  );
-  return candidates;
-}
-function pushCandidate(candidates, kind, root, ...parts) {
-  if (root) {
-    candidates.push({
-      kind,
-      path: join8(root, ...parts)
-    });
-  }
-}
-function getBrowserKindFromPath(path2) {
-  return path2.toLowerCase().includes("edge") || path2.toLowerCase().includes("msedge") ? "edge" : "chrome";
-}
-function isBrowserCandidateUsable(browser) {
-  if (browser.kind !== "chrome") {
-    return true;
-  }
-  const majorVersion = getInstalledBrowserMajorVersion(browser.path);
-  if (!majorVersion) {
-    return true;
-  }
-  return majorVersion < 137;
-}
-function getInstalledBrowserMajorVersion(browserPath) {
-  const applicationFolder = dirname6(browserPath);
   try {
-    const majorVersions = readdirSync(applicationFolder, {
-      withFileTypes: true
-    }).filter((entry) => entry.isDirectory()).map((entry) => /^(\d+)\./.exec(entry.name)?.[1]).filter((majorVersion) => Boolean(majorVersion)).map((majorVersion) => Number.parseInt(majorVersion, 10)).filter(Number.isFinite);
-    return majorVersions.length > 0 ? Math.max(...majorVersions) : null;
+    const content = readFileSync7(config2.keyFilePath, "utf8");
+    return /OPENAI_API_KEY=\S+/.test(content) ? "saved" : "invalid";
   } catch {
-    return null;
+    return "invalid";
   }
 }
-function getResourceRoots(startDirectory) {
-  const roots = /* @__PURE__ */ new Set();
-  const resolvedStart = resolve4(startDirectory);
-  roots.add(resolvedStart);
-  roots.add(join8(resolvedStart, "resources"));
-  roots.add(dirname6(resolvedStart));
-  const parsed = parse2(resolvedStart);
-  if (parsed.dir) {
-    roots.add(parsed.dir);
+function detectOllamaStatus() {
+  return resolveOllamaCommand() ? "available" : "missing";
+}
+function resolveOllamaCommand() {
+  if (process.env.OLLAMA_PATH && existsSync9(process.env.OLLAMA_PATH)) {
+    return process.env.OLLAMA_PATH;
   }
-  return [...roots];
-}
-function hasManifest(folder) {
-  return existsSync7(join8(folder, "manifest.json"));
-}
-function recordBrowserEvent(session, kind, label, detail) {
-  const event = {
-    type: "superior-browser-event",
-    id: createLocalId("browser_event"),
-    sessionId: session.sessionId,
-    repoWorkspaceId: session.repoWorkspaceId,
-    kind,
-    label,
-    ...detail ? { detail } : {},
-    createdAt: (/* @__PURE__ */ new Date()).toISOString()
-  };
-  browserEvents = [...browserEvents, event].slice(-maxBrowserEvents);
-  lastSessionId = session.sessionId;
-  rememberRepoWorkspaceBrowserSession(session.repoWorkspaceId, {
-    sessionId: session.sessionId,
-    profilePath: session.profilePath,
-    lastBrowserEventSummary: label,
-    ...session.inspection ? { lastBrowserInspection: session.inspection } : {}
+  const lookup = spawnSync(process.platform === "win32" ? "where" : "which", ["ollama"], {
+    encoding: "utf8"
   });
+  return lookup.stdout?.split(/\r?\n/).map((line) => line.trim()).find(Boolean);
 }
-function scheduleSuperiorBrowserInspection(sessionId, delayMs = 1200) {
-  const timeout = setTimeout(() => {
-    if (activeRuntime?.session.sessionId === sessionId) {
-      void inspectSuperiorBrowser().catch(() => void 0);
-    }
-  }, delayMs);
-  timeout.unref?.();
-}
-async function readSuperiorBrowserInspection(session) {
-  const base = {
-    type: "superior-browser-inspection",
-    inspectedAt: (/* @__PURE__ */ new Date()).toISOString(),
-    extensionPaired: session.attached,
-    ...session.browserKind ? { browserKind: session.browserKind } : {},
-    consoleErrorCount: 0,
-    networkFailureCount: 0
-  };
-  if (!session.debugPort) {
-    return {
-      ...base,
-      status: "unavailable",
-      note: "No debug port."
-    };
-  }
+function readStoredModelProvider(config2) {
   try {
-    const targets = await fetchDebugTargets(session.debugPort);
-    const target = pickSuperiorBrowserDebugTarget(targets, session);
-    if (!target) {
-      return {
-        ...base,
-        status: "unavailable",
-        note: "No page target."
-      };
+    const filePath = getModelProviderFilePath(config2);
+    if (!existsSync9(filePath)) {
+      return void 0;
     }
-    const counts = target.webSocketDebuggerUrl ? await collectDebugProtocolCounts(target.webSocketDebuggerUrl).catch(() => ({
-      consoleErrorCount: 0,
-      networkFailureCount: 0
-    })) : {
-      consoleErrorCount: 0,
-      networkFailureCount: 0
-    };
+    const parsed = JSON.parse(readFileSync7(filePath, "utf8"));
+    if (parsed.modelProvider !== "ollama" && parsed.modelProvider !== "openai-byok") {
+      return void 0;
+    }
     return {
-      ...base,
-      status: "ready",
-      ...target.url ? { currentUrl: target.url } : {},
-      ...target.title ? { pageTitle: target.title } : {},
-      ...target.id ? { tabId: target.id } : {},
-      consoleErrorCount: counts.consoleErrorCount,
-      networkFailureCount: counts.networkFailureCount
+      modelProvider: parsed.modelProvider,
+      selectedAt: typeof parsed.selectedAt === "string" ? parsed.selectedAt : (/* @__PURE__ */ new Date()).toISOString()
     };
-  } catch (error) {
-    return {
-      ...base,
-      status: "failed",
-      note: error instanceof Error ? error.message : "DevTools inspection failed."
-    };
-  }
-}
-function pickSuperiorBrowserDebugTarget(targets, session) {
-  const pageTargets = targets.filter((target) => isInspectablePageTarget(target));
-  const repoTarget = pageTargets.find((target) => isRepoTarget(target, session.repoUrl));
-  const nonHomeTarget = pageTargets.find((target) => !isRobotHomeTarget(target, session.sessionId));
-  return repoTarget ?? nonHomeTarget ?? pageTargets[0] ?? null;
-}
-function maybeRecordInspectionEvent(session, inspection) {
-  const signature = [
-    inspection.status,
-    inspection.currentUrl ?? "",
-    inspection.pageTitle ?? "",
-    inspection.consoleErrorCount,
-    inspection.networkFailureCount,
-    inspection.extensionPaired ? "paired" : "unpaired"
-  ].join("|");
-  if (session.lastInspectionEventSignature === signature) {
-    return;
-  }
-  session.lastInspectionEventSignature = signature;
-  const label = inspection.status === "ready" ? "Page inspected" : "Inspect blocked";
-  const detail = inspection.status === "ready" ? [
-    inspection.pageTitle ?? inspection.currentUrl ?? "page",
-    `${inspection.consoleErrorCount} console`,
-    `${inspection.networkFailureCount} network`
-  ].join(" / ") : inspection.note;
-  recordBrowserEvent(session, "page_inspected", label, detail);
-}
-async function fetchDebugTargets(port) {
-  const response = await fetchWithTimeout(`http://127.0.0.1:${port}/json/list`, 900);
-  if (!response.ok) {
-    throw new Error(`DevTools target list returned ${response.status}.`);
-  }
-  const payload = await response.json();
-  return Array.isArray(payload) ? payload.filter(isDebugTarget) : [];
-}
-async function fetchWithTimeout(url, timeoutMs) {
-  const controller = new AbortController();
-  const timeout = setTimeout(() => controller.abort(), timeoutMs);
-  timeout.unref?.();
-  try {
-    return await fetch(url, {
-      signal: controller.signal
-    });
-  } finally {
-    clearTimeout(timeout);
-  }
-}
-async function collectDebugProtocolCounts(webSocketDebuggerUrl) {
-  if (typeof WebSocket === "undefined") {
-    return {
-      consoleErrorCount: 0,
-      networkFailureCount: 0
-    };
-  }
-  return new Promise((resolveCounts) => {
-    const counts = {
-      consoleErrorCount: 0,
-      networkFailureCount: 0
-    };
-    let commandId = 1;
-    let finished = false;
-    let inspectTimeout;
-    let hardTimeout;
-    let socket = null;
-    function finish() {
-      if (finished) {
-        return;
-      }
-      finished = true;
-      if (inspectTimeout) {
-        clearTimeout(inspectTimeout);
-      }
-      if (hardTimeout) {
-        clearTimeout(hardTimeout);
-      }
-      try {
-        socket?.close();
-      } catch {
-      }
-      resolveCounts(counts);
-    }
-    function send(method) {
-      if (socket?.readyState === 1) {
-        socket.send(
-          JSON.stringify({
-            id: commandId++,
-            method
-          })
-        );
-      }
-    }
-    try {
-      socket = new WebSocket(webSocketDebuggerUrl);
-    } catch {
-      resolveCounts(counts);
-      return;
-    }
-    hardTimeout = setTimeout(finish, 1300);
-    hardTimeout.unref?.();
-    socket.addEventListener("open", () => {
-      send("Runtime.enable");
-      send("Log.enable");
-      send("Network.enable");
-      inspectTimeout = setTimeout(finish, 750);
-      inspectTimeout.unref?.();
-    });
-    socket.addEventListener("message", (event) => {
-      countDebugProtocolMessage(event.data, counts);
-    });
-    socket.addEventListener("error", finish);
-    socket.addEventListener("close", finish);
-  });
-}
-function countDebugProtocolMessage(data, counts) {
-  const text = typeof data === "string" ? data : "";
-  if (!text) {
-    return;
-  }
-  try {
-    const message = JSON.parse(text);
-    if (message.method === "Runtime.exceptionThrown") {
-      counts.consoleErrorCount += 1;
-      return;
-    }
-    if (message.method === "Runtime.consoleAPICalled" && message.params?.type === "error") {
-      counts.consoleErrorCount += 1;
-      return;
-    }
-    if (message.method === "Log.entryAdded") {
-      const entry = message.params?.entry;
-      if (entry?.level === "error") {
-        counts.consoleErrorCount += 1;
-      }
-      return;
-    }
-    if (message.method === "Network.loadingFailed") {
-      counts.networkFailureCount += 1;
-    }
   } catch {
-    return;
+    return void 0;
   }
 }
-function isDebugTarget(value) {
-  const target = value;
-  return typeof target === "object" && target !== null && (target.id === void 0 || typeof target.id === "string") && (target.type === void 0 || typeof target.type === "string") && (target.url === void 0 || typeof target.url === "string") && (target.title === void 0 || typeof target.title === "string") && (target.webSocketDebuggerUrl === void 0 || typeof target.webSocketDebuggerUrl === "string");
-}
-function isInspectablePageTarget(target) {
-  if (target.type !== "page" || !target.url) {
-    return false;
-  }
-  return !["devtools://", "chrome://", "edge://", "chrome-extension://"].some((prefix) => target.url?.startsWith(prefix));
-}
-function isRepoTarget(target, repoUrl) {
-  if (!target.url) {
-    return false;
-  }
-  const normalizedTargetUrl = normalizeUrlForComparison(target.url);
-  const normalizedRepoUrl = normalizeUrlForComparison(repoUrl);
-  return normalizedTargetUrl === normalizedRepoUrl || normalizedTargetUrl.startsWith(`${normalizedRepoUrl}/`);
-}
-function isRobotHomeTarget(target, sessionId) {
-  return Boolean(target.url?.includes(`/browser-session/${encodeURIComponent(sessionId)}/home`));
-}
-function normalizeUrlForComparison(value) {
-  return value.replace(/\/+$/, "").toLowerCase();
-}
-function getDaemonPort() {
-  const port = Number.parseInt(process.env.CLAWDBOT_DAEMON_PORT ?? "5317", 10);
-  return Number.isFinite(port) ? port : 5317;
-}
-async function allocateLocalPort() {
-  return new Promise((resolvePort, rejectPort) => {
-    const server2 = createServer();
-    server2.once("error", rejectPort);
-    server2.listen(0, "127.0.0.1", () => {
-      const address = server2.address();
-      const port = typeof address === "object" && address ? address.port : 0;
-      server2.close(() => {
-        resolvePort(port);
-      });
-    });
-  });
-}
-function waitForSpawnTick() {
-  return new Promise((resolveTick) => {
-    setTimeout(resolveTick, 80);
-  });
-}
-function escapeHtml(value) {
-  return value.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#39;");
+function getModelProviderFilePath(config2) {
+  return join10(config2.localStateDirectory, "model-provider.json");
 }
 
 // src/server.ts
@@ -12747,12 +13703,49 @@ var server = createServer2(async (request, response) => {
     });
     return;
   }
+  if (request.method === "GET" && url.pathname === "/bot-presets") {
+    sendJson(response, 200, readBotStarterPresets());
+    return;
+  }
+  if (request.method === "GET" && url.pathname === "/bot-creation-options") {
+    sendJson(response, 200, readBotCreationOptions());
+    return;
+  }
+  if (request.method === "GET" && url.pathname === "/setup-state") {
+    sendJson(response, 200, readSetupState());
+    return;
+  }
+  if (request.method === "GET" && url.pathname === "/mobile-companion") {
+    sendJson(response, 200, readMobileCompanion());
+    return;
+  }
+  if (request.method === "GET" && url.pathname === "/account/oauth/callback") {
+    sendHtml(response, 200, renderAccountOAuthCallbackPage());
+    return;
+  }
+  if (request.method === "GET" && url.pathname === "/model-provider") {
+    sendJson(response, 200, readModelProviderState(config));
+    return;
+  }
   if (request.method === "GET" && url.pathname === "/bot-identity") {
     sendJson(response, 200, readServiceBotIdentity());
     return;
   }
   if (request.method === "GET" && url.pathname === "/recent-results") {
     sendJson(response, 200, readRecentSkillResults());
+    return;
+  }
+  if (request.method === "GET" && url.pathname === "/functions") {
+    sendJson(response, 200, readSuperiorFunctionCatalog());
+    return;
+  }
+  if (request.method === "GET" && url.pathname === "/function-runs/recent") {
+    sendJson(response, 200, readRecentFunctionRuns());
+    return;
+  }
+  const functionRunEventsMatch = /^\/function-runs\/([^/]+)\/events$/.exec(url.pathname);
+  if (request.method === "GET" && functionRunEventsMatch?.[1]) {
+    sendJson(response, 200, readFunctionRunEvents(decodeURIComponent(functionRunEventsMatch[1])));
     return;
   }
   if (request.method === "GET" && url.pathname === "/repo-workspaces") {
@@ -12789,6 +13782,10 @@ var server = createServer2(async (request, response) => {
     await handleExplain(request, response);
     return;
   }
+  if (request.method === "POST" && url.pathname === "/functions/run") {
+    await handleFunctionRun(request, response);
+    return;
+  }
   if (request.method === "POST" && url.pathname === "/skills/article-xray") {
     await handleArticleXray(request, response);
     return;
@@ -12799,6 +13796,30 @@ var server = createServer2(async (request, response) => {
   }
   if (request.method === "POST" && url.pathname === "/browser-link/start") {
     await handleBrowserPairingStart(request, response);
+    return;
+  }
+  if (request.method === "POST" && url.pathname === "/account/start-oauth") {
+    await handleAccountOAuthStart(request, response);
+    return;
+  }
+  if (request.method === "POST" && url.pathname === "/account/oauth/complete") {
+    await handleAccountOAuthComplete(request, response);
+    return;
+  }
+  if (request.method === "POST" && url.pathname === "/account/sign-out") {
+    await handleAccountSignOut(request, response);
+    return;
+  }
+  if (request.method === "POST" && url.pathname === "/model-provider/select") {
+    await handleModelProviderSelect(request, response);
+    return;
+  }
+  if (request.method === "POST" && url.pathname === "/model-provider/openai-key") {
+    await handleModelProviderOpenAiKey(request, response);
+    return;
+  }
+  if (request.method === "POST" && url.pathname === "/model-provider/ollama/start") {
+    await handleModelProviderOllamaStart(request, response);
     return;
   }
   if (request.method === "POST" && url.pathname === "/browser-link/complete") {
@@ -12815,6 +13836,10 @@ var server = createServer2(async (request, response) => {
   }
   if (request.method === "POST" && url.pathname === "/browser-runtime/stop") {
     await handleBrowserRuntimeStop(request, response);
+    return;
+  }
+  if (request.method === "POST" && url.pathname === "/browser-runtime/active-page") {
+    await handleBrowserRuntimeActivePage(request, response);
     return;
   }
   if (request.method === "POST" && url.pathname === "/custom-skills/import-proposal") {
@@ -12860,7 +13885,19 @@ async function handleBrowserRuntimeStart(request, response) {
     return;
   }
   try {
-    sendJson(response, 200, await startSuperiorBrowser(payload));
+    const output = await runSuperiorFunction(
+      createSuperiorFunctionRunRequest({
+        functionId: "superior-browser-start",
+        input: payload,
+        bot: payload.bot
+      }),
+      createFunctionRunContext(request)
+    );
+    if (isSuperiorFunctionError(output)) {
+      sendJson(response, getFunctionStatusCode(output.code), toSuperiorBrowserError(output, payload.requestId));
+      return;
+    }
+    sendJson(response, 200, output.result);
   } catch (error) {
     sendBrowserRuntimeError(response, payload.requestId, error);
   }
@@ -12874,17 +13911,63 @@ async function handleBrowserRuntimeStop(request, response) {
     });
     return;
   }
-  sendJson(response, 200, {
-    type: "superior-browser-stop-result",
-    state: await stopSuperiorBrowser(),
+  const payload = {
+    type: "superior-function-run",
+    requestId: `function_stop_${Date.now()}`,
+    functionId: "superior-browser-stop",
+    input: {
+      type: "superior-browser-stop"
+    },
     createdAt: (/* @__PURE__ */ new Date()).toISOString()
-  });
+  };
+  const output = await runSuperiorFunction(payload, createFunctionRunContext(request));
+  if (isSuperiorFunctionError(output)) {
+    sendJson(response, getFunctionStatusCode(output.code), toSuperiorBrowserError(output, payload.requestId));
+    return;
+  }
+  sendJson(response, 200, output.result);
 }
 async function handleBrowserRuntimeInspect(response) {
   try {
     sendJson(response, 200, await inspectSuperiorBrowser());
   } catch (error) {
     sendBrowserRuntimeError(response, void 0, error);
+  }
+}
+async function handleBrowserRuntimeActivePage(request, response) {
+  let payload;
+  try {
+    payload = await readJsonBody(request);
+  } catch {
+    sendJson(response, 400, {
+      type: "superior-browser-error",
+      code: "bad_request",
+      message: "Expected a valid SUPERIOR Browser active page report."
+    });
+    return;
+  }
+  if (payload.type !== "superior-browser-active-page" || typeof payload.pairingToken !== "string" || typeof payload.page?.url !== "string" || typeof payload.page?.title !== "string") {
+    sendJson(response, 400, {
+      type: "superior-browser-error",
+      requestId: payload.requestId,
+      code: "bad_request",
+      message: "SUPERIOR Browser active page report needs a page URL and title."
+    });
+    return;
+  }
+  if (readPairingHeader(request) !== payload.pairingToken) {
+    sendJson(response, 401, {
+      type: "superior-browser-error",
+      requestId: payload.requestId,
+      code: "unauthorized",
+      message: "SUPERIOR Browser active page report needs the paired token."
+    });
+    return;
+  }
+  try {
+    sendJson(response, 200, reportSuperiorBrowserActivePage(payload));
+  } catch (error) {
+    sendBrowserRuntimeError(response, payload.requestId, error);
   }
 }
 function handleBrowserSessionHome(sessionId, response) {
@@ -12921,6 +14004,202 @@ async function handleBrowserSessionAttach(sessionId, request, response) {
   } catch (error) {
     sendBrowserRuntimeError(response, payload.requestId, error);
   }
+}
+async function handleAccountOAuthStart(request, response) {
+  if (!isTrustedLocalOrigin(request.headers.origin)) {
+    sendJson(response, 403, {
+      type: "superior-account-error",
+      code: "bad_request",
+      message: "Account sign-in can only start from the local Workshop."
+    });
+    return;
+  }
+  let payload;
+  try {
+    payload = await readJsonBody(request);
+  } catch {
+    sendJson(response, 400, {
+      type: "superior-account-error",
+      code: "bad_request",
+      message: "Expected an account OAuth start request."
+    });
+    return;
+  }
+  const provider = parseAccountProvider(payload.provider);
+  if (payload.type !== "superior-account-start-oauth" || !provider) {
+    sendJson(response, 400, {
+      type: "superior-account-error",
+      code: "bad_request",
+      message: "Choose Google or X."
+    });
+    return;
+  }
+  if (!isAccountConfigured()) {
+    sendJson(response, 503, {
+      type: "superior-account-error",
+      code: "not_configured",
+      message: "Supabase account login is not configured for this build."
+    });
+    return;
+  }
+  const redirectTo = typeof payload.redirectTo === "string" && payload.redirectTo.trim() ? payload.redirectTo.trim() : config.accountRedirectUrl;
+  try {
+    const started = await startAccountOAuth(provider, redirectTo);
+    writePendingAccountProvider(provider);
+    sendJson(response, 200, started);
+  } catch (error) {
+    sendJson(response, 502, {
+      type: "superior-account-error",
+      code: "auth_failed",
+      message: error instanceof Error ? error.message : "Account sign-in could not start."
+    });
+  }
+}
+async function handleAccountOAuthComplete(request, response) {
+  let payload;
+  try {
+    payload = await readJsonBody(request);
+  } catch {
+    sendJson(response, 400, {
+      type: "superior-account-error",
+      code: "bad_request",
+      message: "Expected an account OAuth completion payload."
+    });
+    return;
+  }
+  if (payload.type !== "superior-account-oauth-complete" || typeof payload.accessToken !== "string") {
+    sendJson(response, 400, {
+      type: "superior-account-error",
+      code: "bad_request",
+      message: "OAuth callback needs the returned access token."
+    });
+    return;
+  }
+  if (!isAccountConfigured()) {
+    sendJson(response, 503, {
+      type: "superior-account-error",
+      code: "not_configured",
+      message: "Supabase account login is not configured for this build."
+    });
+    return;
+  }
+  try {
+    const accountState = readStoredAccountState();
+    const profile = await syncAccountProfile(payload.accessToken, readServiceBotIdentity().id);
+    const session = {
+      type: "superior-account-session",
+      userId: profile.userId,
+      email: profile.email ?? accountState.session?.email ?? "operator@superior.local",
+      ...accountState.pendingProvider ? { provider: accountState.pendingProvider } : {},
+      accessToken: payload.accessToken,
+      ...typeof payload.expiresAt === "number" ? { expiresAt: payload.expiresAt } : {},
+      createdAt: (/* @__PURE__ */ new Date()).toISOString()
+    };
+    writeStoredAccountSession({
+      session,
+      profile
+    });
+    await syncAccountSpore(payload.accessToken, readServiceBotIdentity()).catch(() => void 0);
+    sendJson(response, 200, {
+      type: "superior-account-connected",
+      session,
+      profile,
+      account: getSetupAccountState(),
+      createdAt: (/* @__PURE__ */ new Date()).toISOString()
+    });
+  } catch (error) {
+    sendJson(response, 502, {
+      type: "superior-account-error",
+      code: "auth_failed",
+      message: error instanceof Error ? error.message : "Could not finish account sign-in."
+    });
+  }
+}
+async function handleAccountSignOut(request, response) {
+  if (!isTrustedLocalOrigin(request.headers.origin)) {
+    sendJson(response, 403, {
+      type: "superior-account-error",
+      code: "bad_request",
+      message: "Account sign-out can only start from the local Workshop."
+    });
+    return;
+  }
+  clearStoredAccountSession();
+  sendJson(response, 200, readSetupState());
+}
+async function handleModelProviderSelect(request, response) {
+  if (!isTrustedLocalOrigin(request.headers.origin)) {
+    sendJson(response, 403, {
+      type: "superior-model-provider-error",
+      code: "bad_request",
+      message: "Model provider can only be changed from the local Workshop."
+    });
+    return;
+  }
+  let payload;
+  try {
+    payload = await readJsonBody(request);
+  } catch {
+    sendJson(response, 400, {
+      type: "superior-model-provider-error",
+      code: "bad_request",
+      message: "Expected a model provider selection."
+    });
+    return;
+  }
+  if (payload.type !== "superior-model-provider-select" || payload.provider !== "ollama" && payload.provider !== "openai-byok") {
+    sendJson(response, 400, {
+      type: "superior-model-provider-error",
+      code: "bad_request",
+      message: "Choose Local Ollama or OpenAI BYOK."
+    });
+    return;
+  }
+  sendJson(response, 200, selectModelProvider(config, payload.provider));
+}
+async function handleModelProviderOpenAiKey(request, response) {
+  if (!isTrustedLocalOrigin(request.headers.origin)) {
+    sendJson(response, 403, {
+      type: "superior-model-provider-error",
+      code: "bad_request",
+      message: "BYOK can only be saved from the local Workshop."
+    });
+    return;
+  }
+  let payload;
+  try {
+    payload = await readJsonBody(request);
+  } catch {
+    sendJson(response, 400, {
+      type: "superior-model-provider-error",
+      code: "bad_request",
+      message: "Expected a BYOK save request."
+    });
+    return;
+  }
+  try {
+    if (payload.type !== "superior-openai-key-save") {
+      throw new Error("Expected a BYOK save request.");
+    }
+    sendJson(response, 200, saveOpenAiKey(config, payload.apiKey, payload.model));
+  } catch (error) {
+    sendJson(response, 400, {
+      type: "superior-model-provider-error",
+      code: "bad_request",
+      message: error instanceof Error ? error.message : "Could not save BYOK."
+    });
+  }
+}
+async function handleModelProviderOllamaStart(request, response) {
+  if (!isTrustedLocalOrigin(request.headers.origin)) {
+    sendJson(response, 403, {
+      type: "superior-model-provider-error",
+      code: "bad_request",
+      message: "Ollama can only be started from the local Workshop."
+    });
+    return;
+  }
+  sendJson(response, 200, startOllamaIfAvailable(config));
 }
 async function handleBrowserPairingStart(request, response) {
   if (!isTrustedLocalOrigin(request.headers.origin)) {
@@ -13032,17 +14311,19 @@ async function handleCustomSkillImport(request, response) {
     return;
   }
   try {
-    sendJson(response, 200, await proposeCustomSkillImport(payload));
-  } catch (error) {
-    if (error instanceof CustomSkillImportScanError) {
-      sendJson(response, error.code === "not_found" ? 404 : 400, {
-        type: "custom-skill-import-error",
-        requestId: payload.requestId,
-        code: error.code,
-        message: error.message
-      });
+    const output = await runSuperiorFunction(
+      createSuperiorFunctionRunRequest({
+        functionId: "custom-skill-import-proposal",
+        input: payload
+      }),
+      createFunctionRunContext(request)
+    );
+    if (isSuperiorFunctionError(output)) {
+      sendJson(response, getFunctionStatusCode(output.code), toCustomSkillImportError(output, payload.requestId));
       return;
     }
+    sendJson(response, 200, output.result);
+  } catch (error) {
     sendJson(response, 500, {
       type: "custom-skill-import-error",
       requestId: payload.requestId,
@@ -13051,16 +14332,46 @@ async function handleCustomSkillImport(request, response) {
     });
   }
 }
+async function handleFunctionRun(request, response) {
+  let payload;
+  try {
+    payload = await readJsonBody(request);
+  } catch {
+    sendJson(response, 400, {
+      type: "superior-function-error",
+      code: "bad_request",
+      message: "Expected a valid function run request.",
+      createdAt: (/* @__PURE__ */ new Date()).toISOString()
+    });
+    return;
+  }
+  if (payload.type !== "superior-function-run" || typeof payload.requestId !== "string") {
+    sendJson(response, 400, {
+      type: "superior-function-error",
+      requestId: payload.requestId,
+      code: "bad_request",
+      message: "Function runs need a request id and function id.",
+      createdAt: (/* @__PURE__ */ new Date()).toISOString()
+    });
+    return;
+  }
+  sendFunctionOutput(response, await runSuperiorFunction(payload, createFunctionRunContext(request)));
+}
 async function handleBotIdentitySave(request, response) {
   try {
     const payload = await readJsonBody(request);
+    const saved = writeBotIdentity({
+      ...payload,
+      browserLinkState: readBrowserLinkState()
+    });
+    const accountSession = getActiveAccountSession();
+    if (accountSession) {
+      void syncAccountSpore(accountSession.accessToken, saved).catch(() => void 0);
+    }
     sendJson(
       response,
       200,
-      writeBotIdentity({
-        ...payload,
-        browserLinkState: readBrowserLinkState()
-      })
+      saved
     );
   } catch {
     sendJson(response, 400, {
@@ -13081,28 +14392,19 @@ async function handleArticleXray(request, response) {
     });
     return;
   }
-  if (!validatePairingRequest(request, payload.pairingToken)) {
-    sendJson(response, 401, {
-      type: "article-xray-error",
-      requestId: payload.requestId,
-      code: "unauthorized",
-      message: "Pair the extension from SUPERIOR before running Article X-Ray."
-    });
+  const output = await runSuperiorFunction(
+    createSuperiorFunctionRunRequest({
+      functionId: "article-xray",
+      input: payload,
+      bot: payload.bot
+    }),
+    createFunctionRunContext(request)
+  );
+  if (isSuperiorFunctionError(output)) {
+    sendJson(response, getFunctionStatusCode(output.code), toArticleXrayError(output, payload.requestId));
     return;
   }
-  if (!hasArticleContent(payload)) {
-    sendJson(response, 400, {
-      type: "article-xray-error",
-      requestId: payload.requestId,
-      code: "empty_page",
-      message: "SUPERIOR needs selected text, readable article blocks, or page text to X-Ray."
-    });
-    return;
-  }
-  const result = runArticleXray(payload);
-  rememberArticleXrayResult(result);
-  rememberSuperiorBrowserSkillRun("Article X-Ray", result.source.title, result.source.url);
-  sendJson(response, 200, result);
+  sendJson(response, 200, output.result);
 }
 async function handleRepoReader(request, response) {
   if (!isTrustedLocalOrigin(request.headers.origin)) {
@@ -13134,21 +14436,20 @@ async function handleRepoReader(request, response) {
     return;
   }
   try {
-    const result = await runRepoReader(payload);
-    rememberRepoReaderResult(result);
-    rememberRepoWorkspaceRecord(result);
-    sendJson(response, 200, result);
-  } catch (error) {
-    if (error instanceof RepoReaderError) {
-      const statusCode = error.code === "not_found" ? 404 : error.code === "rate_limited" ? 429 : 400;
-      sendJson(response, statusCode, {
-        type: "repo-reader-error",
-        requestId: payload.requestId,
-        code: error.code,
-        message: error.message
-      });
+    const output = await runSuperiorFunction(
+      createSuperiorFunctionRunRequest({
+        functionId: "repo-reader",
+        input: payload,
+        bot: payload.bot
+      }),
+      createFunctionRunContext(request)
+    );
+    if (isSuperiorFunctionError(output)) {
+      sendJson(response, getFunctionStatusCode(output.code), toRepoReaderError(output, payload.requestId));
       return;
     }
+    sendJson(response, 200, output.result);
+  } catch (error) {
     sendJson(response, 502, {
       type: "repo-reader-error",
       requestId: payload.requestId,
@@ -13169,46 +14470,19 @@ async function handleExplain(request, response) {
     });
     return;
   }
-  if (!validatePairingRequest(request, payload.pairingToken)) {
-    sendJson(response, 401, {
-      type: "explain-page-error",
-      requestId: payload.requestId,
-      code: "unauthorized",
-      message: "Pair the extension from SUPERIOR before explaining pages."
-    });
+  const output = await runSuperiorFunction(
+    createSuperiorFunctionRunRequest({
+      functionId: "page-explainer",
+      input: payload,
+      bot: payload.bot
+    }),
+    createFunctionRunContext(request)
+  );
+  if (isSuperiorFunctionError(output)) {
+    sendJson(response, getFunctionStatusCode(output.code), toExplainPageError(output, payload.requestId));
     return;
   }
-  if (!hasUsablePageText(payload.page)) {
-    sendJson(response, 400, {
-      type: "explain-page-error",
-      requestId: payload.requestId,
-      code: "empty_page",
-      message: "SUPERIOR needs selected text or readable page text to explain."
-    });
-    return;
-  }
-  try {
-    const result = await explainPageWithOpenAI(payload, config);
-    rememberExplainPageResult(result);
-    rememberSuperiorBrowserSkillRun("Page Explainer", result.source.title, result.source.url);
-    sendJson(response, 200, result);
-  } catch (error) {
-    if (error instanceof MissingOpenAIConfigError) {
-      sendJson(response, 503, {
-        type: "explain-page-error",
-        requestId: payload.requestId,
-        code: "missing_config",
-        message: "Set OPENAI_API_KEY in a local .env.local to use Page Explainer."
-      });
-      return;
-    }
-    sendJson(response, 502, {
-      type: "explain-page-error",
-      requestId: payload.requestId,
-      code: "provider_error",
-      message: error instanceof Error ? error.message : "OpenAI provider failed."
-    });
-  }
+  sendJson(response, 200, output.result);
 }
 async function readJsonBody(request) {
   let body = "";
@@ -13231,6 +14505,88 @@ function sendHtml(response, statusCode, html) {
     "Content-Type": "text/html; charset=utf-8"
   });
   response.end(html);
+}
+function sendFunctionOutput(response, output) {
+  if (isSuperiorFunctionError(output)) {
+    sendJson(response, getFunctionStatusCode(output.code), output);
+    return;
+  }
+  sendJson(response, 200, output);
+}
+function getFunctionStatusCode(code) {
+  if (code === "unauthorized") {
+    return 401;
+  }
+  if (code === "missing_permission") {
+    return 403;
+  }
+  if (code === "missing_config" || code === "missing_browser" || code === "missing_extension" || code === "not_running") {
+    return 503;
+  }
+  if (code === "not_found" || code === "unknown_repo") {
+    return 404;
+  }
+  if (code === "rate_limited") {
+    return 429;
+  }
+  if (code === "runner_failed" || code === "launch_failed") {
+    return 502;
+  }
+  return 400;
+}
+function createFunctionRunContext(request) {
+  const pairingHeaderToken = readPairingHeader(request);
+  return {
+    config,
+    ...pairingHeaderToken ? { pairingHeaderToken } : {},
+    trustedLocalOrigin: isTrustedLocalOrigin(request.headers.origin)
+  };
+}
+function toArticleXrayError(output, requestId) {
+  return {
+    type: "article-xray-error",
+    ...requestId ? { requestId } : {},
+    code: output.code === "unauthorized" ? "unauthorized" : output.code === "empty_input" ? "empty_page" : "bad_request",
+    message: output.message
+  };
+}
+function toExplainPageError(output, requestId) {
+  return {
+    type: "explain-page-error",
+    ...requestId ? { requestId } : {},
+    code: output.code === "unauthorized" ? "unauthorized" : output.code === "empty_input" ? "empty_page" : output.code === "missing_config" ? "missing_config" : output.code === "bad_request" ? "bad_request" : "provider_error",
+    message: output.message
+  };
+}
+function toRepoReaderError(output, requestId) {
+  return {
+    type: "repo-reader-error",
+    ...requestId ? { requestId } : {},
+    code: output.code === "not_found" ? "not_found" : output.code === "rate_limited" ? "rate_limited" : output.code === "bad_request" || output.code === "missing_permission" ? "bad_request" : "network_error",
+    message: output.message
+  };
+}
+function toCustomSkillImportError(output, requestId) {
+  return {
+    type: "custom-skill-import-error",
+    ...requestId ? { requestId } : {},
+    code: output.code === "not_found" ? "not_found" : output.code === "bad_request" || output.code === "missing_permission" ? "bad_request" : "scan_failed",
+    message: output.message
+  };
+}
+function toSuperiorBrowserError(output, requestId) {
+  return {
+    type: "superior-browser-error",
+    ...requestId ? { requestId } : {},
+    code: toSuperiorBrowserErrorCode(output.code),
+    message: output.message
+  };
+}
+function toSuperiorBrowserErrorCode(code) {
+  if (code === "unknown_repo" || code === "missing_browser" || code === "missing_extension" || code === "launch_failed" || code === "not_running" || code === "unauthorized") {
+    return code;
+  }
+  return code === "bad_request" || code === "missing_permission" ? "bad_request" : "launch_failed";
 }
 function sendBrowserRuntimeError(response, requestId, error) {
   if (error instanceof BrowserRuntimeError) {
@@ -13256,16 +14612,511 @@ function setCorsHeaders(response) {
   response.setHeader("Access-Control-Allow-Headers", "Content-Type,X-Clawdbot-Pairing-Token");
   response.setHeader("Access-Control-Max-Age", "86400");
 }
+function readBotStarterPresets() {
+  return {
+    type: "bot-starter-presets",
+    items: botStarterPresets.map((preset) => ({
+      ...preset,
+      skills: [...preset.skills]
+    })),
+    createdAt: (/* @__PURE__ */ new Date()).toISOString()
+  };
+}
+function readBotCreationOptions() {
+  return {
+    type: "bot-creation-options",
+    shapes: botCreationShapes.map((shape) => ({ ...shape })),
+    races: sporeRaceCatalog.map((race) => ({ ...race })),
+    skills: botSkillLoadoutOptions.map((skill) => ({ ...skill })),
+    premadeSkillParts: premadeSkillPartOptions.map((skill) => ({
+      ...skill,
+      fits: [...skill.fits]
+    })),
+    createdAt: (/* @__PURE__ */ new Date()).toISOString()
+  };
+}
+function getSetupAccountState() {
+  const session = getActiveAccountSession();
+  const stored = readStoredAccountState();
+  const profile = stored.profile;
+  const configured = isAccountConfigured();
+  const connectedProviders = profile?.connectedProviders ?? (session?.provider && session.provider !== "email-code" ? [session.provider] : []);
+  const email = profile?.email ?? session?.email;
+  return {
+    status: session ? "signed-in" : configured ? "signed-out" : "offline",
+    ...profile?.handle ? { handle: profile.handle } : {},
+    ...email ? { email } : {},
+    ...session?.userId ? { userId: session.userId } : {},
+    ...profile?.avatarUrl ? { avatarUrl: profile.avatarUrl } : {},
+    connectedProviders,
+    providers: superiorAccountOAuthProviders.map((provider) => ({
+      provider,
+      label: formatAccountProviderLabel(provider),
+      status: connectedProviders.includes(provider) ? "connected" : configured ? "available" : "not-configured",
+      detail: connectedProviders.includes(provider) ? "linked" : configured ? "ready" : "missing config"
+    })),
+    ...profile?.updatedAt ? { syncedAt: profile.updatedAt } : {},
+    detail: profile?.handle ?? profile?.email ?? (session ? "spore claimed" : configured ? "Google / X / Discord" : "account offline")
+  };
+}
+function formatAccountProviderLabel(provider) {
+  if (provider === "google") {
+    return "Google";
+  }
+  if (provider === "discord") {
+    return "Discord";
+  }
+  return "X";
+}
+function getActiveAccountSession() {
+  const session = readStoredAccountState().session;
+  if (!session) {
+    return null;
+  }
+  if (typeof session.expiresAt === "number" && session.expiresAt <= Math.floor(Date.now() / 1e3)) {
+    clearStoredAccountSession();
+    return null;
+  }
+  return session;
+}
+function isAccountConfigured() {
+  return Boolean(config.supabaseUrl && config.supabasePublishableKey);
+}
+function parseAccountProvider(value) {
+  return superiorAccountOAuthProviders.includes(value) ? value : null;
+}
+async function startAccountOAuth(provider, redirectTo) {
+  const response = await fetch(`${getAccountBaseUrl()}/start-oauth`, {
+    method: "POST",
+    headers: getAccountHeaders(),
+    body: JSON.stringify({
+      type: "superior-account-start-oauth",
+      provider,
+      ...redirectTo ? { redirectTo } : {}
+    })
+  });
+  if (!response.ok) {
+    throw new Error(await readRemoteAccountError(response, "Supabase did not return an OAuth URL."));
+  }
+  return await response.json();
+}
+async function syncAccountProfile(accessToken, activeSporeId) {
+  const baseUrl = getAccountBaseUrl();
+  const authorizationHeaders = getAccountHeaders({
+    Authorization: `Bearer ${accessToken}`
+  });
+  const profileResponse = await fetch(`${baseUrl}/profile`, {
+    headers: authorizationHeaders
+  });
+  if (!profileResponse.ok) {
+    throw new Error(await readRemoteAccountError(profileResponse, "Could not read account profile."));
+  }
+  const profile = await profileResponse.json();
+  const upsertResponse = await fetch(`${baseUrl}/profile`, {
+    method: "PUT",
+    headers: authorizationHeaders,
+    body: JSON.stringify({
+      handle: profile.handle,
+      activeSporeId
+    })
+  });
+  if (!upsertResponse.ok) {
+    throw new Error(await readRemoteAccountError(upsertResponse, "Could not save account profile."));
+  }
+  return await upsertResponse.json();
+}
+async function syncAccountSpore(accessToken, bot) {
+  const response = await fetch(`${getAccountBaseUrl()}/spore`, {
+    method: "PUT",
+    headers: getAccountHeaders({
+      Authorization: `Bearer ${accessToken}`
+    }),
+    body: JSON.stringify({
+      starterPresetId: bot.starterPresetId,
+      spore: createBotSporeFromIdentity(bot)
+    })
+  });
+  if (!response.ok) {
+    throw new Error(await readRemoteAccountError(response, "Could not sync the active spore."));
+  }
+}
+function getAccountBaseUrl() {
+  if (!config.supabaseUrl) {
+    throw new Error("SUPABASE_URL is not configured.");
+  }
+  return `${config.supabaseUrl.replace(/\/+$/, "")}/functions/v1/account`;
+}
+function getAccountHeaders(extraHeaders = {}) {
+  if (!config.supabasePublishableKey) {
+    throw new Error("SUPABASE_PUBLISHABLE_KEY is not configured.");
+  }
+  return {
+    "Content-Type": "application/json",
+    apikey: config.supabasePublishableKey,
+    ...extraHeaders
+  };
+}
+async function readRemoteAccountError(response, fallback) {
+  const payload = await response.json().catch(() => null);
+  return payload?.message ?? fallback;
+}
+function renderAccountOAuthCallbackPage() {
+  return `<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>SUPERIOR Sign-In</title>
+    <style>
+      :root {
+        color-scheme: light;
+        font-family: "Segoe UI", sans-serif;
+        background: #dcc29e;
+        color: #2e211a;
+      }
+      body {
+        margin: 0;
+        min-height: 100vh;
+        display: grid;
+        place-items: center;
+        background:
+          radial-gradient(circle at top, rgba(255, 233, 177, 0.74), transparent 28%),
+          linear-gradient(180deg, #8fb2b8 0%, #caa47c 54%, #8f5639 100%);
+      }
+      main {
+        width: min(420px, calc(100vw - 24px));
+        padding: 24px 22px;
+        border-radius: 24px;
+        background: rgba(255, 244, 219, 0.92);
+        box-shadow: 0 22px 60px rgba(33, 22, 16, 0.24);
+      }
+      p {
+        margin: 0;
+        line-height: 1.45;
+      }
+      .kicker {
+        display: inline-block;
+        margin-bottom: 10px;
+        font-size: 12px;
+        font-weight: 800;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+      }
+      #status {
+        font-size: 24px;
+        font-weight: 700;
+      }
+      #detail {
+        margin-top: 10px;
+        color: #6c5342;
+      }
+    </style>
+  </head>
+  <body>
+    <main>
+      <span class="kicker">SUPERIOR</span>
+      <p id="status">Finishing sign-in...</p>
+      <p id="detail">Keep the Workshop open.</p>
+    </main>
+    <script>
+      const status = document.getElementById("status");
+      const detail = document.getElementById("detail");
+      const fragment = new URLSearchParams(window.location.hash.slice(1));
+      const accessToken = fragment.get("access_token");
+      const refreshToken = fragment.get("refresh_token");
+      const expiresAt = fragment.get("expires_at");
+      const authError = fragment.get("error_description") || fragment.get("error");
+
+      history.replaceState(null, "", "/account/oauth/callback");
+
+      if (authError) {
+        status.textContent = "Sign-in failed";
+        detail.textContent = authError;
+      } else if (!accessToken) {
+        status.textContent = "Token missing";
+        detail.textContent = "The provider returned without an access token.";
+      } else {
+        fetch("/account/oauth/complete", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json"
+          },
+          body: JSON.stringify({
+            type: "superior-account-oauth-complete",
+            accessToken,
+            ...(refreshToken ? { refreshToken } : {}),
+            ...(expiresAt ? { expiresAt: Number(expiresAt) } : {})
+          })
+        })
+          .then(async (response) => {
+            const payload = await response.json().catch(() => null);
+
+            if (!response.ok) {
+              throw new Error(payload?.message || "Could not finish sign-in.");
+            }
+
+            const handle = payload?.profile?.handle || payload?.profile?.email || "spore claimed";
+
+            status.textContent = "Account linked";
+            detail.textContent = handle + ". Return to the Workshop.";
+          })
+          .catch((error) => {
+            status.textContent = "Sign-in failed";
+            detail.textContent = error instanceof Error ? error.message : "Could not finish sign-in.";
+          });
+      }
+    </script>
+  </body>
+</html>`;
+}
+function readSetupState() {
+  const bot = readServiceBotIdentity();
+  const browserLinkState = readBrowserLinkState();
+  const modelProviderState = readModelProviderState(config);
+  const accountState = getSetupAccountState();
+  const activeBotSaved = hasSavedBotIdentity();
+  const keyReady = modelProviderState.openAiKeyStatus === "ready" || modelProviderState.openAiKeyStatus === "saved";
+  const modelReady = modelProviderState.modelProvider !== "missing";
+  const browserReady = browserLinkState.status === "paired";
+  const botStatus = activeBotSaved ? bot.starterPresetId ? "saved" : "custom" : "starter-seed";
+  return {
+    type: "superior-setup-state",
+    activeBotSaved,
+    requiresSetup: !activeBotSaved || accountState.status !== "signed-in",
+    steps: [
+      {
+        step: "account",
+        status: accountState.status === "signed-in" ? "ready" : accountState.status === "offline" ? "blocked" : "missing",
+        label: "Account",
+        detail: accountState.detail
+      },
+      {
+        step: "daemon",
+        status: "ready",
+        label: "Power",
+        detail: "daemon awake"
+      },
+      {
+        step: "key",
+        status: keyReady ? "ready" : "missing",
+        label: "Key",
+        detail: keyReady ? "key ready" : "key missing"
+      },
+      {
+        step: "model",
+        status: modelReady ? "ready" : "missing",
+        label: "Model",
+        detail: modelProviderState.detail
+      },
+      {
+        step: "browser",
+        status: browserReady ? "ready" : "missing",
+        label: "Browser",
+        detail: browserReady ? "hand fitted" : browserLinkState.status
+      },
+      {
+        step: "starter",
+        status: "ready",
+        label: "Starter",
+        detail: bot.starterPresetId ?? "clawd"
+      },
+      {
+        step: "skills",
+        status: "ready",
+        label: "Skills",
+        detail: bot.skills.join(" / ")
+      },
+      {
+        step: "assembly",
+        status: "ready",
+        label: "Build",
+        detail: `${bot.body} / ${bot.color} / ${bot.eye}`
+      },
+      {
+        step: "finish",
+        status: activeBotSaved && accountState.status === "signed-in" ? "ready" : "blocked",
+        label: "Save",
+        detail: activeBotSaved && accountState.status === "signed-in" ? "active bot saved" : accountState.status !== "signed-in" ? "claim spore first" : "save active bot"
+      }
+    ],
+    account: accountState,
+    daemon: {
+      status: "ready",
+      detail: `SUPERIOR daemon ${config.version}`
+    },
+    key: {
+      status: keyReady ? "ready" : "missing",
+      keyFilePath: config.keyFilePath,
+      source: config.openaiConfigSource
+    },
+    browser: {
+      status: browserLinkState.status,
+      ...browserLinkState.extensionId ? { extensionId: browserLinkState.extensionId } : {},
+      ...browserLinkState.lastSeenAt ? { lastSeenAt: browserLinkState.lastSeenAt } : {}
+    },
+    model: modelProviderState,
+    bot: {
+      status: botStatus,
+      identity: bot,
+      ...bot.starterPresetId ? { starterPresetId: bot.starterPresetId } : {}
+    },
+    createdAt: (/* @__PURE__ */ new Date()).toISOString()
+  };
+}
+function readMobileCompanion() {
+  const bot = readServiceBotIdentity();
+  const spore = createBotSporeFromIdentity(bot);
+  const account = getSetupAccountState();
+  const modelProviderState = readModelProviderState(config);
+  const browserLinkState = readBrowserLinkState();
+  const browserState = getSuperiorBrowserState();
+  const recentProof = [
+    ...readRecentSkillResults().items.map(toMobileSkillProof),
+    ...readRecentFunctionRuns().items.map(toMobileFunctionProof)
+  ].sort((left, right) => Date.parse(right.createdAt) - Date.parse(left.createdAt)).slice(0, 8);
+  return {
+    type: "superior-mobile-companion",
+    bot: {
+      id: bot.id,
+      name: bot.name,
+      body: bot.body,
+      color: bot.color,
+      eye: bot.eye,
+      ...bot.race ? { race: bot.race } : {},
+      avatarAsset: spore.appearance.avatarAsset,
+      equippedSkills: bot.skills.map((skillId) => {
+        const skill = skillCatalog[skillId];
+        return {
+          id: skill.id,
+          label: skill.label,
+          slot: skill.slot,
+          attachment: skill.attachment,
+          effect: skill.effect
+        };
+      }),
+      ...bot.updatedAt ? { updatedAt: bot.updatedAt } : {}
+    },
+    account: {
+      status: account.status,
+      ...account.handle ? { handle: account.handle } : {},
+      ...account.avatarUrl ? { avatarUrl: account.avatarUrl } : {},
+      connectedProviders: account.connectedProviders ?? [],
+      detail: account.detail
+    },
+    device: {
+      browser: {
+        status: browserLinkState.status,
+        ...browserLinkState.extensionId ? { extensionId: browserLinkState.extensionId } : {},
+        ...browserLinkState.lastSeenAt ? { lastSeenAt: browserLinkState.lastSeenAt } : {}
+      },
+      superiorBrowser: toMobileBrowserRuntime(browserState),
+      model: {
+        modelProvider: modelProviderState.modelProvider,
+        ollamaStatus: modelProviderState.ollamaStatus,
+        openAiKeyStatus: modelProviderState.openAiKeyStatus,
+        detail: modelProviderState.detail
+      }
+    },
+    recentProof,
+    asset: {
+      id: "mobile-clawd-gremlin",
+      version: "mobile-3d-0.1",
+      format: "glb",
+      runtimePath: "assets/bots/mobile-3d/generated/mobile-clawd-gremlin.glb",
+      sourcePath: "assets/bots/mobile-3d/asset-manifest.json",
+      triangleCount: 492,
+      fileBytes: 19064,
+      requiredNodeNames: [
+        "Body_Gremlin",
+        "Eye_Left_Pixel",
+        "Eye_Right_Pixel",
+        "Antenna_Left",
+        "Antenna_Right",
+        "Skill_ArticleXray_Lens",
+        "Skill_RepoReader_Gear"
+      ]
+    },
+    share: {
+      status: "not-configured",
+      acceptedInputs: ["url", "text"],
+      detail: "Share-sheet capture is a future mobile lane; desktop remains the alpha runtime."
+    },
+    privacy: {
+      localOnly: true,
+      excludes: [
+        "OpenAI API keys",
+        "raw browser pairing tokens",
+        "browser profile paths",
+        "debug ports",
+        "page text",
+        "local repo workspace data"
+      ]
+    },
+    createdAt: (/* @__PURE__ */ new Date()).toISOString()
+  };
+}
+function toMobileBrowserRuntime(browserState) {
+  const session = browserState.activeSession;
+  return {
+    status: browserState.status,
+    ...session?.browserKind ? { browserKind: session.browserKind } : {},
+    ...session?.repoTitle ? { repoTitle: session.repoTitle } : {},
+    ...session?.playpenLabel ? { playpenLabel: session.playpenLabel } : {},
+    ...session?.startedAt ? { startedAt: session.startedAt } : {},
+    ...session?.pairedAt ? { pairedAt: session.pairedAt } : {},
+    ...session?.inspection ? {
+      inspection: {
+        status: session.inspection.status,
+        ...session.inspection.pageTitle ? { pageTitle: session.inspection.pageTitle } : {},
+        consoleErrorCount: session.inspection.consoleErrorCount,
+        networkFailureCount: session.inspection.networkFailureCount,
+        ...session.inspection.note ? { note: session.inspection.note } : {}
+      }
+    } : {}
+  };
+}
+function toMobileSkillProof(item) {
+  const sourceHost = readSourceHost(item.source.url);
+  return {
+    type: "mobile-companion-proof",
+    id: item.id,
+    source: "recent-skill",
+    label: item.skillLabel,
+    status: item.status,
+    summary: item.status === "ready" ? `${item.skillLabel} proof recorded.` : `${item.skillLabel} needs review.`,
+    detail: `${item.skillLabel} ran on ${sourceHost ?? "captured source"}.`,
+    skillId: item.skillId,
+    ...sourceHost ? { sourceHost } : {},
+    sourceTitle: item.source.title,
+    createdAt: item.createdAt
+  };
+}
+function toMobileFunctionProof(item) {
+  return {
+    type: "mobile-companion-proof",
+    id: item.runId,
+    source: "function-run",
+    label: item.label,
+    status: item.status === "completed" ? "ready" : "failed",
+    summary: item.status === "completed" ? `${item.label} completed.` : `${item.label} failed.`,
+    detail: item.botReaction.slot ? `${item.botReaction.label} / ${item.botReaction.slot}` : item.botReaction.label,
+    functionId: item.functionId,
+    ...item.botReaction.skillId ? { skillId: item.botReaction.skillId } : {},
+    createdAt: item.createdAt
+  };
+}
+function readSourceHost(value) {
+  try {
+    return new URL(value).host;
+  } catch {
+    return void 0;
+  }
+}
 function readServiceBotIdentity() {
   return {
     ...readBotIdentity(),
     browserLinkState: readBrowserLinkState()
   };
-}
-function validatePairingRequest(request, payloadPairingToken) {
-  const headerToken = readPairingHeader(request);
-  const token = payloadPairingToken?.trim();
-  return Boolean(token && headerToken === token && touchBrowserPairing(token));
 }
 function isValidPairingHeader(request) {
   const headerToken = readPairingHeader(request);

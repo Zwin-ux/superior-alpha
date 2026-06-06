@@ -9,10 +9,12 @@ import {
   RepoReaderResult,
   SkillId,
   SkillDefinition,
+  SuperiorAccountOAuthProvider,
   SuperiorBotReaction,
   SuperiorBrowserEvent,
   SuperiorBrowserState,
   SuperiorFunctionRunSummary,
+  SuperiorSetupState,
   botBodyCatalog,
   botEyeCatalog,
   clayPigments,
@@ -45,15 +47,19 @@ import {
   fetchRecentFunctionRuns,
   fetchRepoWorkspaceRecords,
   fetchRecentSkillResults,
+  fetchSetupState,
   fetchSuperiorBrowserEvents,
   fetchSuperiorBrowserState,
   inspectSuperiorBrowser,
+  openExternalUrl,
   openExtensionFolder,
   openLocalFolder,
   requestCustomSkillImportProposal,
   requestRepoReader,
   resetBrowserPairing,
   saveDaemonBotIdentity,
+  signOutAccount,
+  startAccountOAuth,
   startBrowserPairing,
   startSuperiorBrowser,
   stopSuperiorBrowser
@@ -68,9 +74,12 @@ const skillRows = runnableSkillShelf;
 export function App(): React.ReactElement {
   const [selectedMenu, setSelectedMenu] = useState<MenuItem>("Continue");
   const [health, setHealth] = useState<DaemonHealth | null>(null);
+  const [setupState, setSetupState] = useState<SuperiorSetupState | null>(null);
   const [healthError, setHealthError] = useState<string | null>(null);
   const [daemonLaunch, setDaemonLaunch] = useState<DaemonLaunchResult | null>(null);
   const [botIdentity, setBotIdentity] = useState(() => loadBotIdentity());
+  const [accountBusy, setAccountBusy] = useState(false);
+  const [accountError, setAccountError] = useState<string | null>(null);
   const [activeAssemblyPartId, setActiveAssemblyPartId] = useState<string | null>(null);
   const [assemblyDropState, setAssemblyDropState] = useState<AssemblyDropState>("idle");
   const [assemblySnapKey, setAssemblySnapKey] = useState(0);
@@ -96,6 +105,7 @@ export function App(): React.ReactElement {
   const [recentFunctionRuns, setRecentFunctionRuns] = useState<SuperiorFunctionRunSummary[]>([]);
   const [botReaction, setBotReaction] = useState<SuperiorBotReaction | null>(null);
   const lastReactionPulseKeyRef = useRef<string | null>(null);
+  const previousAccountStatusRef = useRef<SuperiorSetupState["account"]["status"] | null>(null);
 
   const bot = useMemo(
     () =>
@@ -152,8 +162,16 @@ export function App(): React.ReactElement {
 
     async function refresh(): Promise<void> {
       try {
-        const [nextHealth, nextRecentResults, nextFunctionRuns, nextRepoWorkspaces, superiorBrowserState] = await Promise.all([
+        const [
+          nextHealth,
+          nextSetupState,
+          nextRecentResults,
+          nextFunctionRuns,
+          nextRepoWorkspaces,
+          superiorBrowserState
+        ] = await Promise.all([
           fetchDaemonHealth(),
+          fetchSetupState(),
           fetchRecentSkillResults(),
           fetchRecentFunctionRuns(),
           fetchRepoWorkspaceRecords(),
@@ -166,6 +184,7 @@ export function App(): React.ReactElement {
 
         if (!disposed) {
           setHealth(nextHealth);
+          setSetupState(nextSetupState);
           setRecentResults(nextRecentResults.items);
           setRecentFunctionRuns(nextFunctionRuns.items);
           setRepoWorkspaces(nextRepoWorkspaces.items);
@@ -177,6 +196,7 @@ export function App(): React.ReactElement {
       } catch {
         if (!disposed) {
           setHealth(null);
+          setSetupState(null);
           setSuperiorBrowserState(null);
           setSuperiorBrowserEvents([]);
           setHealthError("Daemon offline");
@@ -288,6 +308,19 @@ export function App(): React.ReactElement {
       disposed = true;
     };
   }, []);
+
+  useEffect(() => {
+    const accountStatus = setupState?.account.status ?? null;
+    const previousStatus = previousAccountStatusRef.current;
+
+    if (accountStatus === "signed-in" && previousStatus !== "signed-in") {
+      setSelectedMenu(setupState?.activeBotSaved ? "Continue" : "New Bot");
+      setAccountBusy(false);
+      setAccountError(null);
+    }
+
+    previousAccountStatusRef.current = accountStatus;
+  }, [setupState]);
 
   function commitBotIdentity(changes: Parameters<typeof updateBotIdentity>[1]): void {
     setBotIdentity((currentBot) => {
@@ -404,6 +437,39 @@ export function App(): React.ReactElement {
 
       return nextBot;
     });
+  }
+
+  async function beginAccountOAuth(provider: SuperiorAccountOAuthProvider): Promise<void> {
+    setAccountBusy(true);
+    setAccountError(null);
+
+    try {
+      const started = await startAccountOAuth(provider);
+      const opened = await openExternalUrl(started.authUrl).catch(() => null);
+
+      if (opened?.status === "blocked" || opened?.status === "failed") {
+        throw new Error("Could not open the browser for sign-in.");
+      }
+    } catch (error) {
+      setAccountError(error instanceof Error ? error.message : "Account sign-in could not start.");
+    } finally {
+      setAccountBusy(false);
+    }
+  }
+
+  async function clearAccountSession(): Promise<void> {
+    setAccountBusy(true);
+    setAccountError(null);
+
+    try {
+      const nextSetupState = await signOutAccount();
+      setSetupState(nextSetupState);
+      setSelectedMenu("Continue");
+    } catch (error) {
+      setAccountError(error instanceof Error ? error.message : "Account sign-out failed.");
+    } finally {
+      setAccountBusy(false);
+    }
   }
 
   async function beginBrowserPairing(): Promise<void> {
@@ -620,14 +686,14 @@ export function App(): React.ReactElement {
           {botReaction ? <BotReactionStamp reaction={botReaction} /> : null}
           <section className="workbench-panel" aria-label="Bot setup">
             <div>
-              <p className="panel-kicker">CREATE BOT</p>
+              <p className="panel-kicker">{setupState?.account.status === "signed-in" ? "WORKSHOP" : "REGISTRY"}</p>
               <h2>{bot.name}</h2>
             </div>
             <div className="setup-grid">
               <SetupCell label="Body" value={bot.body} />
               <SetupCell label="Color" value={clayPigments[bot.color].label} />
               <SetupCell label="Eye" value={bot.eye} />
-              <SetupCell label="Browser" value={health ? health.browserLinkState.status : "offline"} />
+              <SetupCell label="Seal" value={setupState?.account.handle ?? setupState?.account.status ?? "offline"} />
             </div>
           </section>
         </section>
@@ -635,13 +701,21 @@ export function App(): React.ReactElement {
         <aside className="activity-panel" aria-label="Current status">
           <section>
             <h2>{selectedMenu}</h2>
-            <p>{getPanelCopy(selectedMenu)}</p>
+            <p>{getPanelCopy(selectedMenu, setupState)}</p>
           </section>
           {selectedMenu === "Continue" ? (
             <>
-              <StatusOverviewPanel health={health} healthError={healthError} daemonLaunch={daemonLaunch} />
-              <FunctionProofStrip runs={recentFunctionRuns} />
-              <RecentList items={recentResults} />
+              <OnboardingPanel
+                setupState={setupState}
+                busy={accountBusy}
+                error={accountError}
+                onStartOAuth={(provider) => void beginAccountOAuth(provider)}
+                onSignOut={() => void clearAccountSession()}
+                onOpenWorkshop={() => setSelectedMenu(setupState?.activeBotSaved ? "Customize Bot" : "New Bot")}
+              />
+              {!setupState?.requiresSetup ? <StatusOverviewPanel health={health} healthError={healthError} daemonLaunch={daemonLaunch} /> : null}
+              {!setupState?.requiresSetup ? <FunctionProofStrip runs={recentFunctionRuns} /> : null}
+              {!setupState?.requiresSetup ? <RecentList items={recentResults} /> : null}
             </>
           ) : null}
           {selectedMenu === "Browser Link" ? (
@@ -714,9 +788,232 @@ export function App(): React.ReactElement {
           {selectedMenu === "Quit" ? <QuitPanel /> : null}
         </aside>
       </div>
-      <StatusBar health={health} error={healthError} />
+      <StatusBar health={health} setupState={setupState} error={healthError} />
     </main>
   );
+}
+
+function OnboardingPanel(props: {
+  setupState: SuperiorSetupState | null;
+  busy: boolean;
+  error: string | null;
+  onStartOAuth: (provider: SuperiorAccountOAuthProvider) => void;
+  onSignOut: () => void;
+  onOpenWorkshop: () => void;
+}): React.ReactElement {
+  const account = props.setupState?.account;
+  const signedIn = account?.status === "signed-in";
+  const providers = account?.providers ?? [];
+  const liveProviders = providers.filter((provider) => provider.status !== "not-configured");
+  const allProvidersOffline = !signedIn && providers.length > 0 && liveProviders.length === 0;
+  const providersToShow = liveProviders.length > 0 ? liveProviders : providers;
+  const bootSteps = getOnboardingBootSteps(props.setupState, signedIn, allProvidersOffline);
+  const registryStatus = signedIn ? account?.handle ?? "signed in" : allProvidersOffline ? "not wired" : account?.status ?? "offline";
+  const avatarInitials = getAccountAvatarInitials(account);
+  const avatarDetail = signedIn
+    ? account?.avatarUrl
+      ? "Provider PFP fitted."
+      : "Initial badge fitted."
+    : "PFP slot waits for sign-in.";
+
+  return (
+    <section className="options-panel boot-panel" aria-label="System onboarding">
+      <div className="boot-screen">
+        <div className="boot-head">
+          <div>
+            <p className="panel-kicker">FIRST BOOT</p>
+            <h3>{signedIn ? "Operator seal fitted" : "Choose an operator seal"}</h3>
+            <p>{signedIn ? "PFP and account seal are ready for the Workshop." : "Pick Google, X, or Discord. SUPERIOR stamps the badge and opens the bench."}</p>
+          </div>
+          <div className="boot-state" data-state={signedIn ? "ready" : allProvidersOffline ? "bad" : "warn"}>
+            <span aria-hidden="true" />
+            <strong>{registryStatus}</strong>
+          </div>
+        </div>
+
+        <div className="operator-card" data-ready={signedIn}>
+          <div className="pfp-frame" data-ready={signedIn}>
+            {account?.avatarUrl ? (
+              <img src={account.avatarUrl} alt="" referrerPolicy="no-referrer" />
+            ) : (
+              <span>{avatarInitials}</span>
+            )}
+          </div>
+          <div>
+            <span>Operator PFP</span>
+            <strong>{account?.handle ?? account?.email ?? "Unclaimed"}</strong>
+            <em>{avatarDetail}</em>
+          </div>
+        </div>
+
+        <div className="seal-rack" aria-label="OAuth provider seals">
+          {providersToShow.map((provider) =>
+            signedIn ? (
+              <div
+                key={provider.provider}
+                className="provider-seal"
+                data-provider={provider.provider}
+                data-state={provider.status}
+              >
+                <ProviderMark provider={provider.provider} />
+                <span>
+                  <em>{provider.status === "connected" ? "Fitted" : "Available"}</em>
+                  <strong>{provider.label}</strong>
+                </span>
+                <i aria-hidden="true" />
+              </div>
+            ) : (
+              <button
+                key={provider.provider}
+                className="provider-seal"
+                data-provider={provider.provider}
+                data-state={provider.status}
+                type="button"
+                disabled={props.busy || provider.status === "not-configured"}
+                onClick={() => props.onStartOAuth(provider.provider)}
+              >
+                <ProviderMark provider={provider.provider} />
+                <span>
+                  <em>{provider.detail}</em>
+                  <strong>{props.busy ? "Opening..." : `Sign in with ${provider.label}`}</strong>
+                </span>
+                <i aria-hidden="true" />
+              </button>
+            )
+          )}
+        </div>
+
+        {providersToShow.length === 0 || allProvidersOffline ? (
+          <div className="registry-actions">
+            <p className="registry-note">Add <code>SUPABASE_URL</code> and <code>SUPABASE_PUBLISHABLE_KEY</code> to wake account seals.</p>
+          </div>
+        ) : null}
+
+        <div className="boot-checklist" aria-label="Boot steps">
+          {bootSteps.map((step) => (
+            <div key={step.label} className="boot-step" data-state={step.state}>
+              <span aria-hidden="true" />
+              <strong>{step.label}</strong>
+              <em>{step.detail}</em>
+            </div>
+          ))}
+        </div>
+
+        {signedIn ? (
+          <div className="boot-actions">
+            <button
+              className="choice-chip service-action"
+              type="button"
+              onClick={props.onOpenWorkshop}
+              disabled={props.busy}
+            >
+              {props.setupState?.activeBotSaved ? "Enter Workshop" : "Open Bench"}
+            </button>
+            <button className="choice-chip service-action" type="button" onClick={props.onSignOut} disabled={props.busy}>
+              {props.busy ? "Clearing..." : "Clear Seal"}
+            </button>
+            <p>{formatConnectedProviders(account?.connectedProviders)}</p>
+          </div>
+        ) : null}
+        {props.error ? <p className="custom-import-error">{props.error}</p> : null}
+      </div>
+    </section>
+  );
+}
+
+type OnboardingBootStep = {
+  label: string;
+  detail: string;
+  state: "ready" | "warn" | "bad";
+};
+
+function getOnboardingBootSteps(
+  setupState: SuperiorSetupState | null,
+  signedIn: boolean,
+  allProvidersOffline: boolean
+): OnboardingBootStep[] {
+  const modelReady = Boolean(setupState && setupState.model.modelProvider !== "missing");
+  const browserStatus = setupState?.browser.status ?? "offline";
+
+  return [
+    {
+      label: "Seal",
+      detail: signedIn ? "account claimed" : allProvidersOffline ? "provider config missing" : "choose provider",
+      state: signedIn ? "ready" : allProvidersOffline ? "bad" : "warn"
+    },
+    {
+      label: "PFP",
+      detail: signedIn ? (setupState?.account.avatarUrl ? "provider image" : "initial badge") : "waiting",
+      state: signedIn ? "ready" : "warn"
+    },
+    {
+      label: "Model",
+      detail: setupState?.model.modelProvider ?? "checking",
+      state: modelReady ? "ready" : "warn"
+    },
+    {
+      label: "Workshop",
+      detail: setupState?.activeBotSaved ? "spore saved" : "bench pending",
+      state: setupState?.activeBotSaved ? "ready" : signedIn ? "warn" : "bad"
+    },
+    {
+      label: "Browser",
+      detail: browserStatus,
+      state: browserStatus === "paired" ? "ready" : browserStatus === "offline" ? "bad" : "warn"
+    }
+  ];
+}
+
+function ProviderMark(props: { provider: SuperiorAccountOAuthProvider }): React.ReactElement {
+  return (
+    <span className={`provider-glyph provider-glyph-${props.provider}`} aria-hidden="true">
+      {renderProviderMark(props.provider)}
+    </span>
+  );
+}
+
+function renderProviderMark(provider: SuperiorAccountOAuthProvider): React.ReactElement {
+  if (provider === "google") {
+    return (
+      <svg className="provider-logo provider-logo-google" viewBox="0 0 24 24" focusable="false">
+        <path className="google-red" d="M5.2 9.2A7.8 7.8 0 0 1 12 4.2a7.4 7.4 0 0 1 5 1.9" />
+        <path className="google-yellow" d="M5.2 9.2a7.9 7.9 0 0 0 0 6.6" />
+        <path className="google-green" d="M5.2 15.8A7.8 7.8 0 0 0 12 19.8a7.7 7.7 0 0 0 5.5-2.3" />
+        <path className="google-blue" d="M12 12h7.4c0 2.1-.7 3.9-1.9 5.3" />
+      </svg>
+    );
+  }
+
+  if (provider === "discord") {
+    return (
+      <svg className="provider-logo provider-logo-discord" viewBox="0 0 24 24" focusable="false">
+        <path d="M7.1 8.1c2.9-1.7 6.9-1.7 9.8 0l1.4 8.2c-1.8 1.3-3.5 2-5.1 2.2l-.8-1.3h-.8l-.8 1.3c-1.6-.2-3.3-.9-5.1-2.2l1.4-8.2Z" />
+        <circle cx="9.8" cy="12.3" r="1.1" />
+        <circle cx="14.2" cy="12.3" r="1.1" />
+        <path d="M9.7 15.2c1.4.8 3.2.8 4.6 0" />
+      </svg>
+    );
+  }
+
+  return (
+    <svg className="provider-logo provider-logo-x" viewBox="0 0 24 24" focusable="false">
+      <path d="M6 5.6 18.2 18.4" />
+      <path d="M18 5.6 5.8 18.4" />
+    </svg>
+  );
+}
+
+function getAccountAvatarInitials(account: SuperiorSetupState["account"] | undefined): string {
+  const source = account?.handle ?? account?.email ?? "OP";
+  const tokens = source
+    .replace(/@.*/, "")
+    .split(/[^a-z0-9]+/i)
+    .filter(Boolean);
+  const initials = tokens.length > 1
+    ? `${tokens[0]?.[0] ?? ""}${tokens[1]?.[0] ?? ""}`
+    : source.slice(0, 2);
+
+  return initials.toUpperCase();
 }
 
 function StatusOverviewPanel(props: {
@@ -1611,7 +1908,39 @@ function SkillRow(props: { skill: SkillDefinition; equipped: boolean }): React.R
   );
 }
 
-function getPanelCopy(item: MenuItem): string {
+function formatConnectedProviders(providers: SuperiorSetupState["account"]["connectedProviders"] | undefined): string {
+  if (!providers || providers.length === 0) {
+    return "Google, X, or Discord.";
+  }
+
+  return `Linked: ${providers.map(formatAccountProviderName).join(" / ")}`;
+}
+
+function formatAccountProviderName(provider: SuperiorAccountOAuthProvider): string {
+  if (provider === "google") {
+    return "Google";
+  }
+
+  if (provider === "discord") {
+    return "Discord";
+  }
+
+  return "X";
+}
+
+function pickRegistrySteps(setupState: SuperiorSetupState | null): SuperiorSetupState["steps"] {
+  if (!setupState) {
+    return [];
+  }
+
+  const registrySteps = ["account", "model", "browser", "finish"] as const;
+
+  return registrySteps
+    .map((stepId) => setupState.steps.find((step) => step.step === stepId))
+    .filter((step): step is SuperiorSetupState["steps"][number] => Boolean(step));
+}
+
+function getPanelCopy(item: MenuItem, setupState: SuperiorSetupState | null): string {
   switch (item) {
     case "New Bot":
       return "Start with body, pigment, eye, and one part.";
@@ -1627,6 +1956,6 @@ function getPanelCopy(item: MenuItem): string {
       return "Window controls.";
     case "Continue":
     default:
-      return "Workbench state.";
+      return setupState?.requiresSetup ? "Wake the spore and fit the seal." : "Workshop state.";
   }
 }
