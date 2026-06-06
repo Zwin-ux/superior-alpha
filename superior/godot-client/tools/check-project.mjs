@@ -11,6 +11,7 @@ const requiredFiles = [
   "scenes/ClayWorkshop.tscn",
   "scenes/SignalRoom.tscn",
   "scripts/boot_controller.gd",
+  "scripts/bot_catalog.gd",
   "scripts/onboarding_controller.gd",
   "scripts/spore_garden.gd",
   "scripts/clay_workshop.gd",
@@ -43,7 +44,7 @@ const clientScript = readFileSync(path.join(projectRoot, "scripts/realtime_clien
 const bootScript = readFileSync(path.join(projectRoot, "scripts/boot_controller.gd"), "utf8");
 const sfxScript = readFileSync(path.join(projectRoot, "scripts/sfx_player.gd"), "utf8");
 const shaderSource = readFileSync(path.join(projectRoot, "shaders/crt_pixel_pass.gdshader"), "utf8");
-for (const token of ["ClayWorkshop", "ClawdGremlin", "send_signal", "CRTPixelPass", "KEY_1", "KEY_2", "KEY_3", "clay_atlas", "superior-clay-factory-atlas.json", "scene.left-rail", "bot.clawd.body"]) {
+for (const token of ["ClayWorkshop", "BotCatalog", "send_signal", "CRTPixelPass", "KEY_1", "KEY_2", "KEY_3", "clay_atlas", "superior-clay-factory-atlas.json", "scene.left-rail", "bot.clawd.body", "BUILD SHELL", "LOADOUT RACK", "HAND DOCK", "StatusPill"]) {
   if (!workshopScript.includes(token)) {
     throw new Error(`Godot clay workshop is missing expected token: ${token}`);
   }
@@ -61,12 +62,12 @@ for (const token of ["BOOT_DURATION", "AudioStreamGenerator", "boot.seed", "boot
     throw new Error(`Boot controller is missing expected token: ${token}`);
   }
 }
-for (const token of ["REGISTER", "Local Ollama", "OpenAI BYOK", "CHROME HAND", "CLAWD", "SAVE SPORE", "SporeGarden.tscn", "superior-setup-complete.flag"]) {
+for (const token of ["REGISTER", "Local Ollama", "OpenAI BYOK", "CHROME HAND", "CLAWD", "SAVE SPORE", "ClayWorkshop.tscn", "superior-setup-complete.flag"]) {
   if (!onboardingScript.includes(token)) {
     throw new Error(`Onboarding controller is missing expected token: ${token}`);
   }
 }
-for (const token of ["SporeGarden", "BUILDER RACE", "SCOUT RACE", "SENTINEL RACE", "KEY_1", "KEY_2", "KEY_3", "ClayWorkshop.tscn", "SporeGardenCRTPixelPass"]) {
+for (const token of ["SporeGarden", "BotCatalog", "BUILDER RACE", "SCOUT RACE", "SENTINEL RACE", "KEY_1", "KEY_2", "KEY_3", "ClayWorkshop.tscn", "SporeGardenCRTPixelPass", "KIT /", "PLAY   FEED   SIGNAL   ENTER"]) {
   if (!gardenScript.includes(token)) {
     throw new Error(`Spore garden is missing expected token: ${token}`);
   }

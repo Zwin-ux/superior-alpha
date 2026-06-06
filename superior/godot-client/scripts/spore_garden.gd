@@ -1,8 +1,12 @@
 extends Node3D
 class_name SporeGarden
 
+const BotCatalog := preload("res://scripts/bot_catalog.gd")
 const SFX_PLAYER := preload("res://scripts/sfx_player.gd")
 const CLAY_ATLAS_MANIFEST_PATH := "res://assets/clay/superior-clay-factory-atlas.json"
+const SETUP_STATE_URL := "http://127.0.0.1:5317/setup-state"
+const WORKSHOP_SCENE_PATH := "res://scenes/ClayWorkshop.tscn"
+const SETUP_POLL_INTERVAL := 3.2
 
 const RACES := [
 	{
@@ -11,7 +15,6 @@ const RACES := [
 		"short": "BUILDER",
 		"color": Color("#6f8d58"),
 		"accent": Color("#d8a849"),
-		"body": "bot.clawd.body",
 		"line": "project work / tool snap"
 	},
 	{
@@ -20,7 +23,6 @@ const RACES := [
 		"short": "SCOUT",
 		"color": Color("#6fa0b7"),
 		"accent": Color("#8fe8ff"),
-		"body": "bot.clawd.body",
 		"line": "browser signals / lens sweep"
 	},
 	{
@@ -29,7 +31,6 @@ const RACES := [
 		"short": "SENTINEL",
 		"color": Color("#a95442"),
 		"accent": Color("#ffe0a3"),
-		"body": "bot.clawd.body",
 		"line": "checks / shield pulse"
 	}
 ]
@@ -41,10 +42,19 @@ var camera: Camera3D
 var spore_rig: Node3D
 var spore_body: MeshInstance3D
 var eye_panel: MeshInstance3D
+var eye_orb_left: MeshInstance3D
+var eye_orb_right: MeshInstance3D
+var eye_lens_core: MeshInstance3D
 var race_badge: MeshInstance3D
-var skill_part: MeshInstance3D
-var antenna_left: MeshInstance3D
-var antenna_right: MeshInstance3D
+var lens_part: MeshInstance3D
+var badge_part: MeshInstance3D
+var side_part: MeshInstance3D
+var body_antenna_left: MeshInstance3D
+var body_antenna_right: MeshInstance3D
+var body_shield: MeshInstance3D
+var body_orb_glow: MeshInstance3D
+var body_core_bead_left: MeshInstance3D
+var body_core_bead_right: MeshInstance3D
 var race_markers: Array[MeshInstance3D] = []
 var race_labels: Array[Label3D] = []
 var garden_props: Dictionary = {}
@@ -52,7 +62,6 @@ var click_targets: Array[Area3D] = []
 var firefly_nodes: Array[MeshInstance3D] = []
 var firefly_bases: Array[Vector3] = []
 var status_label: Label
-var race_label: Label
 var mood_label: Label
 var action_label: Label
 var equipped_label: Label
@@ -60,10 +69,15 @@ var selected_race_index := 0
 var reaction_kind := ""
 var reaction_timer := 0.0
 var pulse := 0.0
-var equipped := false
 var video_step := 0
 var showcase_mode := false
 var sfx_player
+var setup_request: HTTPRequest
+var setup_state: Dictionary = {}
+var setup_state_error := ""
+var setup_state_loaded := false
+var setup_poll_clock := 0.0
+var garden_bot: Dictionary = BotCatalog.default_bot_identity()
 
 func _ready() -> void:
 	showcase_mode = OS.get_environment("SUPERIOR_SHOWCASE") == "1"
@@ -74,12 +88,17 @@ func _ready() -> void:
 	_build_garden()
 	_build_hud()
 	_build_sfx()
-	_select_race(0)
+	_build_runtime_probe()
+	_apply_bot_identity(garden_bot)
+	_request_setup_state()
 
 func _process(delta: float) -> void:
 	pulse += delta
 	if reaction_timer > 0.0:
 		reaction_timer = max(0.0, reaction_timer - delta)
+		if reaction_timer == 0.0:
+			_refresh_identity_copy()
+	_tick_setup_poll(delta)
 	_update_motion()
 	_update_video_proof()
 
@@ -90,7 +109,7 @@ func _input(event: InputEvent) -> void:
 		if event.keycode == KEY_1:
 			_trigger_reaction("play")
 		if event.keycode == KEY_2:
-			_equip_skill()
+			_show_loadout_reaction()
 		if event.keycode == KEY_3:
 			_trigger_reaction("signal")
 		if event.keycode == KEY_Q:
@@ -98,7 +117,48 @@ func _input(event: InputEvent) -> void:
 		if event.keycode == KEY_E:
 			_select_race(min(RACES.size() - 1, selected_race_index + 1))
 		if event.keycode == KEY_ENTER or event.keycode == KEY_SPACE:
-			get_tree().change_scene_to_file("res://scenes/ClayWorkshop.tscn")
+			get_tree().change_scene_to_file(WORKSHOP_SCENE_PATH)
+
+func _build_runtime_probe() -> void:
+	setup_request = HTTPRequest.new()
+	setup_request.name = "GardenSetupProbe"
+	add_child(setup_request)
+	setup_request.request_completed.connect(_on_setup_state_response)
+
+func _request_setup_state() -> void:
+	if not setup_request or setup_request.get_http_client_status() != HTTPClient.STATUS_DISCONNECTED:
+		return
+	var error := setup_request.request(SETUP_STATE_URL)
+	if error != OK:
+		setup_state_loaded = true
+		setup_state_error = "daemon offline"
+		_refresh_identity_copy()
+
+func _tick_setup_poll(delta: float) -> void:
+	setup_poll_clock += delta
+	if setup_poll_clock < SETUP_POLL_INTERVAL:
+		return
+	setup_poll_clock = 0.0
+	_request_setup_state()
+
+func _on_setup_state_response(result: int, response_code: int, _headers: PackedStringArray, body: PackedByteArray) -> void:
+	setup_state_loaded = true
+	if result != HTTPRequest.RESULT_SUCCESS or response_code < 200 or response_code >= 300:
+		setup_state_error = "daemon offline"
+		_refresh_identity_copy()
+		return
+	var parsed := _parse_json_dictionary(body)
+	if parsed.is_empty():
+		setup_state_error = "bad response"
+		_refresh_identity_copy()
+		return
+	setup_state = parsed
+	setup_state_error = ""
+	var bot_state = parsed.get("bot", {})
+	if typeof(bot_state) == TYPE_DICTIONARY:
+		_apply_bot_identity(bot_state.get("identity", {}))
+	else:
+		_refresh_identity_copy()
 
 func _build_garden() -> void:
 	camera = Camera3D.new()
@@ -162,11 +222,19 @@ func _build_spore() -> void:
 
 	spore_body = _add_panel_to(spore_rig, "GardenSporeBody", "bot.clawd.body", Vector2(1.52, 1.52), Vector3(0.0, 0.42, 0.14))
 	eye_panel = _add_panel_to(spore_rig, "GardenSporeEyes", "bot.clawd.eye.pixel", Vector2(0.72, 0.36), Vector3(0.0, 0.55, 0.35))
+	eye_orb_left = _add_sphere(spore_rig, "GardenEyeOrbLeft", 0.062, Vector3(-0.17, 0.55, 0.38), Color("#dff8ff"))
+	eye_orb_right = _add_sphere(spore_rig, "GardenEyeOrbRight", 0.062, Vector3(0.17, 0.55, 0.38), Color("#dff8ff"))
+	eye_lens_core = _add_sphere(spore_rig, "GardenEyeLensCore", 0.14, Vector3(0.0, 0.55, 0.39), Color("#dff8ff"))
 	race_badge = _add_box(spore_rig, "GardenRaceBadge", Vector3(0.24, 0.18, 0.08), Vector3(0.58, 0.55, 0.41), Color("#d8a849"))
-	skill_part = _add_panel_to(spore_rig, "GardenSkillPart", "bot.clawd.skill.eye", Vector2(0.34, 0.34), Vector3(-0.58, 0.54, 0.42))
-	skill_part.visible = false
-	antenna_left = _add_box(spore_rig, "BuilderAntennaLeft", Vector3(0.07, 0.58, 0.07), Vector3(-0.28, 1.15, 0.18), Color("#42502f"))
-	antenna_right = _add_box(spore_rig, "BuilderAntennaRight", Vector3(0.07, 0.42, 0.07), Vector3(0.23, 1.08, 0.18), Color("#42502f"))
+	lens_part = _add_panel_to(spore_rig, "GardenSkillLens", "bot.clawd.skill.eye", Vector2(0.34, 0.34), Vector3(-0.58, 0.54, 0.42))
+	badge_part = _add_panel_to(spore_rig, "GardenSkillBadge", "bot.clawd.skill.badge", Vector2(0.32, 0.32), Vector3(0.68, 0.54, 0.42))
+	side_part = _add_panel_to(spore_rig, "GardenSkillSide", "bot.clawd.skill.side", Vector2(0.34, 0.34), Vector3(-0.76, 0.25, 0.3))
+	body_antenna_left = _add_box(spore_rig, "GardenAntennaLeft", Vector3(0.06, 0.4, 0.06), Vector3(-0.25, 1.0, 0.18), Color("#42502f"))
+	body_antenna_right = _add_box(spore_rig, "GardenAntennaRight", Vector3(0.06, 0.3, 0.06), Vector3(0.22, 0.95, 0.18), Color("#42502f"))
+	body_shield = _add_box(spore_rig, "GardenBodyShield", Vector3(0.24, 0.18, 0.08), Vector3(0.54, 0.72, 0.38), Color("#ffe0a3"))
+	body_orb_glow = _add_sphere(spore_rig, "GardenBodyOrbGlow", 0.1, Vector3(0.0, 0.42, 0.25), Color("#ffd88a"))
+	body_core_bead_left = _add_sphere(spore_rig, "GardenCoreBeadLeft", 0.06, Vector3(-0.14, 0.88, 0.22), Color("#d7c999"))
+	body_core_bead_right = _add_sphere(spore_rig, "GardenCoreBeadRight", 0.06, Vector3(0.14, 0.88, 0.22), Color("#d7c999"))
 
 func _build_garden_props() -> void:
 	for index in range(6):
@@ -214,49 +282,55 @@ func _build_hud() -> void:
 	root.set_anchors_preset(Control.PRESET_FULL_RECT)
 	hud.add_child(root)
 
-	status_label = _add_hud_label(root, "SPORE GARDEN", Vector2(26, 20), Vector2(300, 30), 20, Color("#f8e6b2"))
-	race_label = _add_hud_label(root, "RACE / BUILDER", Vector2(26, 54), Vector2(340, 26), 16, Color("#d7c999"))
-	race_label.visible = false
-	mood_label = _add_hud_label(root, "BUILDER / CURIOUS", Vector2(26, 54), Vector2(360, 26), 16, Color("#d7c999"))
-	equipped_label = _add_hud_label(root, "PART / EMPTY", Vector2(26, 110), Vector2(340, 26), 16, Color("#d7c999"))
-	equipped_label.visible = false
-	action_label = _add_hud_label(root, "RACES   PLAY   FEED   GATE", Vector2(760, 646), Vector2(420, 26), 14, Color("#f8e6b2"))
+	status_label = _add_hud_label(root, "CLAWD", Vector2(26, 20), Vector2(320, 30), 20, Color("#f8e6b2"))
+	mood_label = _add_hud_label(root, "ORB / LAVENDER / GLOW", Vector2(26, 54), Vector2(420, 26), 16, Color("#d7c999"))
+	equipped_label = _add_hud_label(root, "KIT / X-RAY / REPO / EXPLAIN", Vector2(26, 88), Vector2(520, 26), 16, Color("#d7c999"))
+	action_label = _add_hud_label(root, "PLAY   FEED   SIGNAL   ENTER", Vector2(728, 646), Vector2(452, 26), 14, Color("#f8e6b2"))
 	_add_crt_pass(root)
 
 func _build_sfx() -> void:
 	sfx_player = SFX_PLAYER.new()
 	add_child(sfx_player)
 
-func _select_race(index: int) -> void:
+func _apply_bot_identity(raw_bot: Dictionary) -> void:
+	garden_bot = BotCatalog.normalize_bot_identity(raw_bot)
+	_set_selected_race(_race_index_for_id(str(garden_bot.get("race", "builder"))))
+	_apply_bot_visuals()
+	_refresh_identity_copy()
+
+func _refresh_identity_copy() -> void:
+	if status_label:
+		var title := str(garden_bot.get("name", "Clawd")).to_upper()
+		if setup_state_error != "" and setup_state_loaded:
+			title += " / LOCAL"
+		status_label.text = title
+	if mood_label:
+		mood_label.text = BotCatalog.format_identity_meta(garden_bot)
+	if equipped_label:
+		equipped_label.text = "KIT / %s" % BotCatalog.format_loadout_meta(garden_bot)
+	if action_label:
+		action_label.text = "PLAY   FEED   SIGNAL   ENTER"
+
+func _set_selected_race(index: int) -> void:
 	selected_race_index = clamp(index, 0, RACES.size() - 1)
-	var race: Dictionary = RACES[selected_race_index]
-	if spore_body and spore_body.material_override:
-		spore_body.material_override.albedo_color = race["color"]
-	if race_badge and race_badge.material_override:
-		race_badge.material_override.albedo_color = race["accent"]
-	if antenna_left:
-		antenna_left.visible = race["id"] == "builder"
-	if antenna_right:
-		antenna_right.visible = race["id"] == "builder"
 	for marker_index in range(race_markers.size()):
 		var marker := race_markers[marker_index]
+		var label := race_labels[marker_index]
 		var active := marker_index == selected_race_index
 		marker.scale = Vector3(1.14, 1.14, 1.14) if active else Vector3.ONE
 		if marker.material_override:
 			marker.material_override.albedo_color = Color("#e0be72") if active else Color("#c5a879")
-	if race_label:
-		race_label.text = "RACE / %s" % str(race["short"])
-	if mood_label:
-		mood_label.text = "%s / %s" % [str(race["short"]), str(race["line"]).to_upper()]
+		if label:
+			label.modulate = Color("#f8e6b2") if active else Color("#23170f")
+
+func _select_race(index: int) -> void:
+	_set_selected_race(index)
 	_trigger_reaction("race")
 
-func _equip_skill() -> void:
-	equipped = true
-	if skill_part:
-		skill_part.visible = true
-	if equipped_label:
-		equipped_label.text = "PART / X-RAY FITTED"
+func _show_loadout_reaction() -> void:
 	_trigger_reaction("equip")
+	if equipped_label:
+		equipped_label.text = "KIT / %s" % BotCatalog.format_loadout_meta(garden_bot)
 
 func _trigger_reaction(kind: String) -> void:
 	reaction_kind = kind
@@ -274,16 +348,98 @@ func _trigger_reaction(kind: String) -> void:
 			"race":
 				sfx_player.play_sfx("select", 0.56)
 	if mood_label:
-		if kind == "play":
-			mood_label.text = "%s / HAPPY HOP" % str(RACES[selected_race_index]["short"])
-		elif kind == "feed":
-			mood_label.text = "%s / FED" % str(RACES[selected_race_index]["short"])
-		elif kind == "equip":
-			mood_label.text = "%s / PART SNAP" % str(RACES[selected_race_index]["short"])
-		elif kind == "signal":
-			mood_label.text = "%s / SIGNAL CAUGHT" % str(RACES[selected_race_index]["short"])
-		elif kind == "race":
-			mood_label.text = "%s / RACE SET" % str(RACES[selected_race_index]["short"])
+		match kind:
+			"play":
+				mood_label.text = "%s / HAPPY HOP" % str(garden_bot.get("name", "Clawd")).to_upper()
+			"feed":
+				mood_label.text = "%s / FED" % str(garden_bot.get("name", "Clawd")).to_upper()
+			"equip":
+				mood_label.text = "%s / KIT SNAP" % str(garden_bot.get("name", "Clawd")).to_upper()
+			"signal":
+				mood_label.text = "%s / SIGNAL CAUGHT" % str(garden_bot.get("name", "Clawd")).to_upper()
+			"race":
+				var race: Dictionary = RACES[selected_race_index]
+				mood_label.text = "%s / %s" % [str(race["short"]), str(race["line"]).to_upper()]
+
+func _apply_bot_visuals() -> void:
+	var pigment := BotCatalog.pigment_info(str(garden_bot.get("color", "lavender")))
+	var body_id := str(garden_bot.get("body", "orb"))
+	var eye_id := str(garden_bot.get("eye", "glow"))
+	if spore_body and spore_body.material_override:
+		spore_body.material_override.albedo_color = pigment.get("color", Color.WHITE)
+	var race: Dictionary = RACES[_race_index_for_id(str(garden_bot.get("race", "builder")))]
+	if race_badge and race_badge.material_override:
+		race_badge.material_override.albedo_color = race.get("accent", Color("#d8a849"))
+	_apply_body_style(body_id, pigment)
+	_apply_eye_style(eye_id)
+	_apply_skill_style(pigment)
+
+func _apply_body_style(body_id: String, pigment: Dictionary) -> void:
+	var shadow = pigment.get("shadow", Color("#4e463f"))
+	var highlight = pigment.get("highlight", Color("#fff8ec"))
+	spore_body.position = Vector3(0.0, 0.42, 0.14)
+	match body_id:
+		"scanner":
+			spore_body.scale = Vector3(0.92, 0.86, 1.0)
+		"sentinel":
+			spore_body.scale = Vector3(1.0, 0.94, 1.0)
+		"core":
+			spore_body.scale = Vector3(0.86, 0.86, 1.0)
+		"gremlin":
+			spore_body.scale = Vector3(1.0, 1.0, 1.0)
+		_:
+			spore_body.scale = Vector3(1.06, 1.06, 1.0)
+	if body_antenna_left and body_antenna_left.material_override:
+		body_antenna_left.visible = body_id == "gremlin"
+		body_antenna_left.material_override.albedo_color = shadow
+	if body_antenna_right and body_antenna_right.material_override:
+		body_antenna_right.visible = body_id == "gremlin"
+		body_antenna_right.material_override.albedo_color = shadow
+	if body_shield and body_shield.material_override:
+		body_shield.visible = body_id == "sentinel"
+		body_shield.material_override.albedo_color = highlight
+	if body_orb_glow and body_orb_glow.material_override:
+		body_orb_glow.visible = body_id == "orb"
+		body_orb_glow.material_override.albedo_color = highlight
+	if body_core_bead_left and body_core_bead_left.material_override:
+		body_core_bead_left.visible = body_id == "core"
+		body_core_bead_left.material_override.albedo_color = highlight
+	if body_core_bead_right and body_core_bead_right.material_override:
+		body_core_bead_right.visible = body_id == "core"
+		body_core_bead_right.material_override.albedo_color = highlight
+
+func _apply_eye_style(eye_id: String) -> void:
+	var eye_color := Color("#dff8ff") if eye_id == "lens" or eye_id == "glow" else Color("#15120f")
+	if eye_panel and eye_panel.material_override:
+		eye_panel.visible = eye_id == "pixel"
+		eye_panel.material_override.albedo_color = Color.WHITE
+	if eye_orb_left and eye_orb_left.material_override:
+		eye_orb_left.visible = eye_id == "dot" or eye_id == "glow"
+		eye_orb_left.material_override.albedo_color = eye_color
+		eye_orb_left.scale = Vector3.ONE * (1.12 if eye_id == "glow" else 0.72)
+	if eye_orb_right and eye_orb_right.material_override:
+		eye_orb_right.visible = eye_id == "dot" or eye_id == "glow"
+		eye_orb_right.material_override.albedo_color = eye_color
+		eye_orb_right.scale = Vector3.ONE * (1.12 if eye_id == "glow" else 0.72)
+	if eye_lens_core and eye_lens_core.material_override:
+		eye_lens_core.visible = eye_id == "lens"
+		eye_lens_core.material_override.albedo_color = eye_color
+
+func _apply_skill_style(pigment: Dictionary) -> void:
+	var highlight = pigment.get("highlight", Color("#f0cd7a"))
+	var shadow = pigment.get("shadow", Color("#4e463f"))
+	var eye_skill := BotCatalog.equipped_skill_for_slot(garden_bot, "eye")
+	var side_skill := BotCatalog.equipped_skill_for_slot(garden_bot, "side")
+	var badge_skill := BotCatalog.equipped_skill_for_slot(garden_bot, "badge")
+	if lens_part and lens_part.material_override:
+		lens_part.visible = eye_skill != ""
+		lens_part.material_override.albedo_color = highlight
+	if side_part and side_part.material_override:
+		side_part.visible = side_skill != ""
+		side_part.material_override.albedo_color = shadow
+	if badge_part and badge_part.material_override:
+		badge_part.visible = badge_skill != ""
+		badge_part.material_override.albedo_color = Color("#f0cd7a")
 
 func _update_motion() -> void:
 	if not spore_rig:
@@ -314,12 +470,17 @@ func _update_motion() -> void:
 		camera.position.x = sin(pulse * 0.2) * 0.14
 		camera.position.y = 3.16 + cos(pulse * 0.24) * 0.04
 		camera.rotation_degrees.x = -20.0 + sin(pulse * 0.18) * 0.8
-	if eye_panel:
+	if eye_panel and eye_panel.visible:
 		var blink := int(pulse * 2.0) % 7 == 0 or (reaction_kind == "play" and reaction_timer > 0.28)
 		eye_panel.scale.y = 0.25 if blink else 1.0
-	if skill_part and skill_part.visible:
-		var pulse_scale := 1.0 + (sin(reaction_timer * 13.0) * 0.12 if reaction_kind == "equip" or reaction_kind == "signal" else 0.0)
-		skill_part.scale = Vector3.ONE * pulse_scale
+	if eye_lens_core and eye_lens_core.visible:
+		eye_lens_core.scale = Vector3.ONE * (1.0 + sin(pulse * 2.2) * 0.04)
+	if lens_part:
+		lens_part.scale = Vector3.ONE * (1.0 + (sin(reaction_timer * 13.0) * 0.12 if reaction_kind == "equip" or reaction_kind == "signal" else 0.0))
+	if badge_part:
+		badge_part.scale = Vector3.ONE * (1.0 + (sin(reaction_timer * 11.0) * 0.1 if reaction_kind == "feed" else 0.0))
+	if side_part:
+		side_part.scale = Vector3.ONE * (1.0 + (sin(reaction_timer * 9.0) * 0.1 if reaction_kind == "race" else 0.0))
 	_update_prop_motion()
 
 func _update_prop_motion() -> void:
@@ -350,36 +511,31 @@ func _update_prop_motion() -> void:
 func _update_video_proof() -> void:
 	if OS.get_environment("SUPERIOR_VIDEO_PROOF") != "1":
 		return
-	var beat_1 := 0.62 if showcase_mode else 0.65
-	var beat_2 := 1.72 if showcase_mode else 2.0
-	var beat_3 := 2.72 if showcase_mode else 3.25
-	var beat_4 := 3.72 if showcase_mode else 4.45
-	var beat_5 := 5.05 if showcase_mode else 6.05
-	var beat_6 := 6.25 if showcase_mode else 7.75
-	var beat_7 := 6.9 if showcase_mode else 6.9
+	var beat_1 := 0.72 if showcase_mode else 0.8
+	var beat_2 := 1.85 if showcase_mode else 2.05
+	var beat_3 := 3.0 if showcase_mode else 3.4
+	var beat_4 := 4.18 if showcase_mode else 4.8
+	var beat_5 := 5.4 if showcase_mode else 6.0
+	var beat_6 := 6.9 if showcase_mode else 7.4
 	if video_step == 0 and pulse > beat_1:
 		video_step = 1
-		_select_race(0)
-		_trigger_reaction("play")
+		_set_selected_race(_race_index_for_id(str(garden_bot.get("race", "builder"))))
+		_trigger_reaction("race")
 	if video_step == 1 and pulse > beat_2:
 		video_step = 2
-		_select_race(1)
+		_trigger_reaction("play")
 	if video_step == 2 and pulse > beat_3:
 		video_step = 3
-		_select_race(2)
+		_show_loadout_reaction()
 	if video_step == 3 and pulse > beat_4:
 		video_step = 4
-		_select_race(0)
-		_equip_skill()
+		_trigger_reaction("feed")
 	if video_step == 4 and pulse > beat_5:
 		video_step = 5
-		_trigger_reaction("feed")
+		_trigger_reaction("signal")
 	if video_step == 5 and pulse > beat_6:
 		video_step = 6
-		_trigger_reaction("signal")
-	if video_step == 6 and pulse > beat_7:
-		video_step = 7
-		get_tree().change_scene_to_file("res://scenes/ClayWorkshop.tscn")
+		get_tree().change_scene_to_file(WORKSHOP_SCENE_PATH)
 
 func _handle_scene_click(screen_position: Vector2) -> void:
 	if not camera:
@@ -397,12 +553,24 @@ func _handle_scene_click(screen_position: Vector2) -> void:
 		return
 	var kind := str(collider.get_meta("kind"))
 	if kind == "gate":
-		get_tree().change_scene_to_file("res://scenes/ClayWorkshop.tscn")
+		get_tree().change_scene_to_file(WORKSHOP_SCENE_PATH)
 	elif kind.begins_with("race:"):
 		var race_index := int(kind.split(":")[1])
 		_select_race(race_index)
-	else:
+	elif kind == "play" or kind == "feed" or kind == "signal":
 		_trigger_reaction(kind)
+
+func _race_index_for_id(race_id: String) -> int:
+	for index in range(RACES.size()):
+		if str(RACES[index]["id"]) == race_id:
+			return index
+	return 0
+
+func _parse_json_dictionary(body: PackedByteArray) -> Dictionary:
+	var parsed = JSON.parse_string(body.get_string_from_utf8())
+	if typeof(parsed) != TYPE_DICTIONARY:
+		return {}
+	return parsed
 
 func _load_clay_asset_manifest() -> void:
 	if not clay_image:

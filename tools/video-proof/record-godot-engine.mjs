@@ -16,6 +16,8 @@ const runDir = path.join(artifactRoot, `${stamp}-${scenario}`);
 const rawMoviePath = path.join(runDir, `SUPERIOR-${scenario}-${stamp}.avi`);
 const mp4Path = path.join(runDir, `SUPERIOR-${scenario}-${stamp}.mp4`);
 const posterPath = path.join(runDir, `SUPERIOR-${scenario}-${stamp}.png`);
+const workshopStillMoviePath = path.join(runDir, `SUPERIOR-${scenario}-${stamp}-workshop.avi`);
+const workshopStillPath = path.join(runDir, `SUPERIOR-${scenario}-${stamp}-workshop-still.png`);
 const reviewFramesDir = path.join(runDir, "review-frames");
 const contactSheetPath = path.join(reviewFramesDir, "contact-sheet-1s.png");
 const manifestPath = path.join(runDir, "manifest.json");
@@ -30,38 +32,26 @@ const ffmpegPath = await resolveFfmpegPath();
 let godotProcess;
 
 try {
-  const result = spawnSync(godotPath, [
-    "--rendering-driver",
-    "opengl3",
-    "--path",
-    projectDir,
-    "--fixed-fps",
-    String(fps),
-    "--write-movie",
-    rawMoviePath,
-    "--quit-after",
-    String(frameCount)
-  ], {
-    cwd: projectDir,
-    encoding: "utf8",
-    windowsHide: false,
-    env: {
-      ...process.env,
-      SUPERIOR_FORCE_ONBOARDING: "1",
-      SUPERIOR_VIDEO_PROOF: "1",
-      SUPERIOR_SHOWCASE: options.showcase ? "1" : process.env.SUPERIOR_SHOWCASE ?? ""
-    }
+  const durationSeconds = frameCount / fps;
+  runGodotMovieCapture(godotPath, rawMoviePath, frameCount, {
+    ...process.env,
+    SUPERIOR_FORCE_ONBOARDING: "1",
+    SUPERIOR_VIDEO_PROOF: "1",
+    SUPERIOR_SHOWCASE: options.showcase ? "1" : process.env.SUPERIOR_SHOWCASE ?? ""
   });
 
-  if (result.status !== 0 || !existsSync(rawMoviePath)) {
-    throw new Error(`Godot movie writer failed.\n${result.stderr || result.stdout}`);
-  }
-
   convertMovie(ffmpegPath, rawMoviePath, mp4Path);
-  extractPoster(ffmpegPath, mp4Path, posterPath, options.posterSecond);
+  extractPoster(ffmpegPath, mp4Path, posterPath, clampPosterSecond(options.posterSecond, durationSeconds));
   await mkdir(reviewFramesDir, { recursive: true });
-  extractReviewFrames(ffmpegPath, mp4Path, reviewFramesDir, options.reviewFrameSeconds);
-  createContactSheet(ffmpegPath, mp4Path, contactSheetPath, Math.ceil(frameCount / fps));
+  extractReviewFrames(ffmpegPath, mp4Path, reviewFramesDir, options.reviewFrameSeconds.filter((second) => second < durationSeconds));
+  createContactSheet(ffmpegPath, mp4Path, contactSheetPath, Math.ceil(durationSeconds));
+  runGodotMovieCapture(godotPath, workshopStillMoviePath, options.workshopStillFrames, {
+    ...process.env,
+    SUPERIOR_FORCE_WORKSHOP: "1",
+    SUPERIOR_VIDEO_PROOF: "1",
+    SUPERIOR_SHOWCASE: options.showcase ? "1" : process.env.SUPERIOR_SHOWCASE ?? ""
+  });
+  extractPoster(ffmpegPath, workshopStillMoviePath, workshopStillPath, options.workshopStillSecond);
 
   const manifest = {
     kind: "superior-video-proof",
@@ -75,12 +65,14 @@ try {
     rawMoviePath,
     mp4Path,
     posterPath,
+    workshopStillMoviePath,
+    workshopStillPath,
     reviewFramesDir,
     contactSheetPath,
     captureMode: "godot-write-movie",
     frames: frameCount,
     fps,
-    durationSeconds: frameCount / fps,
+    durationSeconds,
     notes: options.notes
   };
 
@@ -96,6 +88,14 @@ try {
 function resolveGodotPath() {
   const candidates = [
     process.env.GODOT_BIN,
+    path.join(
+      process.env.LOCALAPPDATA ?? "",
+      "Microsoft",
+      "WinGet",
+      "Packages",
+      "GodotEngine.GodotEngine_Microsoft.Winget.Source_8wekyb3d8bbwe",
+      "Godot_v4.6.3-stable_win64_console.exe"
+    ),
     commandPath("godot"),
     commandPath("godot_console"),
     path.join(
@@ -140,18 +140,46 @@ function parseArgs(args) {
     showcase,
     frames,
     posterSecond: showcase ? 10.8 : 12.1,
+    workshopStillFrames: showcase ? 210 : 240,
+    workshopStillSecond: showcase ? 4.6 : 5.8,
     reviewFrameSeconds: showcase ? [1.0, 2.6, 4.2, 5.8, 7.4, 9.2, 10.8, 12.6, 15.0, 17.2, 20.6] : [1.0, 3.2, 5.2, 7.2, 9.2, 10.8, 12.1, 14.6, 17.4, 19.6, 21.2],
     notes: showcase
       ? [
           "Production showcase from the Superior Godot runtime.",
           "22-second beat map: console boot, Wake Spore, body pick, eye fit, role stamp, Browser bind, ICON MATCH, Article X-Ray SKILL RAN, spore reaction, registry stamp, Spore Garden, Workshop reactions.",
-          "Uses SUPERIOR_SHOWCASE=1 to hide debug controls and keep labels product-facing."
+          "Uses SUPERIOR_SHOWCASE=1 to hide debug controls and keep labels product-facing.",
+          "Exports a dedicated workshop still from a forced workshop boot for deterministic proof of the main surface."
         ]
       : [
           "Generated from the Superior Alpha Godot engine slice.",
-          "Shows the SUPERIOR first-boot ritual: Wake Spore, choose body, fit eye, choose role, bind browser hand, ICON MATCH, Article X-Ray SKILL RAN, spore reaction, stamp registry, Spore Garden home, workshop drop, mocked server events, and bot reactions."
+          "Shows the SUPERIOR first-boot ritual: Wake Spore, choose body, fit eye, choose role, bind browser hand, ICON MATCH, Article X-Ray SKILL RAN, spore reaction, stamp registry, Spore Garden home, workshop drop, mocked server events, and bot reactions.",
+          "Exports a dedicated workshop still from a forced workshop boot for deterministic proof of the main surface."
         ]
   };
+}
+
+function runGodotMovieCapture(godotPath, moviePath, captureFrameCount, env) {
+  const result = spawnSync(godotPath, [
+    "--rendering-driver",
+    "opengl3",
+    "--path",
+    projectDir,
+    "--fixed-fps",
+    String(fps),
+    "--write-movie",
+    moviePath,
+    "--quit-after",
+    String(captureFrameCount)
+  ], {
+    cwd: projectDir,
+    encoding: "utf8",
+    windowsHide: false,
+    env
+  });
+
+  if (result.status !== 0 || !existsSync(moviePath)) {
+    throw new Error(`Godot movie writer failed.\n${result.stderr || result.stdout}`);
+  }
 }
 
 function commandPath(command) {
@@ -379,6 +407,11 @@ function extractPoster(ffmpegPath, inputPath, outputPath, posterSecond) {
   if (result.status !== 0 || !existsSync(outputPath)) {
     throw new Error(`ffmpeg failed to extract poster frame.\n${result.stderr || result.stdout}`);
   }
+}
+
+function clampPosterSecond(requestedSecond, durationSeconds) {
+  const latestValidSecond = Math.max(0, durationSeconds - 0.35);
+  return Math.min(requestedSecond, latestValidSecond);
 }
 
 function extractReviewFrames(ffmpegPath, inputPath, outputDir, seconds) {
