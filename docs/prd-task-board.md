@@ -1,6 +1,6 @@
 # SUPERIOR PRD Task Board
 
-Updated: 2026-06-05
+Updated: 2026-06-06
 
 This is the execution board for the current PRD. It is not a roadmap wishlist. Each item has a lane, a proof gate, and the next concrete action.
 
@@ -31,7 +31,7 @@ Product rule: do not widen platform features until the 0.19 loop survives a fres
 | Account/spore setup continuity | daemon / windows | Review | `corepack pnpm gate:sprint -- --sprint account-spore-continuity --lane daemon --lane windows --lane root --command "corepack pnpm fixture:supabase-account" --command "corepack pnpm windows:installed-loop-smoke:skip-build"` | Account continuity proof now shows Google/X/Discord account state beside a local spore, no token leakage, and sign-out preserving the local spore. Latest sprint report: `.clawdbot/sprint-gates/2026-06-06T14-32-38-492Z-account-spore-continuity.json`. |
 | Chrome hand bind proof | extension / daemon | Review | `corepack pnpm fixture:extension-skill` | Re-run stale-token, unpaired, and active-page proof after any daemon or extension contract change. |
 | Spore survives reinstall | windows / daemon | Review | `corepack pnpm windows:installed-loop-smoke:skip-build` | Added reinstall persistence check; latest report: `.clawdbot/verification/native-loop-fixture-1780644556596.json`. |
-| Release proof packet | release / docs | Not started | `corepack pnpm gate:sprint -- --sprint release-proof --lane root` | Build a one-page release proof with MP4, installer/extension artifacts, caveats, and exact test commands. |
+| Release proof packet | release / docs | Review | `corepack pnpm gate:sprint -- --sprint release-proof --prompt "build current alpha release proof packet" --lane docs --lane root` | One-page packet exists at `docs/release-proof-packet.md`; latest sprint report: `.clawdbot/sprint-gates/2026-06-06T15-04-08-933Z-release-proof.json`. |
 
 ## P1 Tasks
 
@@ -84,4 +84,4 @@ root           full workspace typecheck/test/build
 
 ## Current Next Move
 
-Continue with `Release proof packet`. Reinstall persistence, first-run recovery, and account/spore continuity are in review; the remaining beta-candidate blocker is a one-page proof packet that ties installer, extension, MP4, sprint gates, caveats, and exact commands together.
+Continue with fresh artifact rebuild and live OAuth smoke. Reinstall persistence, first-run recovery, account/spore continuity, and the release proof packet are in review; the remaining beta-candidate blockers are current-commit installer/extension rebuilds and a manual Google/X/Discord OAuth walkthrough on a clean Windows profile.

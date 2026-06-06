@@ -15,6 +15,7 @@ Current source of truth:
 - Native platform reset: [native-platform-reset.md](native-platform-reset.md)
 - Mobile platform plan: [mobile-platform-plan.md](mobile-platform-plan.md)
 - Mobile 3D asset pipeline: [mobile-3d-asset-pipeline.md](mobile-3d-asset-pipeline.md)
+- Release proof packet: [release-proof-packet.md](release-proof-packet.md)
 
 ## Current Release Focus
 
@@ -32,7 +33,8 @@ Recommended work packet:
 
 - `0.19 Clean Install Ownership Loop`
 - Prove a fresh install can wake/register one spore, bind Chrome, run the starter skill, and reload the same spore after reinstall.
-- Close with fixture reports, artifact paths, and a short release proof page.
+- Close with fixture reports, artifact paths, and the release proof packet.
+- Current next build action: rebuild installer/extension artifacts from the latest commit, then run live Google/X/Discord OAuth smoke against the configured Supabase project.
 
 ## Phase 1: Product Frame
 
