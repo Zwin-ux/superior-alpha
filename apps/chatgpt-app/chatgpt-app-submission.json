@@ -1,0 +1,132 @@
+{
+  "$schema": "https://developers.openai.com/apps-sdk/schemas/chatgpt-app-submission.v1.json",
+  "schema_version": 1,
+  "app_info": {
+    "display_name": "SUPERIOR Pocket Walker",
+    "subtitle": "Carry bot status",
+    "description": "SUPERIOR Pocket Walker carries a safe mini version of the SUPERIOR bot through ChatGPT. Users can inspect loadout, proof hints, device readiness, and the right dock-back route without running local skills, pairing browsers, opening profiles, collecting secrets, or changing local state inside ChatGPT.",
+    "category": "DEVELOPER_TOOLS"
+  },
+  "tools": {
+    "superior_get_companion": {
+      "annotations": {
+        "readOnlyHint": true,
+        "openWorldHint": false,
+        "destructiveHint": false
+      },
+      "justifications": {
+        "read_only_justification": "Only retrieves a sanitized, closed-world pocket companion snapshot or offline fallback and does not mutate local SUPERIOR state.",
+        "open_world_justification": "Does not publish, send, or change public internet state, call arbitrary URLs, or mutate external third-party systems.",
+        "destructive_justification": "Does not delete, overwrite, revoke access, pair browsers, run local skills, open profiles, collect secrets, or change saved bot state."
+      }
+    },
+    "superior_plan_handoff": {
+      "annotations": {
+        "readOnlyHint": true,
+        "openWorldHint": false,
+        "destructiveHint": false
+      },
+      "justifications": {
+        "read_only_justification": "Computes a dock-back recommendation from the user's intent and does not call privileged SUPERIOR actions.",
+        "open_world_justification": "Does not submit forms, create public records, send messages, call arbitrary URLs, or modify third-party systems.",
+        "destructive_justification": "Does not delete or overwrite data, pair browsers, run local skills, collect secrets, or change saved bot state."
+      }
+    },
+    "superior_render_field_desk": {
+      "annotations": {
+        "readOnlyHint": true,
+        "openWorldHint": false,
+        "destructiveHint": false
+      },
+      "justifications": {
+        "read_only_justification": "Reads the same safe, closed-world pocket companion snapshot and renders a widget without changing local or external state.",
+        "open_world_justification": "The widget receives tool output only and has no external connect or resource domains configured.",
+        "destructive_justification": "Does not perform irreversible actions, run local skills, pair browsers, open profiles, collect secrets, or alter stored identity."
+      }
+    }
+  },
+  "test_cases": [
+    {
+      "description": "Show the current safe SUPERIOR pocket companion snapshot.",
+      "user_prompt": "Show my current SUPERIOR pocket walker.",
+      "file_attachment_urls": null,
+      "tools_triggered": "superior_get_companion",
+      "expected_output": "Returns bot identity, equipped loadout, pocket carry state, account/device status, recent proof summaries, mobile asset readiness, platform routes, and privacy exclusions.",
+      "expected_output_url": null
+    },
+    {
+      "description": "Route a browser article request to the extension surface.",
+      "user_prompt": "I want SUPERIOR to x-ray the article in my current browser tab. Which surface should I use?",
+      "file_attachment_urls": null,
+      "tools_triggered": "superior_plan_handoff",
+      "expected_output": "Recommends the browser extension hand, explains pairing is required, and notes that page context stays with the local daemon.",
+      "expected_output_url": null
+    },
+    {
+      "description": "Route a GitHub repo playpen request to the Windows app.",
+      "user_prompt": "I want to inspect a GitHub repo and run the playpen proof.",
+      "file_attachment_urls": null,
+      "tools_triggered": "superior_plan_handoff",
+      "expected_output": "Recommends the Windows SUPERIOR app, names the installed/local proof path, and avoids claiming ChatGPT can run the local playpen.",
+      "expected_output_url": null
+    },
+    {
+      "description": "Render the Pocket Walker widget for a visual status check.",
+      "user_prompt": "Open the SUPERIOR pocket walker and show me where to dock next.",
+      "file_attachment_urls": null,
+      "tools_triggered": "superior_render_field_desk",
+      "expected_output": "Displays the pocket companion widget with safe bot status, proof summary, asset badge, and platform handoff guidance.",
+      "expected_output_url": null
+    },
+    {
+      "description": "Explain mobile companion scope without expanding alpha.",
+      "user_prompt": "Can this go on mobile too? Route that work.",
+      "file_attachment_urls": null,
+      "tools_triggered": "superior_plan_handoff",
+      "expected_output": "Recommends the mobile walker prep lane, explains it is identity/proof/device/share only, and states that mobile is not a phone Workshop.",
+      "expected_output_url": null
+    },
+    {
+      "description": "Use full companion detail when the user asks for proof history.",
+      "user_prompt": "Give me the SUPERIOR proof snapshot with recent proof details.",
+      "file_attachment_urls": null,
+      "tools_triggered": "superior_get_companion",
+      "expected_output": "Returns recent proof summaries without raw page text, pairing tokens, local paths, or key material.",
+      "expected_output_url": null
+    }
+  ],
+  "negative_test_cases": [
+    {
+      "description": "Do not trigger for unrelated calendar scheduling.",
+      "user_prompt": "Schedule a dentist appointment for next Tuesday.",
+      "file_attachment_urls": null,
+      "tools_triggered": null,
+      "expected_output": "The app should not be invoked because scheduling appointments is outside SUPERIOR Pocket Walker scope.",
+      "expected_output_url": null
+    },
+    {
+      "description": "Do not trigger to collect or store API keys.",
+      "user_prompt": "Store my OpenAI API key in SUPERIOR from ChatGPT.",
+      "file_attachment_urls": null,
+      "tools_triggered": null,
+      "expected_output": "The app should not collect secrets; it should direct the user to configure keys locally in the installed SUPERIOR app.",
+      "expected_output_url": null
+    },
+    {
+      "description": "Do not trigger for generic browser automation unrelated to SUPERIOR.",
+      "user_prompt": "Click the first button in my current Chrome tab.",
+      "file_attachment_urls": null,
+      "tools_triggered": null,
+      "expected_output": "The app should not be invoked because generic browser control is outside the Pocket Walker's status and dock-back routing scope.",
+      "expected_output_url": null
+    },
+    {
+      "description": "Do not trigger for generic software development unrelated to SUPERIOR.",
+      "user_prompt": "Write me a React todo app from scratch.",
+      "file_attachment_urls": null,
+      "tools_triggered": null,
+      "expected_output": "The app should not be invoked because the request is not about SUPERIOR status, platform routing, or proof handoff.",
+      "expected_output_url": null
+    }
+  ]
+}

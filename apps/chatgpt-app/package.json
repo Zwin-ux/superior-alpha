@@ -1,0 +1,28 @@
+{
+  "name": "@clawdbot/chatgpt-app",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "main": "./dist/server.js",
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "start": "node dist/server.js",
+    "start:stdio": "node dist/server.js --stdio",
+    "dev": "tsx watch src/server.ts",
+    "smoke:pocket": "node scripts/verify-pocket-walker.mjs",
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "@clawdbot/shared": "workspace:*",
+    "@modelcontextprotocol/ext-apps": "1.7.3",
+    "@modelcontextprotocol/sdk": "1.29.0",
+    "zod": "4.4.3"
+  },
+  "devDependencies": {
+    "@types/node": "25.9.1",
+    "tsx": "4.22.3",
+    "typescript": "6.0.3",
+    "vitest": "4.1.7"
+  }
+}
