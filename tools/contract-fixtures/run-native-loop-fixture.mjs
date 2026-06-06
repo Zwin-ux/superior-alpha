@@ -1,8 +1,17 @@
 #!/usr/bin/env node
-import { mkdir, writeFile } from "node:fs/promises";
-import { join } from "node:path";
+import { spawn } from "node:child_process";
+import { mkdir, mkdtemp, rm, writeFile } from "node:fs/promises";
+import { tmpdir } from "node:os";
+import { dirname, join, resolve } from "node:path";
+import { fileURLToPath } from "node:url";
 
-const host = normalizeHost(readArg("--host") ?? process.env.SUPERIOR_FIXTURE_HOST ?? "http://127.0.0.1:5317");
+const repoRoot = resolve(dirname(fileURLToPath(import.meta.url)), "..", "..");
+const requestedHost = readArg("--host") ?? process.env.SUPERIOR_FIXTURE_HOST;
+const tempRoot = await mkdtemp(join(tmpdir(), "superior-native-loop-"));
+const stateDirectory = join(tempRoot, "state");
+const daemonCwd = join(tempRoot, "cwd");
+const port = Number.parseInt(readArg("--port") ?? String(26000 + Math.floor(Math.random() * 1000)), 10);
+const host = normalizeHost(requestedHost ?? `http://127.0.0.1:${port}`);
 const repoUrl = readArg("--repo") ?? "https://github.com/openai/openai-node";
 const startedAt = new Date().toISOString();
 const checks = [];
@@ -11,8 +20,15 @@ let repoResult = null;
 let repoWorkspace = null;
 let pairingToken = "";
 let functionRunRequestId = "";
+let daemonProcess = null;
 
 try {
+  if (!requestedHost) {
+    await mkdir(stateDirectory, { recursive: true });
+    await mkdir(daemonCwd, { recursive: true });
+    daemonProcess = await startDaemon();
+  }
+
   await runCheck("health", async () => {
     const health = await getJson("/health");
 
@@ -199,6 +215,14 @@ try {
 } finally {
   await postJson("/browser-runtime/stop").catch(() => undefined);
   await postJson("/browser-link/reset").catch(() => undefined);
+
+  if (daemonProcess) {
+    await stopDaemonProcess(daemonProcess);
+  }
+
+  if (!requestedHost) {
+    await removeTempRoot();
+  }
 }
 
 const failedChecks = checks.filter((check) => check.status === "failed");
@@ -337,6 +361,86 @@ async function writeReport(report) {
   await writeFile(reportPath, JSON.stringify(report, null, 2), "utf8");
 
   return reportPath;
+}
+
+async function startDaemon() {
+  const daemonPath = join(repoRoot, "apps", "daemon", "dist", "server.js");
+  const child = spawn(process.execPath, [daemonPath], {
+    cwd: daemonCwd,
+    env: {
+      ...process.env,
+      CLAWDBOT_STATE_DIR: stateDirectory,
+      CLAWDBOT_DAEMON_PORT: String(port),
+      CLAWDBOT_DAEMON_HOST: "127.0.0.1",
+      SUPERIOR_EXTENSION_PATH: join(repoRoot, "apps", "extension", "dist"),
+      SUPERIOR_ENV_PATH: join(tempRoot, "missing-env.local"),
+      OPENAI_API_KEY: "",
+      SUPABASE_URL: "",
+      SUPABASE_PUBLISHABLE_KEY: ""
+    },
+    stdio: ["ignore", "pipe", "pipe"]
+  });
+
+  child.stdout.on("data", () => undefined);
+  child.stderr.on("data", () => undefined);
+
+  const deadline = Date.now() + 30_000;
+
+  while (Date.now() < deadline) {
+    if (child.exitCode !== null) {
+      throw new Error(`Temporary daemon exited before becoming ready with code ${child.exitCode}.`);
+    }
+
+    try {
+      const response = await fetch(`${host}/health`);
+      if (response.ok) {
+        return child;
+      }
+    } catch {
+      // Retry until the temporary daemon binds the loopback port.
+    }
+
+    await new Promise((resolve) => setTimeout(resolve, 250));
+  }
+
+  child.kill("SIGTERM");
+  throw new Error("Timed out waiting for temporary native loop daemon.");
+}
+
+async function stopDaemonProcess(child) {
+  if (child.exitCode !== null) {
+    return;
+  }
+
+  child.kill("SIGTERM");
+  await Promise.race([
+    new Promise((resolve) => child.once("exit", resolve)),
+    new Promise((resolve) => setTimeout(resolve, 2_000))
+  ]);
+
+  if (child.exitCode === null) {
+    child.kill("SIGKILL");
+    await Promise.race([
+      new Promise((resolve) => child.once("exit", resolve)),
+      new Promise((resolve) => setTimeout(resolve, 1_000))
+    ]);
+  }
+}
+
+async function removeTempRoot() {
+  for (let attempt = 0; attempt < 6; attempt += 1) {
+    try {
+      await rm(tempRoot, { recursive: true, force: true });
+      return;
+    } catch (error) {
+      if (attempt === 5) {
+        console.warn(`Could not remove temporary native loop folder: ${error instanceof Error ? error.message : String(error)}`);
+        return;
+      }
+
+      await new Promise((resolve) => setTimeout(resolve, 250 * (attempt + 1)));
+    }
+  }
 }
 
 function readArg(name) {
