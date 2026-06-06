@@ -28,6 +28,23 @@ The `soul/` shelf came from `clawdbot_codex_soul_brief` and is now the default c
 
 Runtime customized icons can still be generated from `BotIdentity`; these assets set the clean-install face.
 
+## Mobile 3D Shelf
+
+`mobile-3d/` prepares the future companion app to feel dimensional without cloning the desktop Workshop.
+
+- `mobile-3d/asset-manifest.json`: GLB budget, required node names, coordinate rules, and mobile identity mapping.
+- `mobile-3d/generated/mobile-clawd-gremlin.glb`: first generated low-poly clay bot proof.
+- `mobile-3d/generated/mobile-3d-quality-report.json`: generation report.
+- `mobile-3d/generated/mobile-3d-validation-report.json`: validation report.
+
+Run:
+
+```powershell
+corepack pnpm assets:mobile-3d
+```
+
+Keep this shelf small and named. Mobile needs one strong dimensional spore preview, not a phone-sized dashboard or a different mascot.
+
 ## 0.14 Clay Factory Gate
 
 `0.13` is plumbing only. Its tiny generated atlas proves Godot can load assets, but it is not product-quality runtime art.

@@ -26,14 +26,58 @@ After Windows native proof:
 
 No local OpenAI key should live in mobile storage in the first mobile lane.
 
+## Dimensional Asset Direction
+
+Mobile currently risks feeling flat because the lane only describes status and history. The correction is not to copy the desktop Workshop; it is to give the companion screen one strong dimensional object.
+
+Use `assets/bots/mobile-3d/` as the mobile asset contract:
+
+- `generated/mobile-clawd-gremlin.glb` is the first low-poly clay bot proof.
+- `asset-manifest.json` defines GLB budgets, required node names, coordinate rules, and identity mapping.
+- `corepack pnpm assets:mobile-3d` generates and validates the GLB.
+- Detailed pipeline: [mobile-3d-asset-pipeline.md](mobile-3d-asset-pipeline.md).
+
+Mobile screen shape:
+
+- top: dimensional bot identity, not a hero block
+- middle: recent proof and paired device state
+- bottom: share/capture actions and short skill results
+
+Avoid:
+
+- desktop left-menu/right-tray clones
+- generic mobile dashboard cards
+- flat avatar-only identity without parts
+- local model key storage
+
 ## Contract Needs
 
-Mobile should eventually consume a mobile-safe contract layer:
+Mobile should consume the daemon's read-only companion envelope first:
+
+```text
+GET /mobile-companion
+```
+
+The response is `MobileCompanionResponse` from `packages/shared`.
+
+It includes:
 
 - bot identity summary
 - recent proof summary
 - device pairing state
 - share intent payload
 - result detail without local desktop secrets
+- mobile asset reference for the same active spore
+
+It excludes:
+
+- raw browser pairing tokens
+- OpenAI keys and key paths
+- browser profile paths
+- debug ports
+- page text
+- local repo workspace data
+
+Validate this boundary with `corepack pnpm fixture:mobile-companion`.
 
 This lane should not start until the Windows native loop and extension loop are dependable.

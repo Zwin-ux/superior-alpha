@@ -1,0 +1,49 @@
+{
+  "generatedAt": "2026-06-06T14:53:53.999Z",
+  "manifestVersion": "mobile-3d-0.1",
+  "assetId": "mobile-clawd-gremlin",
+  "output": "assets/bots/mobile-3d/generated/mobile-clawd-gremlin.glb",
+  "fileBytes": 19064,
+  "triangleCount": 492,
+  "nodeCount": 8,
+  "materialCount": 6,
+  "requiredNodeNames": [
+    "Body_Gremlin",
+    "Eye_Left_Pixel",
+    "Eye_Right_Pixel",
+    "Antenna_Left",
+    "Antenna_Right",
+    "Skill_ArticleXray_Lens",
+    "Skill_RepoReader_Gear"
+  ],
+  "budget": {
+    "targetGlbBytes": 90000,
+    "maxGlbBytes": 180000,
+    "maxTriangles": 1800,
+    "maxMaterials": 8,
+    "maxNodes": 16,
+    "textureMaxSize": 512
+  },
+  "passed": true,
+  "checks": {
+    "glbMagic": "glTF",
+    "format": "glTF 2.0 binary",
+    "externalTextures": 0,
+    "namedNodes": [
+      "Body_Gremlin",
+      "Eye_Left_Pixel",
+      "Eye_Right_Pixel",
+      "Antenna_Left",
+      "Antenna_Right",
+      "Skill_ArticleXray_Lens",
+      "Skill_RepoReader_Gear",
+      "Clay_Fingerprint_Highlight"
+    ],
+    "coordinateSystem": {
+      "up": "+Y",
+      "front": "+Z",
+      "unit": "meter-like normalized toy scale",
+      "origin": "bot center at workbench/body center"
+    }
+  }
+}

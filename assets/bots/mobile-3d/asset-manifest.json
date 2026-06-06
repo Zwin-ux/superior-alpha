@@ -1,0 +1,61 @@
+{
+  "version": "mobile-3d-0.1",
+  "name": "Mobile Dimensional Clay Shelf",
+  "status": "pipeline-ready",
+  "runtimeIntent": "Native mobile companion and web/PWA proof surfaces; not a desktop Workshop clone.",
+  "sourceIdentity": {
+    "name": "Clawd",
+    "body": "gremlin",
+    "color": "mossGreen",
+    "eye": "pixel",
+    "skills": ["article-xray", "repo-reader"]
+  },
+  "format": {
+    "shipping": "glb",
+    "standard": "glTF 2.0",
+    "texturePolicy": "No external texture paths in alpha mobile GLB assets.",
+    "compressionPolicy": "Meshopt/KTX2 may be added when the mobile runtime supports it; do not add decode cost before runtime proof."
+  },
+  "coordinateSystem": {
+    "up": "+Y",
+    "front": "+Z",
+    "unit": "meter-like normalized toy scale",
+    "origin": "bot center at workbench/body center"
+  },
+  "budgets": {
+    "targetGlbBytes": 90000,
+    "maxGlbBytes": 180000,
+    "maxTriangles": 1800,
+    "maxMaterials": 8,
+    "maxNodes": 16,
+    "textureMaxSize": 512
+  },
+  "requiredNodeNames": [
+    "Body_Gremlin",
+    "Eye_Left_Pixel",
+    "Eye_Right_Pixel",
+    "Antenna_Left",
+    "Antenna_Right",
+    "Skill_ArticleXray_Lens",
+    "Skill_RepoReader_Gear"
+  ],
+  "assets": [
+    {
+      "id": "mobile-clawd-gremlin",
+      "runtime": "generated/mobile-clawd-gremlin.glb",
+      "purpose": "First dimensional mobile bot preview for identity, equipped parts, pairing, and recent proof states.",
+      "sourceKind": "generated-contract-asset",
+      "identity": {
+        "body": "gremlin",
+        "color": "mossGreen",
+        "eye": "pixel",
+        "skills": ["article-xray", "repo-reader"]
+      }
+    }
+  ],
+  "notes": [
+    "This shelf is preparation only; mobile remains after the Windows/native loop is dependable.",
+    "Generated GLB assets should stay small, named, matte, and inspectable.",
+    "When hand-sculpted Blender assets arrive, export clean GLB files into this same contract and keep the validator passing."
+  ]
+}
