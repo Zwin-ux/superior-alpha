@@ -34,7 +34,7 @@ Recommended work packet:
 - `0.19 Clean Install Ownership Loop`
 - Prove a fresh install can wake/register one spore, bind Chrome, run the starter skill, and reload the same spore after reinstall.
 - Close with fixture reports, artifact paths, and the release proof packet.
-- Current next build action: rebuild installer/extension artifacts from the latest commit, then run live Google/X/Discord OAuth smoke against the configured Supabase project.
+- Current next build action: finish full interactive account callback validation, then run a manual installed-app walkthrough on a clean Windows profile.
 
 ## Phase 1: Product Frame
 

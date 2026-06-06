@@ -140,6 +140,10 @@ Last checked: 2026-06-06
 - Latest release-facing Godot showcase contact sheet: `.clawdbot/video-proof/2026-06-03T03-04-54-967Z-godot-showcase/review-frames/contact-sheet-1s.png`.
 - Latest 0.19 native loop fixture report: `.clawdbot/verification/native-loop-fixture-1780757763571.json`.
 - Latest 0.19 mobile companion fixture report: `.clawdbot/verification/mobile-companion-fixture-1780757490460.json`.
+- Current Windows MSI was rebuilt locally on 2026-06-06: `.clawdbot/artifacts/windows/SUPERIOR-0.7.0-alpha-win-x64.msi`, SHA-256 `411DBEA3D3ADEC5BC45E065405C1BAEA1D9FE29837197B4136DAEB466CB7195B`.
+- Current Chrome MV3 ZIP was rebuilt locally on 2026-06-06: `.clawdbot/artifacts/extension/SUPERIOR-0.8.0-chrome-mv3.zip`, SHA-256 `3A874BC741D8F3C5FD44AE2EFDC378B7750922CD888936EA814EEB2AE599C697`.
+- Live Google, X, and Discord OAuth redirect smoke passes from a packaged daemon with isolated clean-profile state: `.clawdbot/verification/live-oauth-smoke-1780758866547.json`.
+- The live OAuth smoke verifies first-hop redirects to `accounts.google.com`, `x.com`, and `discord.com`; it does not complete interactive credential entry or persist a Supabase session.
 - Private hub package builds with public-safe validation: `corepack pnpm --filter @clawdbot/hub build`.
 - Vercel protected deployment is ready: `https://hub-o0anzynn0-zwin-uxs-projects.vercel.app`.
 - Vercel Authentication is enabled for production deployment URLs and all previews.

@@ -31,6 +31,16 @@ The spore remains local ownership state. Supabase account state can sit beside i
 | ChatGPT app sprint gate | `.clawdbot/sprint-gates/2026-06-06T14-53-53-359Z-chatgpt-app.json` |
 | OS first-boot onboarding sprint gate | `.clawdbot/sprint-gates/2026-06-06T14-46-46-622Z-os-first-boot-onboarding.json` |
 | Account/spore sprint gate | `.clawdbot/sprint-gates/2026-06-06T14-32-38-492Z-account-spore-continuity.json` |
+| Live OAuth redirect smoke | `.clawdbot/verification/live-oauth-smoke-1780758866547.json` |
+
+## Current Artifact Rebuild
+
+Rebuilt locally on 2026-06-06 from the current alpha workspace.
+
+| Artifact | Bytes | SHA-256 |
+| --- | ---: | --- |
+| `.clawdbot/artifacts/windows/SUPERIOR-0.7.0-alpha-win-x64.msi` | `89052800` | `411DBEA3D3ADEC5BC45E065405C1BAEA1D9FE29837197B4136DAEB466CB7195B` |
+| `.clawdbot/artifacts/extension/SUPERIOR-0.8.0-chrome-mv3.zip` | `1325565` | `3A874BC741D8F3C5FD44AE2EFDC378B7750922CD888936EA814EEB2AE599C697` |
 
 ## Exact Commands
 
@@ -46,6 +56,7 @@ corepack pnpm windows:installed-loop-smoke
 corepack pnpm fixture:host-contract
 corepack pnpm fixture:supabase-account
 corepack pnpm fixture:mobile-companion
+corepack pnpm smoke:oauth-live
 corepack pnpm gate:chatgpt-app
 corepack pnpm gate:sprint -- --sprint release-proof --prompt "build current alpha release proof packet" --lane docs --lane root
 ```
@@ -54,10 +65,11 @@ corepack pnpm gate:sprint -- --sprint release-proof --prompt "build current alph
 
 - Windows scheduled-task service registration can report `needs-admin` on this machine unless the smoke is elevated or local policy allows current-user task registration.
 - Live Google, X, and Discord OAuth depend on Supabase provider settings plus local `SUPABASE_URL` and `SUPABASE_PUBLISHABLE_KEY`; do not place provider secrets in docs, fixtures, or spore exports.
+- The current live OAuth smoke verifies clean-profile provider availability and first-hop redirects to Google, X, and Discord. It does not complete an interactive user credential flow or store a Supabase session.
 - Repeated Repo Reader runs against GitHub can hit unauthenticated rate limits; set `GITHUB_TOKEN` or `GH_TOKEN` locally for repeat validation.
 - The mobile and ChatGPT app lanes are read-only companion surfaces. They are not remote Workshop replacements.
 - The public GitHub release can lag the local proof packet. Rebuild and republish artifacts before making a public beta claim.
 
 ## Release Decision
 
-Alpha proof review can use this packet. The beta-candidate blocker is no longer evidence organization; the remaining public-release work is a fresh artifact rebuild, live OAuth smoke, and manual installed-app walkthrough on a clean Windows profile.
+Alpha proof review can use this packet. The beta-candidate blocker is no longer evidence organization, artifact rebuild, or first-hop provider configuration. The remaining public-release work is full interactive account callback validation and a manual installed-app walkthrough on a clean Windows profile.

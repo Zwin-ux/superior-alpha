@@ -47,6 +47,7 @@
     "fixture:spore-ownership": "corepack pnpm --filter @clawdbot/shared build && node tools/contract-fixtures/run-spore-ownership-fixture.mjs",
     "fixture:mobile-companion": "corepack pnpm --filter @clawdbot/shared build && corepack pnpm --filter @clawdbot/daemon build && node tools/contract-fixtures/run-mobile-companion-fixture.mjs",
     "fixture:supabase-account": "corepack pnpm --filter @clawdbot/shared build && corepack pnpm --filter @clawdbot/daemon build && node tools/contract-fixtures/run-supabase-account-fixture.mjs",
+    "smoke:oauth-live": "node tools/contract-fixtures/run-live-oauth-smoke.mjs",
     "demo:spore-ownership": "corepack pnpm fixture:spore-ownership && corepack pnpm video:godot-engine",
     "extension:store-package": "corepack pnpm --filter @clawdbot/extension store-package",
     "windows:install-sdk": "powershell -ExecutionPolicy Bypass -File apps/windows/scripts/install-dotnet-sdk.ps1",
