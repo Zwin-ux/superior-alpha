@@ -41,6 +41,7 @@ SUPERIOR is an alpha signal-analysis console with a Godot visual engine, browser
 | --- | --- |
 | [Release Ladder](docs/release-ladder.md) | Current alpha path to `1.0` beta |
 | [Build Plan](docs/build-plan.md) | What the next agent should build |
+| [Notion Alpha Template](docs/notion-alpha-template.md) | Working plan mirror for alpha tasks, gates, risks, evidence |
 | [Godot Engine Direction](docs/superior-alpha-engine.md) | Primary runtime direction |
 | [Chrome Store Packet](docs/chrome-web-store-listing.md) | Public extension listing prep |
 | [Privacy Policy Source](docs/extension-privacy.md) | GitHub-hosted privacy doc source |

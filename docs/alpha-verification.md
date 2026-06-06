@@ -1,6 +1,6 @@
 # SUPERIOR Alpha Verification
 
-Last checked: 2026-06-02
+Last checked: 2026-06-05
 
 ## Passing Evidence
 
@@ -125,6 +125,15 @@ Last checked: 2026-06-02
 - Installed-loop smoke installed to `%LOCALAPPDATA%\Programs\SUPERIOR`, launched the installed WPF app, verified packaged Node, packaged daemon, and packaged extension resources, used `%APPDATA%\SUPERIOR\.clawdbot`, ran the native repo loop, then uninstalled.
 - Windows beta gate passes: `corepack pnpm windows:beta-gate`.
 - Latest installed-loop fixture report: `.clawdbot/verification/native-loop-fixture-1780162908113.json`.
+- 0.19 reinstall persistence proof passes with `Loop Clawd`: install, save a known Gremlin/Moss/Pixel spore, run native repo loop, uninstall/reinstall, relaunch, confirm the same active spore loads, then restore the original bot identity.
+- Latest 0.19 reinstall persistence fixture report: `.clawdbot/verification/native-loop-fixture-1780644556596.json`.
+- 0.19 first-run recovery proof passes: the native Windows setup tray now distinguishes daemon offline, missing OpenAI key, missing Chrome/Edge browser, and unpaired browser hand states with short recovery actions.
+- Latest 0.19 recovery sprint report: `.clawdbot/sprint-gates/2026-06-05T07-38-55-693Z-first-run-recovery-states.json`.
+- Latest 0.19 recovery host-contract report: `.clawdbot/verification/host-contract-fixture-1780645193444.json`.
+- 0.19 account/spore continuity proof passes: seeded Google/X/Discord account state can coexist with a separate local active spore, portable spore export stays secret-free, mobile companion exposes only safe account display state, and account sign-out does not delete the local spore.
+- Latest 0.19 account/spore sprint report: `.clawdbot/sprint-gates/2026-06-06T14-32-38-492Z-account-spore-continuity.json`.
+- Latest 0.19 account continuity fixture report: `.clawdbot/verification/supabase-account-continuity-fixture-1780756432099.json`.
+- Latest 0.19 account continuity installed-loop fixture report: `.clawdbot/verification/native-loop-fixture-1780756452577.json`.
 - Private hub package builds with public-safe validation: `corepack pnpm --filter @clawdbot/hub build`.
 - Vercel protected deployment is ready: `https://hub-o0anzynn0-zwin-uxs-projects.vercel.app`.
 - Vercel Authentication is enabled for production deployment URLs and all previews.
@@ -195,6 +204,18 @@ Last checked: 2026-06-02
 - Latest 0.18 Godot proof MP4: `.clawdbot/video-proof/2026-06-02T15-50-26-913Z-godot-engine/SUPERIOR-godot-engine-2026-06-02T15-50-26-913Z.mp4`.
 - Latest 0.18 Godot proof poster: `.clawdbot/video-proof/2026-06-02T15-50-26-913Z-godot-engine/SUPERIOR-godot-engine-2026-06-02T15-50-26-913Z.png`.
 - Latest 0.18 Godot proof contact sheet: `.clawdbot/video-proof/2026-06-02T15-50-26-913Z-godot-engine/review-frames/contact-sheet-1s.png`.
+- Mobile dimensional asset prep is now gated without widening the alpha surface:
+  - `corepack pnpm assets:mobile-3d`
+  - First GLB: `assets/bots/mobile-3d/generated/mobile-clawd-gremlin.glb`
+  - Validation report: `assets/bots/mobile-3d/generated/mobile-3d-validation-report.json`
+  - Latest result: 492 triangles, 19064 bytes.
+- Mobile companion contract prep is now gated without starting mobile app build-out:
+  - `GET /mobile-companion`
+  - Shared response: `MobileCompanionResponse`
+  - Host fixture check confirms the route omits raw pairing tokens, model keys, browser profile paths, debug ports, and page text.
+  - Dedicated mobile companion fixture starts an isolated daemon, runs an Article X-Ray proof with sentinel page text and URL query data, then proves the mobile companion response does not expose that raw desktop/browser material.
+  - Latest host fixture report: `.clawdbot/verification/host-contract-fixture-1780640308079.json`.
+  - Latest mobile companion fixture report: `.clawdbot/verification/mobile-companion-fixture-1780640212004.json`.
 
 ## Environment Gate
 

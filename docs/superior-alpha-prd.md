@@ -1,12 +1,13 @@
 # SUPERIOR Alpha PRD
 
-Status: alpha executable built
-Updated: 2026-05-30
+Status: 0.18 alpha proof gated; 0.19 beta-candidate work active
+Updated: 2026-06-05
 Source: local-first worktree, Superior OS, SUP Playable Core, Synergy
 Verification: [alpha-verification.md](alpha-verification.md)
 User cases: [user-cases-player-base.md](user-cases-player-base.md)
 Repo playpen plan: [repo-playpen-continuation-plan.md](repo-playpen-continuation-plan.md)
 Account OAuth setup: [account-oauth-setup.md](account-oauth-setup.md)
+Current task board: [prd-task-board.md](prd-task-board.md)
 
 ## Product Sentence
 
@@ -14,13 +15,13 @@ SUPERIOR is a creature-based way to install and operate AI systems: hatch one sp
 
 ## Current Focus
 
-`0.15` is the spore ownership demo. Stop widening until this loop is undeniable:
+`0.18` proved the high-quality spore ownership loop. `0.19` now turns that proof into a beta-candidate install loop:
 
 ```text
-SUPERIOR boot -> register -> hatch Clawd -> choose Gremlin / Moss / Pixel -> equip Article X-Ray -> connect Chrome -> extension icon becomes Clawd -> run skill -> Clawd reacts
+Clean install -> account/spore setup -> Chrome hand bind -> skill proof -> uninstall/reinstall -> spore still loads
 ```
 
-Everything else is secondary until this loop works as a contract fixture and a critique-worthy MP4.
+Everything else is secondary until this loop works for a fresh user without hidden founder setup.
 
 ## Alpha Promise
 

@@ -1,8 +1,9 @@
 # SUPERIOR Full Product Spec
 
 Status: living product spec
-Updated: 2026-05-30
-Current build line: `0.9` Bot Creation Alpha
+Updated: 2026-06-05
+Current build line: `0.18` High Quality Alpha Gate
+Next build line: `0.19` Beta Candidate Gate
 Beta target: `1.0`
 
 ## Product Promise

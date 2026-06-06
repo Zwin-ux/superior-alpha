@@ -10,30 +10,29 @@ Current source of truth:
 - Functional core sprint: [functional-core-sprint.md](functional-core-sprint.md)
 - Agent execution model: [agent-execution-model.md](agent-execution-model.md)
 - Agent packets: [agent-packets.md](agent-packets.md)
+- PRD task board: [prd-task-board.md](prd-task-board.md)
+- Codex sprint gates: [codex-sprint-gates.md](codex-sprint-gates.md)
 - Native platform reset: [native-platform-reset.md](native-platform-reset.md)
 - Mobile platform plan: [mobile-platform-plan.md](mobile-platform-plan.md)
+- Mobile 3D asset pipeline: [mobile-3d-asset-pipeline.md](mobile-3d-asset-pipeline.md)
 
 ## Current Release Focus
 
-Current focus is `0.10 Godot Engine Reset`:
+Current focus is `0.19 Beta Candidate Gate`:
 
-- treat Godot as the primary visual runtime
-- scaffold `superior/core`, `superior/server`, and `superior/godot-client`
-- render a boot screen, low-poly signal room, pixel HUD, agent/avatar, and in-world event terminal
-- stream realtime state patches over local WebSocket/SSE
-- keep the extension as the browser signal hand
-- keep `apps/windows` as an installer/service proof lane, not the final visual shell
-- keep `apps/desktop` as alpha harness only
-- keep `apps/hub` as a private Vercel proof mirror only
-- keep model credentials, pairing, browser profiles, and repo workspaces local
+- preserve the `0.18` spore ownership proof loop
+- prove clean install, account/spore setup, Chrome hand bind, starter skill proof, uninstall/reinstall, and persisted spore identity
+- keep Godot as the primary visual runtime and Windows as the install proof lane
+- keep extension as the Chrome hand
+- keep mobile and ChatGPT as read-only companion/route surfaces until the Windows loop is stable
+- keep model credentials, pairing tokens, browser profiles, and repo workspaces local
 - use GitHub Releases as the artifact shelf when a remote exists
-- add Godot MP4 proof once Godot is installed locally
 
 Recommended work packet:
 
-- `Godot: Signal Room Alpha`
-- Prove Godot can boot, connect to `superior/server`, receive state patches, and show signal feedback through the room/avatar/terminal.
-- Close with an MP4 from the Godot client once Godot is available on PATH.
+- `0.19 Clean Install Ownership Loop`
+- Prove a fresh install can wake/register one spore, bind Chrome, run the starter skill, and reload the same spore after reinstall.
+- Close with fixture reports, artifact paths, and a short release proof page.
 
 ## Phase 1: Product Frame
 
@@ -110,6 +109,7 @@ Recommended work packet:
 - Confirm the material reads as matte clay rather than plastic, metal, or generic vector art.
 - Confirm the UI does not drift into generic SaaS dashboard structure.
 - Confirm desktop does not drift into a phone settings layout.
+- Confirm mobile prep does not become a shrunken desktop Workshop.
 - Confirm each customization choice changes a visible part of the creature.
 - Confirm non-runnable future skills do not appear as selectable loadout parts.
 
