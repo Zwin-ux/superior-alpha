@@ -25,3 +25,11 @@ Thumbs.db
 .vscode/
 .gstack/
 .codex-logs/
+
+# Internal Documentation
+docs/agent-packets/
+docs/sprint-gates/
+docs/build-plan.md
+docs/release-ladder.md
+docs/prd-task-board.md
+docs/alpha-verification.md
