@@ -43,7 +43,8 @@ describe("SUPERIOR function runner", () => {
       "repo-reader",
       "superior-browser-start",
       "superior-browser-stop",
-      "custom-skill-import-proposal"
+      "custom-skill-import-proposal",
+      "pi-status"
     ]);
   });
 

@@ -65,6 +65,10 @@ export function clearStoredAccountSession(): StoredAccountState {
   });
 }
 
+export function hasStoredAccountSession(): boolean {
+  return readStoredAccountState().session !== null;
+}
+
 function writeStoredAccountState(state: StoredAccountState): StoredAccountState {
   const normalized = normalizeStoredAccountState(state);
   const filePath = getStoredAccountFilePath();

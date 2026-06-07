@@ -397,6 +397,347 @@ export interface SuperiorBrowserError {
   message: string;
 }
 
+export type GameTargetKind = "fixture" | "steam" | "exe";
+export type GameTargetStatus = "ready" | "missing" | "blocked";
+export type GameRuntimeStatus =
+  | "closed"
+  | "launching"
+  | "observing"
+  | "thinking"
+  | "acting"
+  | "paused"
+  | "stopped"
+  | "failed";
+export type GameBrainMode = "openai-default" | "local-fixture";
+export type GameActionKind = "key" | "mouse" | "wait" | "note";
+export type GameSafetyState =
+  | "foreground-required"
+  | "foreground-owned"
+  | "paused-focus-lost"
+  | "paused-user"
+  | "paused-budget"
+  | "stopped";
+export type GameRuntimePlan = "free" | "pro" | "local-host";
+export type GameRuntimeBudgetStatus = "available" | "low" | "exhausted" | "unmetered";
+export type GameServerRouteSource = "manual" | "battlemetrics" | "saved";
+export type GameServerRouteStatus = "ready" | "missing-address" | "blocked";
+
+export interface GameTarget {
+  type: "game-target";
+  id: string;
+  kind: GameTargetKind;
+  label: string;
+  executablePath?: string;
+  workingDirectory?: string;
+  launchArgs?: string[];
+  steamAppId?: string;
+  status: GameTargetStatus;
+  detail: string;
+  safetyBadge: "local-only" | "private-local-proof";
+  importedAt: string;
+  updatedAt: string;
+}
+
+export interface GameTargetsResponse {
+  type: "game-targets";
+  items: GameTarget[];
+  storage: {
+    localOnly: true;
+    statePath: string;
+    excludes: string[];
+  };
+  createdAt: string;
+}
+
+export interface GameTargetImportRequest {
+  type: "game-target-import";
+  requestId: string;
+  executablePath: string;
+  label?: string;
+  launchArgs?: string[];
+  createdAt: string;
+}
+
+export interface GameTargetImportResult {
+  type: "game-target-import-result";
+  requestId: string;
+  target: GameTarget;
+  targets: GameTargetsResponse;
+  createdAt: string;
+}
+
+export interface GameServerRoute {
+  type: "game-server-route";
+  id: string;
+  game: "gmod";
+  source: GameServerRouteSource;
+  label: string;
+  address: string;
+  password?: string;
+  playerName?: string;
+  battlemetricsUrl?: string;
+  map?: string;
+  mode?: string;
+  players?: number;
+  maxPlayers?: number;
+  rank?: number;
+  status: GameServerRouteStatus;
+  detail: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface GameServerRoutesResponse {
+  type: "game-server-routes";
+  items: GameServerRoute[];
+  storage: {
+    localOnly: true;
+    statePath: string;
+    excludes: string[];
+  };
+  createdAt: string;
+}
+
+export interface GameServerRouteSaveRequest {
+  type: "game-server-route-save";
+  requestId: string;
+  game: "gmod";
+  label?: string;
+  addressOrUrl: string;
+  password?: string;
+  playerName?: string;
+  createdAt: string;
+}
+
+export interface GameServerRouteSaveResult {
+  type: "game-server-route-save-result";
+  requestId: string;
+  route: GameServerRoute;
+  routes: GameServerRoutesResponse;
+  createdAt: string;
+}
+
+export interface GameGoal {
+  type: "game-goal";
+  text: string;
+  createdAt: string;
+}
+
+export interface GameObservation {
+  type: "game-observation";
+  observedAt: string;
+  source: "fixture" | "window-capture" | "unavailable";
+  foregroundOwned: boolean;
+  framePersisted: false;
+  summary: string;
+  width?: number;
+  height?: number;
+}
+
+export interface GameAction {
+  type: "game-action";
+  id: string;
+  kind: GameActionKind;
+  label: string;
+  reason: string;
+  durationMs: number;
+  key?: string;
+  button?: "left" | "right" | "middle";
+  x?: number;
+  y?: number;
+  createdAt: string;
+}
+
+export type GameEventKind =
+  | "target_imported"
+  | "route_saved"
+  | "route_selected"
+  | "started"
+  | "observed"
+  | "thinking"
+  | "action_planned"
+  | "action_sent"
+  | "talkback"
+  | "goal_updated"
+  | "nudged"
+  | "paused"
+  | "resumed"
+  | "stopped"
+  | "failed";
+
+export interface GameEvent {
+  type: "game-event";
+  id: string;
+  sessionId: string;
+  targetId: string;
+  kind: GameEventKind;
+  label: string;
+  detail?: string;
+  createdAt: string;
+}
+
+export interface GameSession {
+  type: "game-session";
+  sessionId: string;
+  targetId: string;
+  targetLabel: string;
+  serverRoute?: GameServerRoute;
+  status: GameRuntimeStatus;
+  brainMode: GameBrainMode;
+  processId?: number;
+  ownedProcess: boolean;
+  foregroundOnly: true;
+  emergencyStop: true;
+  safetyState: GameSafetyState;
+  goal: GameGoal;
+  observation?: GameObservation;
+  lastAction?: GameAction;
+  confidence: number;
+  startedAt: string;
+  updatedAt: string;
+  error?: string;
+}
+
+export interface GameRuntimeState {
+  type: "game-runtime-state";
+  status: GameRuntimeStatus;
+  activeSession?: GameSession;
+  budget: GameRuntimeBudget;
+  safety: {
+    localOnly: true;
+    foregroundOnly: true;
+    emergencyStop: true;
+    processOwnership: true;
+    noStealthControl: true;
+  };
+  createdAt: string;
+}
+
+export interface GameRuntimeBudget {
+  type: "game-runtime-budget";
+  plan: GameRuntimePlan;
+  status: GameRuntimeBudgetStatus;
+  highQualityFreeSeconds: number;
+  highQualityUsedSeconds: number;
+  highQualityRemainingSeconds: number;
+  meteredBrainModes: GameBrainMode[];
+  localFixtureUnmetered: true;
+  localHostAvailable: boolean;
+  detail: string;
+  upgradePrompt: string;
+  updatedAt: string;
+}
+
+export interface GameRuntimeEventsResponse {
+  type: "game-runtime-events";
+  sessionId?: string;
+  items: GameEvent[];
+  createdAt: string;
+}
+
+export interface GameRuntimeStartRequest {
+  type: "game-runtime-start";
+  requestId: string;
+  targetId: string;
+  goal: string;
+  brainMode?: GameBrainMode;
+  serverRouteId?: string;
+  createdAt: string;
+}
+
+export interface GameRuntimeStartResult {
+  type: "game-runtime-start-result";
+  requestId: string;
+  state: GameRuntimeState;
+  createdAt: string;
+}
+
+export interface GameRuntimeGoalRequest {
+  type: "game-runtime-goal";
+  requestId: string;
+  goal: string;
+  createdAt: string;
+}
+
+export interface GameRuntimeGoalResult {
+  type: "game-runtime-goal-result";
+  requestId: string;
+  state: GameRuntimeState;
+  createdAt: string;
+}
+
+export interface GameRuntimeNudgeRequest {
+  type: "game-runtime-nudge";
+  requestId: string;
+  nudge: string;
+  createdAt: string;
+}
+
+export interface GameRuntimeNudgeResult {
+  type: "game-runtime-nudge-result";
+  requestId: string;
+  state: GameRuntimeState;
+  createdAt: string;
+}
+
+export interface GameRuntimePauseRequest {
+  type: "game-runtime-pause";
+  requestId: string;
+  reason?: string;
+  createdAt: string;
+}
+
+export interface GameRuntimePauseResult {
+  type: "game-runtime-pause-result";
+  requestId: string;
+  state: GameRuntimeState;
+  createdAt: string;
+}
+
+export interface GameRuntimeResumeRequest {
+  type: "game-runtime-resume";
+  requestId: string;
+  createdAt: string;
+}
+
+export interface GameRuntimeResumeResult {
+  type: "game-runtime-resume-result";
+  requestId: string;
+  state: GameRuntimeState;
+  createdAt: string;
+}
+
+export interface GameRuntimeStopRequest {
+  type: "game-runtime-stop";
+  requestId: string;
+  createdAt: string;
+}
+
+export interface GameRuntimeStopResult {
+  type: "game-runtime-stop-result";
+  requestId?: string;
+  state: GameRuntimeState;
+  createdAt: string;
+}
+
+export interface GameRuntimeError {
+  type: "game-runtime-error";
+  requestId?: string;
+  code:
+    | "bad_request"
+    | "not_found"
+    | "missing_exe"
+    | "not_running"
+    | "launch_failed"
+    | "capture_blocked"
+    | "focus_lost"
+    | "invalid_action"
+    | "budget_exhausted"
+    | "unauthorized";
+  message: string;
+  createdAt: string;
+}
+
 export interface RepoReaderError {
   type: "repo-reader-error";
   requestId?: string;
@@ -491,6 +832,8 @@ export interface BotCreationOptionsResponse {
   createdAt: string;
 }
 
+export type SuperiorSignalKind = "repo" | "browser" | "market" | "system" | "agent";
+
 export interface SuperiorSetupStepState {
   step: BotCreationStep;
   status: BotCreationStepStatus;
@@ -531,6 +874,7 @@ export interface SuperiorSetupState {
   type: "superior-setup-state";
   activeBotSaved: boolean;
   requiresSetup: boolean;
+  setupPhase: "needs-account" | "needs-spore" | "ready";
   steps: SuperiorSetupStepState[];
   account: SuperiorAccountState;
   daemon: {
@@ -763,7 +1107,8 @@ export const superiorFunctionIds = [
   "repo-reader",
   "superior-browser-start",
   "superior-browser-stop",
-  "custom-skill-import-proposal"
+  "custom-skill-import-proposal",
+  "pi-status"
 ] as const;
 
 export type SuperiorFunctionId = (typeof superiorFunctionIds)[number];
@@ -775,7 +1120,8 @@ export type SuperiorFunctionPermission =
   | "browser-runtime"
   | "local-files"
   | "model-provider"
-  | "repo-network";
+  | "repo-network"
+  | "pi-network";
 export type SuperiorFunctionRunStatus = "completed" | "failed";
 export type SuperiorFunctionRunEventKind =
   | "queued"
@@ -1104,6 +1450,75 @@ export function createSuperiorBrowserActivePageReport(input: {
     requestId: createLocalId("browser_page"),
     pairingToken: input.pairingToken,
     page: input.page,
+    createdAt: new Date().toISOString()
+  };
+}
+
+export function createGameTargetImportRequest(input: {
+  executablePath: string;
+  label?: string;
+  launchArgs?: string[];
+}): GameTargetImportRequest {
+  return {
+    type: "game-target-import",
+    requestId: createLocalId("game_target"),
+    executablePath: input.executablePath,
+    ...(input.label ? { label: input.label } : {}),
+    ...(input.launchArgs ? { launchArgs: input.launchArgs } : {}),
+    createdAt: new Date().toISOString()
+  };
+}
+
+export function createGameRuntimeStartRequest(input: {
+  targetId: string;
+  goal: string;
+  brainMode?: GameBrainMode;
+  serverRouteId?: string;
+}): GameRuntimeStartRequest {
+  return {
+    type: "game-runtime-start",
+    requestId: createLocalId("game_start"),
+    targetId: input.targetId,
+    goal: input.goal,
+    ...(input.brainMode ? { brainMode: input.brainMode } : {}),
+    ...(input.serverRouteId ? { serverRouteId: input.serverRouteId } : {}),
+    createdAt: new Date().toISOString()
+  };
+}
+
+export function createGameServerRouteSaveRequest(input: {
+  game?: "gmod";
+  label?: string;
+  addressOrUrl: string;
+  password?: string;
+  playerName?: string;
+}): GameServerRouteSaveRequest {
+  return {
+    type: "game-server-route-save",
+    requestId: createLocalId("game_route"),
+    game: input.game ?? "gmod",
+    ...(input.label ? { label: input.label } : {}),
+    addressOrUrl: input.addressOrUrl,
+    ...(input.password ? { password: input.password } : {}),
+    ...(input.playerName ? { playerName: input.playerName } : {}),
+    createdAt: new Date().toISOString()
+  };
+}
+
+export function createGameRuntimeGoalRequest(input: { goal: string }): GameRuntimeGoalRequest {
+  return {
+    type: "game-runtime-goal",
+    requestId: createLocalId("game_goal"),
+    goal: input.goal,
+    createdAt: new Date().toISOString()
+  };
+}
+
+export function createGameRuntimeNudgeRequest(input: { nudge: string }): GameRuntimeNudgeRequest {
+  return {
+    type: "game-runtime-nudge",
+    requestId: createLocalId("game_nudge"),
+    nudge: input.nudge,
     createdAt: new Date().toISOString()
   };
 }

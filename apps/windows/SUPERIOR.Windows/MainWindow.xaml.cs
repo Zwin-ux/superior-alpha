@@ -1,5 +1,6 @@
 using System.Windows;
 using System.Windows.Controls;
+using Microsoft.Win32;
 using Superior.Windows.Models;
 using Superior.Windows.Services;
 
@@ -16,6 +17,9 @@ public partial class MainWindow : Window
     private BotIdentity? currentBot;
     private RepoWorkspaceRecord? currentRepoWorkspace;
     private SuperiorBrowserState? currentBrowserState;
+    private GameTargetsResponse? currentGameTargets;
+    private GameRuntimeState? currentGameRuntimeState;
+    private GameServerRoutesResponse? currentGameServerRoutes;
     private RepoReaderResult? currentRepoReaderResult;
     private IReadOnlyList<BotStarterPreset> starterPresets = Array.Empty<BotStarterPreset>();
     private BotCreationOptionsResponse? creationOptions;
@@ -205,6 +209,184 @@ public partial class MainWindow : Window
         }
     }
 
+    private async void OnGameRigClicked(object sender, RoutedEventArgs e)
+    {
+        GameRigStatusText.Text = "checking";
+        await RefreshWorkbenchAsync();
+    }
+
+    private async void OnImportGameRigClicked(object sender, RoutedEventArgs e)
+    {
+        try
+        {
+            var dialog = new OpenFileDialog
+            {
+                Title = "Import a local game EXE",
+                Filter = "Windows games (*.exe)|*.exe|All files (*.*)|*.*",
+                CheckFileExists = true,
+                Multiselect = false
+            };
+
+            if (dialog.ShowDialog(this) != true)
+            {
+                return;
+            }
+
+            GameRigStatusText.Text = "importing";
+            var imported = await daemonClient.ImportGameTargetAsync(dialog.FileName);
+            currentGameTargets = imported.Targets;
+            GameTargetSelect.SelectedValue = imported.Target.Id;
+            await RefreshWorkbenchAsync();
+        }
+        catch (Exception error)
+        {
+            GameRigStatusText.Text = "import failed";
+            GameRigDetailText.Text = error.Message;
+        }
+    }
+
+    private async void OnStartGameRigClicked(object sender, RoutedEventArgs e)
+    {
+        var targetId = GameTargetSelect.SelectedValue as string;
+
+        if (string.IsNullOrWhiteSpace(targetId))
+        {
+            GameRigDetailText.Text = "Pick a cartridge first.";
+            return;
+        }
+
+        try
+        {
+            StartGameRigButton.IsEnabled = false;
+            GameRigStatusText.Text = "starting";
+            await daemonClient.StartGameRuntimeAsync(targetId, ReadGameGoal(), GameServerRouteSelect.SelectedValue as string);
+            await RefreshWorkbenchAsync();
+        }
+        catch (Exception error)
+        {
+            GameRigStatusText.Text = "failed";
+            GameRigDetailText.Text = error.Message;
+        }
+        finally
+        {
+            UpdateGameRigButtons();
+        }
+    }
+
+    private async void OnPauseGameRigClicked(object sender, RoutedEventArgs e)
+    {
+        try
+        {
+            await daemonClient.PauseGameRuntimeAsync();
+            await RefreshWorkbenchAsync();
+        }
+        catch (Exception error)
+        {
+            GameRigStatusText.Text = "pause failed";
+            GameRigDetailText.Text = error.Message;
+        }
+    }
+
+    private async void OnResumeGameRigClicked(object sender, RoutedEventArgs e)
+    {
+        try
+        {
+            await daemonClient.ResumeGameRuntimeAsync();
+            await RefreshWorkbenchAsync();
+        }
+        catch (Exception error)
+        {
+            GameRigStatusText.Text = "resume failed";
+            GameRigDetailText.Text = error.Message;
+        }
+    }
+
+    private async void OnStopGameRigClicked(object sender, RoutedEventArgs e)
+    {
+        try
+        {
+            StopGameRigButton.IsEnabled = false;
+            GameRigStatusText.Text = "stopping";
+            await daemonClient.StopGameRuntimeAsync();
+            await RefreshWorkbenchAsync();
+        }
+        catch (Exception error)
+        {
+            GameRigStatusText.Text = "stop failed";
+            GameRigDetailText.Text = error.Message;
+        }
+        finally
+        {
+            UpdateGameRigButtons();
+        }
+    }
+
+    private async void OnNudgeGameRigClicked(object sender, RoutedEventArgs e)
+    {
+        try
+        {
+            await daemonClient.NudgeGameRuntimeAsync(ReadGameNudge());
+            await RefreshWorkbenchAsync();
+        }
+        catch (Exception error)
+        {
+            GameRigStatusText.Text = "nudge failed";
+            GameRigDetailText.Text = error.Message;
+        }
+    }
+
+    private async void OnSetGameGoalClicked(object sender, RoutedEventArgs e)
+    {
+        try
+        {
+            await daemonClient.SetGameRuntimeGoalAsync(ReadGameGoal());
+            await RefreshWorkbenchAsync();
+        }
+        catch (Exception error)
+        {
+            GameRigStatusText.Text = "goal failed";
+            GameRigDetailText.Text = error.Message;
+        }
+    }
+
+    private async void OnSaveGameServerRouteClicked(object sender, RoutedEventArgs e)
+    {
+        try
+        {
+            GameRigStatusText.Text = "saving route";
+            var saved = await daemonClient.SaveGameServerRouteAsync(
+                GameServerAddressText.Text.Trim(),
+                GameServerLabelText.Text.Trim(),
+                GameServerPasswordText.Text.Trim(),
+                GamePlayerNameText.Text.Trim());
+            currentGameServerRoutes = saved.Routes;
+            GameServerRouteSelect.SelectedValue = saved.Route.Id;
+            await RefreshWorkbenchAsync();
+        }
+        catch (Exception error)
+        {
+            GameRigStatusText.Text = "route failed";
+            GameRigDetailText.Text = error.Message;
+        }
+    }
+
+    private void OnGameServerRouteSelectionChanged(object sender, SelectionChangedEventArgs e)
+    {
+        ApplySelectedGameRouteToInputs();
+    }
+
+    private void OnGameTargetSelectionChanged(object sender, SelectionChangedEventArgs e)
+    {
+        if (currentGameTargets is not null && currentGameRuntimeState is not null)
+        {
+            GameRigDetailText.Text = currentGameRuntimeState.ActiveSession is null
+                ? FormatSelectedGameTargetDetail(currentGameTargets)
+                : GameRigDetailText.Text;
+        }
+
+        UpdateGameRigButtons();
+    }
+
     private async void OnServiceStartClicked(object sender, RoutedEventArgs e)
     {
         await RunServiceActionAsync(async () =>
@@ -313,12 +495,19 @@ public partial class MainWindow : Window
             var repoWorkspaces = await daemonClient.GetRepoWorkspacesAsync();
             var browserState = await daemonClient.GetSuperiorBrowserStateAsync();
             var browserEvents = await daemonClient.GetSuperiorBrowserEventsAsync();
+            var gameTargets = await daemonClient.GetGameTargetsAsync();
+            var gameState = await daemonClient.GetGameRuntimeStateAsync();
+            var gameEvents = await daemonClient.GetGameRuntimeEventsAsync();
+            var gameRoutes = await daemonClient.GetGameServerRoutesAsync();
 
             currentBot = bot;
             starterPresets = presets.Items;
             creationOptions = options;
             currentRepoWorkspace = repoWorkspaces.Items.OrderByDescending(item => item.UpdatedAt).FirstOrDefault();
             currentBrowserState = browserState;
+            currentGameTargets = gameTargets;
+            currentGameRuntimeState = gameState;
+            currentGameServerRoutes = gameRoutes;
 
             DaemonStatusText.Text = launch.Status == "started" ? "started" : health.Status;
             DaemonDetailText.Text = launch.Detail;
@@ -331,9 +520,11 @@ public partial class MainWindow : Window
             FunctionProofText.Text = recentReaction?.Label ?? $"{catalog.Items.Count} parts ready";
             ApplyRepoWorkspaceState(currentRepoWorkspace);
             ApplyPlaypenState(browserState, browserEvents);
+            ApplyGameRigState(gameTargets, gameRoutes, gameState, gameEvents);
             ApplySetupState(setupState);
             ApplyRecoveryState(setupState, browserState);
             UpdatePlaypenButtons();
+            UpdateGameRigButtons();
 
             ApplyBot(bot, recentReaction);
         }
@@ -366,8 +557,17 @@ public partial class MainWindow : Window
             RepoStatusText.Text = "daemon not answering";
             PlaypenDetailText.Text = "";
             PlaypenEventText.Text = "empty";
+            GameRigStatusText.Text = "offline";
+            GameRigDetailText.Text = "daemon not answering";
+            GameShelfTitleText.Text = "Game Rig offline";
+            GameShelfDetailText.Text = "start daemon";
+            GameShelfTargetsText.Text = "fixture unavailable";
+            GameRigSafetyText.Text = "local-only / foreground-only / emergency stop";
+            GameRigBudgetText.Text = "Free: 15 minutes high-quality gameplay";
+            GameRigEventText.Text = "empty";
             FunctionProofText.Text = error.Message;
             UpdatePlaypenButtons();
+            UpdateGameRigButtons();
         }
     }
 
@@ -716,6 +916,126 @@ public partial class MainWindow : Window
         PlaypenEventText.Text = recentEvents.Length > 0 ? string.Join(" / ", recentEvents) : "empty";
     }
 
+    private void ApplyGameRigState(
+        GameTargetsResponse targets,
+        GameServerRoutesResponse routes,
+        GameRuntimeState state,
+        GameRuntimeEventsResponse events)
+    {
+        var selectedId = GameTargetSelect.SelectedValue as string;
+        var selectedRouteId = GameServerRouteSelect.SelectedValue as string;
+        var activeSession = state.ActiveSession;
+        var fallbackTarget = targets.Items.FirstOrDefault(item => item.Id == activeSession?.TargetId)
+            ?? targets.Items.FirstOrDefault(item => item.Id == "superior-fixture-game")
+            ?? targets.Items.FirstOrDefault();
+
+        GameTargetSelect.ItemsSource = targets.Items;
+        GameServerRouteSelect.ItemsSource = routes.Items;
+
+        if (selectedId is not null && targets.Items.Any(item => item.Id == selectedId))
+        {
+            GameTargetSelect.SelectedValue = selectedId;
+        }
+        else if (fallbackTarget is not null)
+        {
+            GameTargetSelect.SelectedValue = fallbackTarget.Id;
+        }
+
+        if (selectedRouteId is not null && routes.Items.Any(item => item.Id == selectedRouteId))
+        {
+            GameServerRouteSelect.SelectedValue = selectedRouteId;
+        }
+        else if (activeSession?.ServerRoute is not null)
+        {
+            GameServerRouteSelect.SelectedValue = activeSession.ServerRoute.Id;
+        }
+        else if (routes.Items.Count > 0)
+        {
+            GameServerRouteSelect.SelectedValue = routes.Items.OrderByDescending(item => item.UpdatedAt).First().Id;
+        }
+        ApplySelectedGameRouteToInputs();
+
+        GameRigStatusText.Text = state.Status;
+        GameRigDetailText.Text = activeSession is null
+            ? FormatSelectedGameTargetDetail(targets)
+            : $"{activeSession.TargetLabel} / {activeSession.ServerRoute?.Address ?? "no route"} / {activeSession.Goal.Text}";
+        GameRigSafetyText.Text = activeSession is null
+            ? "local-only / foreground-only / emergency stop"
+            : $"{activeSession.SafetyState} / pid {activeSession.ProcessId?.ToString() ?? "pending"} / confidence {activeSession.Confidence:0.00}";
+        GameRigBudgetText.Text = $"{state.Budget.Plan.ToUpperInvariant()} / {state.Budget.Status}: {state.Budget.Detail}";
+
+        var shelfTarget = activeSession is null
+            ? targets.Items.FirstOrDefault(item => item.Id == (GameTargetSelect.SelectedValue as string)) ?? fallbackTarget
+            : targets.Items.FirstOrDefault(item => item.Id == activeSession.TargetId) ?? fallbackTarget;
+
+        GameShelfTitleText.Text = shelfTarget?.Label ?? "No cartridge";
+        GameShelfDetailText.Text = activeSession is null
+            ? $"{shelfTarget?.Status ?? "missing"} / {shelfTarget?.SafetyBadge ?? "local-only"}"
+            : $"{activeSession.Status} / {activeSession.BrainMode} / {activeSession.SafetyState}";
+        GameShelfTargetsText.Text = FormatGameShelfTargets(targets);
+
+        var recentEvents = events.Items
+            .Take(4)
+            .Select(item => item.Detail is null ? item.Label : $"{item.Label}: {item.Detail}")
+            .ToArray();
+
+        GameRigEventText.Text = recentEvents.Length > 0 ? string.Join(" / ", recentEvents) : "empty";
+    }
+
+    private string FormatSelectedGameTargetDetail(GameTargetsResponse targets)
+    {
+        var selectedId = GameTargetSelect.SelectedValue as string;
+        var selected = targets.Items.FirstOrDefault(item => item.Id == selectedId)
+            ?? targets.Items.FirstOrDefault(item => item.Id == "superior-fixture-game")
+            ?? targets.Items.FirstOrDefault();
+
+        if (selected is null)
+        {
+            return "No game targets returned.";
+        }
+
+        var path = selected.ExecutablePath is null ? selected.Detail : selected.ExecutablePath;
+
+        return $"{selected.Status} / {selected.Kind} / {path}";
+    }
+
+    private void ApplySelectedGameRouteToInputs()
+    {
+        var selectedId = GameServerRouteSelect.SelectedValue as string;
+        var route = currentGameServerRoutes?.Items.FirstOrDefault(item => item.Id == selectedId);
+
+        if (route is null)
+        {
+            return;
+        }
+
+        GameServerAddressText.Text = route.BattlemetricsUrl ?? route.Address;
+        GameServerLabelText.Text = route.Label;
+        GamePlayerNameText.Text = route.PlayerName ?? GamePlayerNameText.Text;
+        GameServerPasswordText.Text = route.Password ?? "";
+    }
+
+    private static string FormatGameShelfTargets(GameTargetsResponse targets)
+    {
+        return string.Join(
+            " / ",
+            targets.Items.Take(4).Select(item => $"{item.Status.ToUpperInvariant()} {item.Label} [{item.SafetyBadge}]"));
+    }
+
+    private string ReadGameGoal()
+    {
+        var goal = GameGoalText.Text.Trim();
+
+        return string.IsNullOrWhiteSpace(goal) ? "look around and report what changed" : goal;
+    }
+
+    private string ReadGameNudge()
+    {
+        var nudge = GameNudgeText.Text.Trim();
+
+        return string.IsNullOrWhiteSpace(nudge) ? "try something useful" : nudge;
+    }
+
     private static string FormatNativeLoopStatus(SuperiorBrowserState browserState, SuperiorBrowserEventsResponse events)
     {
         if (events.Items.Any(item => item.Kind == "skill_ran"))
@@ -803,5 +1123,22 @@ public partial class MainWindow : Window
 
         StartPlaypenButton.IsEnabled = canStart;
         StopPlaypenButton.IsEnabled = canStop;
+    }
+
+    private void UpdateGameRigButtons()
+    {
+        var selectedId = GameTargetSelect.SelectedValue as string;
+        var selected = currentGameTargets?.Items.FirstOrDefault(item => item.Id == selectedId);
+        var session = currentGameRuntimeState?.ActiveSession;
+        var hasSession = session is not null && currentGameRuntimeState?.Status != "closed";
+        var isPaused = session?.Status == "paused";
+
+        StartGameRigButton.IsEnabled = selected?.Status == "ready" && !hasSession;
+        PauseGameRigButton.IsEnabled = hasSession && !isPaused;
+        ResumeGameRigButton.IsEnabled = hasSession && isPaused;
+        StopGameRigButton.IsEnabled = hasSession;
+        NudgeGameRigButton.IsEnabled = hasSession;
+        SetGameGoalButton.IsEnabled = hasSession;
+        SaveGameServerRouteButton.IsEnabled = !hasSession;
     }
 }

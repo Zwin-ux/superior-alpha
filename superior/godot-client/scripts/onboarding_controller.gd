@@ -23,6 +23,13 @@ const STEPS := [
 		"stamp": "BOOT / AWAKE"
 	},
 	{
+		"id": "account",
+		"title": "ACCOUNT SEAL",
+		"primary": "CLAIM SPORE",
+		"detail": "Google / X / Discord seal",
+		"stamp": "ACCOUNT / LOCAL"
+	},
+	{
 		"id": "body",
 		"title": "BODY BIOS",
 		"primary": "CHOOSE SHELL",
@@ -42,13 +49,6 @@ const STEPS := [
 		"primary": "STAMP ROLE",
 		"detail": "builder seal / local work",
 		"stamp": "ROLE / STAMPED"
-	},
-	{
-		"id": "account",
-		"title": "ACCOUNT SEAL",
-		"primary": "CLAIM SPORE",
-		"detail": "Google / X / Discord seal",
-		"stamp": "ACCOUNT / LOCAL"
 	},
 	{
 		"id": "browser",
@@ -123,8 +123,8 @@ const SKILL_SLOTS := [
 	["EYE SLOT", "X-RAY", "bot.clawd.skill.eye"],
 	["BADGE SLOT", "EXPLAIN", "bot.clawd.skill.badge"],
 	["SIDE TOOL", "REPO", "bot.clawd.skill.side"],
-	["CROWN SLOT", "CITE", ""],
-	["CHARM SLOT", "WATCH", ""]
+	["CROWN SLOT", "CITE", "bot.clawd.skill.crown"],
+	["CHARM SLOT", "WATCH", "bot.clawd.skill.charm"]
 ]
 
 const ACCOUNT_PROVIDERS := [
@@ -155,23 +155,23 @@ const SYSTEM_CHECKS := [
 		"ready_at": 0
 	},
 	{
+		"id": "account",
+		"label": "ACCOUNT SEAL",
+		"ready_at": 1
+	},
+	{
 		"id": "shell",
 		"label": "SHELL BIOS",
-		"ready_at": 1
+		"ready_at": 2
 	},
 	{
 		"id": "eye",
 		"label": "X-RAY SLOT",
-		"ready_at": 2
+		"ready_at": 3
 	},
 	{
 		"id": "role",
 		"label": "ROLE BADGE",
-		"ready_at": 3
-	},
-	{
-		"id": "account",
-		"label": "ACCOUNT SEAL",
 		"ready_at": 4
 	},
 	{
@@ -213,6 +213,7 @@ var account_feedback_is_error := false
 var browser_pairing_token := ""
 var recovery_feedback := ""
 var recovery_feedback_is_error := false
+var initial_state_synced := false
 
 var title_label: Label
 var primary_label: Label
@@ -297,6 +298,7 @@ var account_provider_lights: Array[ColorRect] = []
 var account_provider_marks: Array[Label] = []
 var account_provider_labels: Array[Label] = []
 var account_provider_buttons: Array[Button] = []
+var hover_provider_index := -1
 var account_action_plate: TextureRect
 var account_action_label: Label
 var account_action_button: Button
@@ -488,6 +490,23 @@ func _on_setup_state_response(result: int, response_code: int, _headers: PackedS
 		return
 	setup_state = parsed
 	setup_state_error = ""
+	
+	var setup_phase := str(setup_state.get("setupPhase", "needs-account"))
+	
+	if not initial_state_synced:
+		initial_state_synced = true
+		if setup_phase == "needs-spore":
+			step_index = 2 # BODY BIOS
+			_render_step()
+		elif setup_phase == "ready":
+			# If everything is ready, we might want to go to the final stamp or workshop
+			# but for now, just let it stay at the beginning or wherever it is.
+			pass
+	
+	if setup_phase == "needs-spore" and _current_step_id() == "account":
+		# Auto-advance from account to body if account is now linked
+		_advance()
+	
 	if _setup_browser_status() == "paired":
 		browser_pairing_token = ""
 	if _setup_key_ready() and browser_key_input:
@@ -1266,18 +1285,19 @@ func _sync_account_seal_visuals() -> void:
 		var provider: Dictionary = ACCOUNT_PROVIDERS[index]
 		var provider_id := str(provider["id"])
 		var selected := provider_id == selected_provider
+		var hovered := index == hover_provider_index
 		var connected := _account_provider_status(provider_id) == "connected"
 		var configured := _account_provider_status(provider_id) != "not-configured"
 		var pending := action_request_kind == "account_oauth" and account_provider_in_flight == provider_id
-		account_provider_plates[index].texture = _factory_texture("scene.tray-slot.equipped" if selected or connected else "scene.tray-slot.empty")
-		account_provider_plates[index].scale = Vector2(1.035, 1.035) if selected else Vector2.ONE
-		account_provider_plates[index].modulate = Color("#dff7aa") if connected else Color("#fff0b1") if selected else Color("#8f806d") if configured else Color("#665c51")
-		account_provider_lights[index].color = Color("#69b65b") if connected else provider["color"] if selected and configured else Color("#d46a5c") if not configured else Color("#7b746a")
-		account_provider_lights[index].modulate.a = 0.62 + absf(sin(Time.get_ticks_msec() * 0.008 + index)) * 0.34 if selected or pending else 0.82
+		account_provider_plates[index].texture = _factory_texture("scene.tray-slot.equipped" if selected or connected or hovered else "scene.tray-slot.empty")
+		account_provider_plates[index].scale = Vector2(1.035, 1.035) if selected or hovered else Vector2.ONE
+		account_provider_plates[index].modulate = Color("#dff7aa") if connected else Color("#fff0b1") if selected or hovered else Color("#8f806d") if configured else Color("#665c51")
+		account_provider_lights[index].color = Color("#69b65b") if connected else provider["color"] if (selected or hovered) and configured else Color("#d46a5c") if not configured else Color("#7b746a")
+		account_provider_lights[index].modulate.a = 0.62 + absf(sin(Time.get_ticks_msec() * 0.008 + index)) * 0.34 if selected or hovered or pending else 0.82
 		account_provider_marks[index].text = str(provider["mark"])
 		account_provider_marks[index].add_theme_color_override("font_color", Color("#1f160f") if configured else Color("#8a7a67"))
 		account_provider_labels[index].text = "%s  %s" % [str(provider["label"]), "LINKED" if connected else "OPEN" if configured else "OFF"]
-		account_provider_labels[index].add_theme_color_override("font_color", Color("#1f160f") if selected or connected else Color("#5f4b34") if configured else Color("#8a7a67"))
+		account_provider_labels[index].add_theme_color_override("font_color", Color("#1f160f") if selected or hovered or connected else Color("#5f4b34") if configured else Color("#8a7a67"))
 		if index < account_provider_buttons.size():
 			account_provider_buttons[index].disabled = action_request_kind != "" or not configured
 	if account_action_label:
@@ -1654,7 +1674,9 @@ func _build_bench() -> void:
 	for spec in [
 		[Vector2(536, 338), "AttachmentPointEye"],
 		[Vector2(724, 338), "AttachmentPointBadge"],
-		[Vector2(512, 416), "AttachmentPointSide"]
+		[Vector2(512, 416), "AttachmentPointSide"],
+		[Vector2(640, 260), "AttachmentPointCrown"],
+		[Vector2(712, 436), "AttachmentPointCharm"]
 	]:
 		var point := _add_dot(spec[0], Color("#ffe7a2"), str(spec[1]))
 		point.size = Vector2(8, 8)
@@ -1664,7 +1686,9 @@ func _build_bench() -> void:
 	var skill_specs := [
 		["bot.clawd.skill.eye", Vector2(508, 318), Vector2(62, 62), "EyeSkillPart"],
 		["bot.clawd.skill.badge", Vector2(708, 312), Vector2(60, 60), "BadgeSkillPart"],
-		["bot.clawd.skill.side", Vector2(492, 380), Vector2(62, 62), "SideSkillPart"]
+		["bot.clawd.skill.side", Vector2(492, 380), Vector2(62, 62), "SideSkillPart"],
+		["bot.clawd.skill.crown", Vector2(610, 226), Vector2(60, 60), "CrownSkillPart"],
+		["bot.clawd.skill.charm", Vector2(688, 412), Vector2(48, 48), "CharmSkillPart"]
 	]
 	for spec in skill_specs:
 		var part := _add_texture(str(spec[0]), spec[1], spec[2], str(spec[3]))
@@ -1935,6 +1959,8 @@ func _build_account_seal() -> void:
 		button.mouse_default_cursor_shape = Control.CURSOR_POINTING_HAND
 		button.set_anchors_preset(Control.PRESET_FULL_RECT)
 		button.pressed.connect(_on_account_provider_pressed.bind(index))
+		button.mouse_entered.connect(_on_account_provider_hover.bind(index))
+		button.mouse_exited.connect(_on_account_provider_hover.bind(-1))
 		plate.add_child(button)
 		account_provider_buttons.append(button)
 
@@ -2249,6 +2275,19 @@ func _update_motion() -> void:
 		var browser_shift_x := 0.0
 		var browser_shift_y := 0.0
 		var browser_tilt := 0.0
+		
+		if _current_step_id() == "account":
+			var mode := _account_mode()
+			if mode == "signed_in":
+				stamp_reaction = absf(sin(Time.get_ticks_msec() * 0.005)) * 0.08
+				browser_tilt = 0.02
+			elif action_request_kind == "account_oauth":
+				browser_tilt = -0.04 + sin(Time.get_ticks_msec() * 0.002) * 0.03
+				browser_shift_y = 4.0
+			else:
+				# Idle "interest" tilt toward the account card
+				browser_tilt = 0.03 + sin(Time.get_ticks_msec() * 0.003) * 0.01
+		
 		if _current_step_id() == "stamp":
 			stamp_reaction = sin(clamp(elapsed / 0.46, 0.0, 1.0) * PI) * 0.16
 		elif _current_step_id() == "browser":
@@ -2277,6 +2316,13 @@ func _update_motion() -> void:
 		if _current_step_id() == "browser":
 			blink = (browser_mode == "transfer" and elapsed > 0.94 and elapsed < 1.08) or (browser_mode == "daemon_offline" and int(Time.get_ticks_msec() * 0.008) % 20 < 2)
 		eye_panel.scale.y = 0.18 if blink else 1.0
+		
+		# Eye tracking: follow mouse within 8x6px
+		var mouse_pos := get_viewport().get_mouse_position()
+		var view_size := get_viewport().get_visible_rect().size
+		var normalized_mouse := (mouse_pos / view_size) * 2.0 - Vector2.ONE
+		var eye_offset := normalized_mouse * Vector2(8.0, 6.0)
+		eye_panel.position = Vector2(508.0, 318.0) + eye_offset
 	if bench_glow:
 		if _current_step_id() == "browser" and browser_mode == "daemon_offline":
 			bench_glow.color = Color(0.76, 0.28, 0.18, 0.05 + abs(sin(Time.get_ticks_msec() * 0.003)) * 0.03)
@@ -2565,6 +2611,12 @@ func _make_recovery_field_stylebox(fill: Color, border: Color) -> StyleBoxFlat:
 func _on_account_provider_pressed(index: int) -> void:
 	_select_account_provider(index)
 	_trigger_account_action(str(ACCOUNT_PROVIDERS[selected_account_provider_index]["id"]))
+
+func _on_account_provider_hover(index: int) -> void:
+	hover_provider_index = index
+	_render_step()
+	if index != -1 and sfx_player:
+		sfx_player.play_sfx("select", 0.35)
 
 func _on_account_action_pressed() -> void:
 	_trigger_account_action()

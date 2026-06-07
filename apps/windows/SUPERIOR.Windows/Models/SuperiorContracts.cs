@@ -277,3 +277,172 @@ public sealed record SuperiorBrowserEvent(
     [property: JsonPropertyName("label")] string Label,
     [property: JsonPropertyName("detail")] string? Detail,
     [property: JsonPropertyName("createdAt")] string CreatedAt);
+
+public sealed record GameTargetsResponse(
+    [property: JsonPropertyName("type")] string Type,
+    [property: JsonPropertyName("items")] IReadOnlyList<GameTarget> Items,
+    [property: JsonPropertyName("storage")] GameTargetStorage Storage,
+    [property: JsonPropertyName("createdAt")] string CreatedAt);
+
+public sealed record GameTargetStorage(
+    [property: JsonPropertyName("localOnly")] bool LocalOnly,
+    [property: JsonPropertyName("statePath")] string StatePath,
+    [property: JsonPropertyName("excludes")] IReadOnlyList<string> Excludes);
+
+public sealed record GameTarget(
+    [property: JsonPropertyName("type")] string Type,
+    [property: JsonPropertyName("id")] string Id,
+    [property: JsonPropertyName("kind")] string Kind,
+    [property: JsonPropertyName("label")] string Label,
+    [property: JsonPropertyName("executablePath")] string? ExecutablePath,
+    [property: JsonPropertyName("workingDirectory")] string? WorkingDirectory,
+    [property: JsonPropertyName("launchArgs")] IReadOnlyList<string>? LaunchArgs,
+    [property: JsonPropertyName("steamAppId")] string? SteamAppId,
+    [property: JsonPropertyName("status")] string Status,
+    [property: JsonPropertyName("detail")] string Detail,
+    [property: JsonPropertyName("safetyBadge")] string SafetyBadge,
+    [property: JsonPropertyName("importedAt")] string ImportedAt,
+    [property: JsonPropertyName("updatedAt")] string UpdatedAt);
+
+public sealed record GameTargetImportResult(
+    [property: JsonPropertyName("type")] string Type,
+    [property: JsonPropertyName("requestId")] string RequestId,
+    [property: JsonPropertyName("target")] GameTarget Target,
+    [property: JsonPropertyName("targets")] GameTargetsResponse Targets,
+    [property: JsonPropertyName("createdAt")] string CreatedAt);
+
+public sealed record GameServerRoutesResponse(
+    [property: JsonPropertyName("type")] string Type,
+    [property: JsonPropertyName("items")] IReadOnlyList<GameServerRoute> Items,
+    [property: JsonPropertyName("storage")] GameTargetStorage Storage,
+    [property: JsonPropertyName("createdAt")] string CreatedAt);
+
+public sealed record GameServerRoute(
+    [property: JsonPropertyName("type")] string Type,
+    [property: JsonPropertyName("id")] string Id,
+    [property: JsonPropertyName("game")] string Game,
+    [property: JsonPropertyName("source")] string Source,
+    [property: JsonPropertyName("label")] string Label,
+    [property: JsonPropertyName("address")] string Address,
+    [property: JsonPropertyName("password")] string? Password,
+    [property: JsonPropertyName("playerName")] string? PlayerName,
+    [property: JsonPropertyName("battlemetricsUrl")] string? BattlemetricsUrl,
+    [property: JsonPropertyName("map")] string? Map,
+    [property: JsonPropertyName("mode")] string? Mode,
+    [property: JsonPropertyName("players")] int? Players,
+    [property: JsonPropertyName("maxPlayers")] int? MaxPlayers,
+    [property: JsonPropertyName("rank")] int? Rank,
+    [property: JsonPropertyName("status")] string Status,
+    [property: JsonPropertyName("detail")] string Detail,
+    [property: JsonPropertyName("createdAt")] string CreatedAt,
+    [property: JsonPropertyName("updatedAt")] string UpdatedAt);
+
+public sealed record GameServerRouteSaveResult(
+    [property: JsonPropertyName("type")] string Type,
+    [property: JsonPropertyName("requestId")] string RequestId,
+    [property: JsonPropertyName("route")] GameServerRoute Route,
+    [property: JsonPropertyName("routes")] GameServerRoutesResponse Routes,
+    [property: JsonPropertyName("createdAt")] string CreatedAt);
+
+public sealed record GameRuntimeState(
+    [property: JsonPropertyName("type")] string Type,
+    [property: JsonPropertyName("status")] string Status,
+    [property: JsonPropertyName("activeSession")] GameSession? ActiveSession,
+    [property: JsonPropertyName("budget")] GameRuntimeBudget Budget,
+    [property: JsonPropertyName("safety")] GameRuntimeSafety Safety,
+    [property: JsonPropertyName("createdAt")] string CreatedAt);
+
+public sealed record GameRuntimeBudget(
+    [property: JsonPropertyName("type")] string Type,
+    [property: JsonPropertyName("plan")] string Plan,
+    [property: JsonPropertyName("status")] string Status,
+    [property: JsonPropertyName("highQualityFreeSeconds")] int HighQualityFreeSeconds,
+    [property: JsonPropertyName("highQualityUsedSeconds")] int HighQualityUsedSeconds,
+    [property: JsonPropertyName("highQualityRemainingSeconds")] int HighQualityRemainingSeconds,
+    [property: JsonPropertyName("meteredBrainModes")] IReadOnlyList<string> MeteredBrainModes,
+    [property: JsonPropertyName("localFixtureUnmetered")] bool LocalFixtureUnmetered,
+    [property: JsonPropertyName("localHostAvailable")] bool LocalHostAvailable,
+    [property: JsonPropertyName("detail")] string Detail,
+    [property: JsonPropertyName("upgradePrompt")] string UpgradePrompt,
+    [property: JsonPropertyName("updatedAt")] string UpdatedAt);
+
+public sealed record GameRuntimeSafety(
+    [property: JsonPropertyName("localOnly")] bool LocalOnly,
+    [property: JsonPropertyName("foregroundOnly")] bool ForegroundOnly,
+    [property: JsonPropertyName("emergencyStop")] bool EmergencyStop,
+    [property: JsonPropertyName("processOwnership")] bool ProcessOwnership,
+    [property: JsonPropertyName("noStealthControl")] bool NoStealthControl);
+
+public sealed record GameSession(
+    [property: JsonPropertyName("type")] string Type,
+    [property: JsonPropertyName("sessionId")] string SessionId,
+    [property: JsonPropertyName("targetId")] string TargetId,
+    [property: JsonPropertyName("targetLabel")] string TargetLabel,
+    [property: JsonPropertyName("serverRoute")] GameServerRoute? ServerRoute,
+    [property: JsonPropertyName("status")] string Status,
+    [property: JsonPropertyName("brainMode")] string BrainMode,
+    [property: JsonPropertyName("processId")] int? ProcessId,
+    [property: JsonPropertyName("ownedProcess")] bool OwnedProcess,
+    [property: JsonPropertyName("foregroundOnly")] bool ForegroundOnly,
+    [property: JsonPropertyName("emergencyStop")] bool EmergencyStop,
+    [property: JsonPropertyName("safetyState")] string SafetyState,
+    [property: JsonPropertyName("goal")] GameGoal Goal,
+    [property: JsonPropertyName("observation")] GameObservation? Observation,
+    [property: JsonPropertyName("lastAction")] GameAction? LastAction,
+    [property: JsonPropertyName("confidence")] double Confidence,
+    [property: JsonPropertyName("startedAt")] string StartedAt,
+    [property: JsonPropertyName("updatedAt")] string UpdatedAt,
+    [property: JsonPropertyName("error")] string? Error);
+
+public sealed record GameGoal(
+    [property: JsonPropertyName("type")] string Type,
+    [property: JsonPropertyName("text")] string Text,
+    [property: JsonPropertyName("createdAt")] string CreatedAt);
+
+public sealed record GameObservation(
+    [property: JsonPropertyName("type")] string Type,
+    [property: JsonPropertyName("observedAt")] string ObservedAt,
+    [property: JsonPropertyName("source")] string Source,
+    [property: JsonPropertyName("foregroundOwned")] bool ForegroundOwned,
+    [property: JsonPropertyName("framePersisted")] bool FramePersisted,
+    [property: JsonPropertyName("summary")] string Summary,
+    [property: JsonPropertyName("width")] int? Width,
+    [property: JsonPropertyName("height")] int? Height);
+
+public sealed record GameAction(
+    [property: JsonPropertyName("type")] string Type,
+    [property: JsonPropertyName("id")] string Id,
+    [property: JsonPropertyName("kind")] string Kind,
+    [property: JsonPropertyName("label")] string Label,
+    [property: JsonPropertyName("reason")] string Reason,
+    [property: JsonPropertyName("durationMs")] int DurationMs,
+    [property: JsonPropertyName("key")] string? Key,
+    [property: JsonPropertyName("createdAt")] string CreatedAt);
+
+public sealed record GameRuntimeStartResult(
+    [property: JsonPropertyName("type")] string Type,
+    [property: JsonPropertyName("requestId")] string RequestId,
+    [property: JsonPropertyName("state")] GameRuntimeState State,
+    [property: JsonPropertyName("createdAt")] string CreatedAt);
+
+public sealed record GameRuntimeCommandResult(
+    [property: JsonPropertyName("type")] string Type,
+    [property: JsonPropertyName("requestId")] string? RequestId,
+    [property: JsonPropertyName("state")] GameRuntimeState State,
+    [property: JsonPropertyName("createdAt")] string CreatedAt);
+
+public sealed record GameRuntimeEventsResponse(
+    [property: JsonPropertyName("type")] string Type,
+    [property: JsonPropertyName("sessionId")] string? SessionId,
+    [property: JsonPropertyName("items")] IReadOnlyList<GameEvent> Items,
+    [property: JsonPropertyName("createdAt")] string CreatedAt);
+
+public sealed record GameEvent(
+    [property: JsonPropertyName("type")] string Type,
+    [property: JsonPropertyName("id")] string Id,
+    [property: JsonPropertyName("sessionId")] string SessionId,
+    [property: JsonPropertyName("targetId")] string TargetId,
+    [property: JsonPropertyName("kind")] string Kind,
+    [property: JsonPropertyName("label")] string Label,
+    [property: JsonPropertyName("detail")] string? Detail,
+    [property: JsonPropertyName("createdAt")] string CreatedAt);

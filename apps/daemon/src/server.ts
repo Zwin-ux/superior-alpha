@@ -1,4 +1,5 @@
 import { createServer, IncomingMessage, ServerResponse } from "node:http";
+import { exec } from "node:child_process";
 import {
   ArticleXrayError,
   ArticleXrayRequest,
@@ -11,6 +12,15 @@ import {
   CustomSkillImportRequest,
   ExplainPageError,
   ExplainPageRequest,
+  GameRuntimeError,
+  GameRuntimeGoalRequest,
+  GameRuntimeNudgeRequest,
+  GameRuntimePauseRequest,
+  GameRuntimeResumeRequest,
+  GameRuntimeStartRequest,
+  GameRuntimeStopRequest,
+  GameServerRouteSaveRequest,
+  GameTargetImportRequest,
   MobileCompanionRecentProof,
   MobileCompanionResponse,
   RecentSkillResult,
@@ -81,6 +91,19 @@ import {
   selectModelProvider,
   startOllamaIfAvailable
 } from "./modelProviderStore.js";
+import { GameTargetStoreError, importGameTarget, readGameTargets } from "./gameTargetStore.js";
+import { GameServerRouteStoreError, readGameServerRoutes, saveGameServerRoute } from "./gameServerRouteStore.js";
+import {
+  GameRuntimeError as GameRuntimeServiceError,
+  getGameRuntimeEvents,
+  getGameRuntimeState,
+  nudgeGameRuntime,
+  pauseGameRuntime,
+  resumeGameRuntime,
+  startGameRuntime,
+  stopGameRuntime,
+  updateGameRuntimeGoal
+} from "./gameRuntime.js";
 
 const config = getDaemonConfig();
 
@@ -181,6 +204,26 @@ const server = createServer(async (request, response) => {
 
   if (request.method === "GET" && url.pathname === "/browser-runtime/events") {
     sendJson(response, 200, getSuperiorBrowserEvents());
+    return;
+  }
+
+  if (request.method === "GET" && url.pathname === "/game-targets") {
+    sendJson(response, 200, readGameTargets());
+    return;
+  }
+
+  if (request.method === "GET" && url.pathname === "/game-server-routes") {
+    sendJson(response, 200, readGameServerRoutes());
+    return;
+  }
+
+  if (request.method === "GET" && url.pathname === "/game-runtime") {
+    sendJson(response, 200, getGameRuntimeState());
+    return;
+  }
+
+  if (request.method === "GET" && url.pathname === "/game-runtime/events") {
+    sendJson(response, 200, getGameRuntimeEvents());
     return;
   }
 
@@ -285,6 +328,46 @@ const server = createServer(async (request, response) => {
 
   if (request.method === "POST" && url.pathname === "/browser-runtime/active-page") {
     await handleBrowserRuntimeActivePage(request, response);
+    return;
+  }
+
+  if (request.method === "POST" && url.pathname === "/game-targets/import") {
+    await handleGameTargetImport(request, response);
+    return;
+  }
+
+  if (request.method === "POST" && url.pathname === "/game-server-routes/save") {
+    await handleGameServerRouteSave(request, response);
+    return;
+  }
+
+  if (request.method === "POST" && url.pathname === "/game-runtime/start") {
+    await handleGameRuntimeStart(request, response);
+    return;
+  }
+
+  if (request.method === "POST" && url.pathname === "/game-runtime/goal") {
+    await handleGameRuntimeGoal(request, response);
+    return;
+  }
+
+  if (request.method === "POST" && url.pathname === "/game-runtime/nudge") {
+    await handleGameRuntimeNudge(request, response);
+    return;
+  }
+
+  if (request.method === "POST" && url.pathname === "/game-runtime/pause") {
+    await handleGameRuntimePause(request, response);
+    return;
+  }
+
+  if (request.method === "POST" && url.pathname === "/game-runtime/resume") {
+    await handleGameRuntimeResume(request, response);
+    return;
+  }
+
+  if (request.method === "POST" && url.pathname === "/game-runtime/stop") {
+    await handleGameRuntimeStop(request, response);
     return;
   }
 
@@ -441,6 +524,195 @@ async function handleBrowserRuntimeActivePage(request: IncomingMessage, response
   }
 }
 
+async function handleGameTargetImport(request: IncomingMessage, response: ServerResponse): Promise<void> {
+  if (!isTrustedLocalOrigin(request.headers.origin)) {
+    sendJson(response, 403, createGameRuntimeError("unauthorized", "Game targets can only be imported from the local Workshop."));
+    return;
+  }
+
+  let payload: GameTargetImportRequest;
+
+  try {
+    payload = (await readJsonBody(request)) as GameTargetImportRequest;
+  } catch {
+    sendJson(response, 400, createGameRuntimeError("bad_request", "Expected a valid Game Rig import request."));
+    return;
+  }
+
+  if (payload.type !== "game-target-import" || typeof payload.executablePath !== "string") {
+    sendJson(response, 400, createGameRuntimeError("bad_request", "Choose a Windows EXE to import.", payload.requestId));
+    return;
+  }
+
+  try {
+    sendJson(response, 200, importGameTarget(payload));
+  } catch (error) {
+    sendGameRuntimeError(response, payload.requestId, error);
+  }
+}
+
+async function handleGameServerRouteSave(request: IncomingMessage, response: ServerResponse): Promise<void> {
+  if (!isTrustedLocalOrigin(request.headers.origin)) {
+    sendJson(response, 403, createGameRuntimeError("unauthorized", "Game server routes can only be saved locally."));
+    return;
+  }
+
+  let payload: GameServerRouteSaveRequest;
+
+  try {
+    payload = (await readJsonBody(request)) as GameServerRouteSaveRequest;
+  } catch {
+    sendJson(response, 400, createGameRuntimeError("bad_request", "Expected a valid GMOD server route request."));
+    return;
+  }
+
+  try {
+    sendJson(response, 200, saveGameServerRoute(payload));
+  } catch (error) {
+    sendGameRuntimeError(response, payload.requestId, error);
+  }
+}
+
+async function handleGameRuntimeStart(request: IncomingMessage, response: ServerResponse): Promise<void> {
+  if (!isTrustedLocalOrigin(request.headers.origin)) {
+    sendJson(response, 403, createGameRuntimeError("unauthorized", "Game Rig can only start from the local Workshop."));
+    return;
+  }
+
+  let payload: GameRuntimeStartRequest;
+
+  try {
+    payload = (await readJsonBody(request)) as GameRuntimeStartRequest;
+  } catch {
+    sendJson(response, 400, createGameRuntimeError("bad_request", "Expected a valid Game Rig start request."));
+    return;
+  }
+
+  try {
+    sendJson(response, 200, await startGameRuntime(payload));
+  } catch (error) {
+    sendGameRuntimeError(response, payload.requestId, error);
+  }
+}
+
+async function handleGameRuntimeGoal(request: IncomingMessage, response: ServerResponse): Promise<void> {
+  if (!isTrustedLocalOrigin(request.headers.origin)) {
+    sendJson(response, 403, createGameRuntimeError("unauthorized", "Game Rig goals can only be set locally."));
+    return;
+  }
+
+  let payload: GameRuntimeGoalRequest;
+
+  try {
+    payload = (await readJsonBody(request)) as GameRuntimeGoalRequest;
+  } catch {
+    sendJson(response, 400, createGameRuntimeError("bad_request", "Expected a valid Game Rig goal request."));
+    return;
+  }
+
+  try {
+    sendJson(response, 200, updateGameRuntimeGoal(payload));
+  } catch (error) {
+    sendGameRuntimeError(response, payload.requestId, error);
+  }
+}
+
+async function handleGameRuntimeNudge(request: IncomingMessage, response: ServerResponse): Promise<void> {
+  if (!isTrustedLocalOrigin(request.headers.origin)) {
+    sendJson(response, 403, createGameRuntimeError("unauthorized", "Game Rig nudges can only be sent locally."));
+    return;
+  }
+
+  let payload: GameRuntimeNudgeRequest;
+
+  try {
+    payload = (await readJsonBody(request)) as GameRuntimeNudgeRequest;
+  } catch {
+    sendJson(response, 400, createGameRuntimeError("bad_request", "Expected a valid Game Rig nudge request."));
+    return;
+  }
+
+  try {
+    sendJson(response, 200, nudgeGameRuntime(payload));
+  } catch (error) {
+    sendGameRuntimeError(response, payload.requestId, error);
+  }
+}
+
+async function handleGameRuntimePause(request: IncomingMessage, response: ServerResponse): Promise<void> {
+  if (!isTrustedLocalOrigin(request.headers.origin)) {
+    sendJson(response, 403, createGameRuntimeError("unauthorized", "Game Rig can only pause from the local Workshop."));
+    return;
+  }
+
+  let payload: GameRuntimePauseRequest;
+
+  try {
+    payload = ((await readOptionalJsonBody(request)) ?? {
+      type: "game-runtime-pause",
+      requestId: `game_pause_${Date.now()}`,
+      createdAt: new Date().toISOString()
+    }) as GameRuntimePauseRequest;
+  } catch {
+    sendJson(response, 400, createGameRuntimeError("bad_request", "Expected a valid Game Rig pause request."));
+    return;
+  }
+
+  try {
+    sendJson(response, 200, pauseGameRuntime(payload));
+  } catch (error) {
+    sendGameRuntimeError(response, payload.requestId, error);
+  }
+}
+
+async function handleGameRuntimeResume(request: IncomingMessage, response: ServerResponse): Promise<void> {
+  if (!isTrustedLocalOrigin(request.headers.origin)) {
+    sendJson(response, 403, createGameRuntimeError("unauthorized", "Game Rig can only resume from the local Workshop."));
+    return;
+  }
+
+  let payload: GameRuntimeResumeRequest;
+
+  try {
+    payload = ((await readOptionalJsonBody(request)) ?? {
+      type: "game-runtime-resume",
+      requestId: `game_resume_${Date.now()}`,
+      createdAt: new Date().toISOString()
+    }) as GameRuntimeResumeRequest;
+  } catch {
+    sendJson(response, 400, createGameRuntimeError("bad_request", "Expected a valid Game Rig resume request."));
+    return;
+  }
+
+  try {
+    sendJson(response, 200, resumeGameRuntime(payload));
+  } catch (error) {
+    sendGameRuntimeError(response, payload.requestId, error);
+  }
+}
+
+async function handleGameRuntimeStop(request: IncomingMessage, response: ServerResponse): Promise<void> {
+  if (!isTrustedLocalOrigin(request.headers.origin)) {
+    sendJson(response, 403, createGameRuntimeError("unauthorized", "Game Rig can only stop from the local Workshop."));
+    return;
+  }
+
+  let payload: GameRuntimeStopRequest | null = null;
+
+  try {
+    payload = (await readOptionalJsonBody(request)) as GameRuntimeStopRequest | null;
+  } catch {
+    sendJson(response, 400, createGameRuntimeError("bad_request", "Expected a valid Game Rig stop request."));
+    return;
+  }
+
+  try {
+    sendJson(response, 200, await stopGameRuntime(payload?.requestId));
+  } catch (error) {
+    sendGameRuntimeError(response, payload?.requestId, error);
+  }
+}
+
 function handleBrowserSessionHome(sessionId: string, response: ServerResponse): void {
   const html = renderSuperiorBrowserHome(decodeURIComponent(sessionId));
 
@@ -543,6 +815,7 @@ async function handleAccountOAuthStart(request: IncomingMessage, response: Serve
     const started = await startAccountOAuth(provider, redirectTo);
 
     writePendingAccountProvider(provider);
+    openExternalUrl(started.authUrl);
     sendJson(response, 200, started);
   } catch (error) {
     sendJson(response, 502, {
@@ -1061,6 +1334,20 @@ async function readJsonBody(request: IncomingMessage): Promise<unknown> {
   return JSON.parse(body);
 }
 
+async function readOptionalJsonBody(request: IncomingMessage): Promise<unknown | null> {
+  let body = "";
+
+  for await (const chunk of request) {
+    body += chunk;
+
+    if (body.length > 1_000_000) {
+      throw new Error("Request body too large.");
+    }
+  }
+
+  return body.trim() ? JSON.parse(body) : null;
+}
+
 function sendJson(response: ServerResponse, statusCode: number, payload: unknown): void {
   response.writeHead(statusCode, {
     "Content-Type": "application/json; charset=utf-8"
@@ -1073,6 +1360,12 @@ function sendHtml(response: ServerResponse, statusCode: number, html: string): v
     "Content-Type": "text/html; charset=utf-8"
   });
   response.end(html);
+}
+
+function openExternalUrl(url: string): void {
+  const command = process.platform === "win32" ? "start" : process.platform === "darwin" ? "open" : "xdg-open";
+
+  exec(`${command} "${url}"`);
 }
 
 function sendFunctionOutput(response: ServerResponse, output: SuperiorFunctionRunnerOutput): void {
@@ -1242,6 +1535,68 @@ function sendBrowserRuntimeError(response: ServerResponse, requestId: string | u
     code: "launch_failed",
     message: error instanceof Error ? error.message : "SUPERIOR Browser failed."
   } satisfies SuperiorBrowserError);
+}
+
+function sendGameRuntimeError(response: ServerResponse, requestId: string | undefined, error: unknown): void {
+  if (error instanceof GameRuntimeServiceError) {
+    sendJson(response, getGameRuntimeStatusCode(error.code), createGameRuntimeError(error.code, error.message, requestId));
+    return;
+  }
+
+  if (error instanceof GameTargetStoreError) {
+    const code = error.code === "missing_exe" ? "missing_exe" : "bad_request";
+    sendJson(response, getGameRuntimeStatusCode(code), createGameRuntimeError(code, error.message, requestId));
+    return;
+  }
+
+  if (error instanceof GameServerRouteStoreError) {
+    sendJson(response, 400, createGameRuntimeError("bad_request", error.message, requestId));
+    return;
+  }
+
+  sendJson(
+    response,
+    500,
+    createGameRuntimeError(
+      "launch_failed",
+      error instanceof Error ? error.message : "Game Rig failed.",
+      requestId
+    )
+  );
+}
+
+function createGameRuntimeError(
+  code: GameRuntimeError["code"],
+  message: string,
+  requestId?: string
+): GameRuntimeError {
+  return {
+    type: "game-runtime-error",
+    ...(requestId ? { requestId } : {}),
+    code,
+    message,
+    createdAt: new Date().toISOString()
+  };
+}
+
+function getGameRuntimeStatusCode(code: GameRuntimeError["code"]): number {
+  if (code === "unauthorized") {
+    return 401;
+  }
+
+  if (code === "not_found" || code === "not_running") {
+    return 404;
+  }
+
+  if (code === "missing_exe" || code === "capture_blocked" || code === "focus_lost" || code === "budget_exhausted") {
+    return 503;
+  }
+
+  if (code === "launch_failed") {
+    return 502;
+  }
+
+  return 400;
 }
 
 function setCorsHeaders(response: ServerResponse): void {
@@ -1560,6 +1915,10 @@ function readSetupState(): SuperiorSetupState {
   const modelProviderState = readModelProviderState(config);
   const accountState = getSetupAccountState();
   const activeBotSaved = hasSavedBotIdentity();
+
+  const setupPhase: SuperiorSetupState["setupPhase"] =
+    accountState.status !== "signed-in" ? "needs-account" : !activeBotSaved ? "needs-spore" : "ready";
+
   const keyReady = modelProviderState.openAiKeyStatus === "ready" || modelProviderState.openAiKeyStatus === "saved";
   const modelReady = modelProviderState.modelProvider !== "missing";
   const browserReady = browserLinkState.status === "paired";
@@ -1573,6 +1932,7 @@ function readSetupState(): SuperiorSetupState {
     type: "superior-setup-state",
     activeBotSaved,
     requiresSetup: !activeBotSaved || accountState.status !== "signed-in",
+    setupPhase,
     steps: [
       {
         step: "account",

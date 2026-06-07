@@ -448,6 +448,140 @@
       "sourceKind": "generated-fallback"
     },
     {
+      "id": "bot.clawd.skill.crown",
+      "kind": "bot-part",
+      "state": "approved-runtime",
+      "width": 192,
+      "height": 192,
+      "approvedPath": "assets/bots/0.14/approved-runtime/generated/bot.clawd.skill.crown.png",
+      "godotTarget": "res://assets/clay/superior-clay-factory-atlas.png#bot.clawd.skill.crown",
+      "zones": [
+        "center-bot",
+        "right-tray"
+      ],
+      "qualityNotes": [
+        "clay crown citation part"
+      ],
+      "atlasRect": {
+        "x": 592,
+        "y": 1424,
+        "width": 192,
+        "height": 192
+      },
+      "sourceKind": "generated-fallback"
+    },
+    {
+      "id": "bot.clawd.skill.charm",
+      "kind": "bot-part",
+      "state": "approved-runtime",
+      "width": 192,
+      "height": 192,
+      "approvedPath": "assets/bots/0.14/approved-runtime/generated/bot.clawd.skill.charm.png",
+      "godotTarget": "res://assets/clay/superior-clay-factory-atlas.png#bot.clawd.skill.charm",
+      "zones": [
+        "center-bot",
+        "right-tray"
+      ],
+      "qualityNotes": [
+        "clay watch charm part"
+      ],
+      "atlasRect": {
+        "x": 788,
+        "y": 1424,
+        "width": 192,
+        "height": 192
+      },
+      "sourceKind": "generated-fallback"
+    },
+    {
+      "id": "scene.monitor",
+      "kind": "clay-world",
+      "state": "approved-runtime",
+      "width": 384,
+      "height": 320,
+      "approvedPath": "assets/bots/0.14/approved-runtime/generated/scene.monitor.png",
+      "godotTarget": "res://assets/clay/superior-clay-factory-atlas.png#scene.monitor",
+      "zones": [
+        "center-bot"
+      ],
+      "qualityNotes": [
+        "chunky CRT clay monitor for agent feedback"
+      ],
+      "atlasRect": {
+        "x": 984,
+        "y": 1424,
+        "width": 384,
+        "height": 320
+      },
+      "sourceKind": "generated-fallback"
+    },
+    {
+      "id": "scene.battery",
+      "kind": "clay-world",
+      "state": "approved-runtime",
+      "width": 192,
+      "height": 256,
+      "approvedPath": "assets/bots/0.14/approved-runtime/generated/scene.battery.png",
+      "godotTarget": "res://assets/clay/superior-clay-factory-atlas.png#scene.battery",
+      "zones": [
+        "center-bot"
+      ],
+      "qualityNotes": [
+        "clay battery pack for budget display"
+      ],
+      "atlasRect": {
+        "x": 1372,
+        "y": 1424,
+        "width": 192,
+        "height": 256
+      },
+      "sourceKind": "generated-fallback"
+    },
+    {
+      "id": "scene.data-spool",
+      "kind": "clay-world",
+      "state": "approved-runtime",
+      "width": 256,
+      "height": 256,
+      "approvedPath": "assets/bots/0.14/approved-runtime/generated/scene.data-spool.png",
+      "godotTarget": "res://assets/clay/superior-clay-factory-atlas.png#scene.data-spool",
+      "zones": [
+        "center-bot"
+      ],
+      "qualityNotes": [
+        "clay spool for active data transfer"
+      ],
+      "atlasRect": {
+        "x": 1568,
+        "y": 1424,
+        "width": 256,
+        "height": 256
+      },
+      "sourceKind": "generated-fallback"
+    },
+    {
+      "id": "scene.lamp-switch",
+      "kind": "clay-world",
+      "state": "approved-runtime",
+      "width": 128,
+      "height": 128,
+      "approvedPath": "assets/bots/0.14/approved-runtime/generated/scene.lamp-switch.png",
+      "godotTarget": "res://assets/clay/superior-clay-factory-atlas.png#scene.lamp-switch",
+      "zones": [
+        "center-bot"
+      ],
+      "qualityNotes": [
+        "interactive clay toggle for lamp control"
+      ],
+      "atlasRect": {
+        "x": 1828,
+        "y": 1424,
+        "width": 128,
+        "height": 128
+      },
+      "sourceKind": "generated-fallback"
+    },
+    {
       "id": "boot.seed",
       "kind": "onboarding",
       "state": "approved-runtime",
@@ -462,8 +596,8 @@
         "clay boot seed used for console startup snap"
       ],
       "atlasRect": {
-        "x": 592,
-        "y": 1424,
+        "x": 4,
+        "y": 1748,
         "width": 256,
         "height": 256
       },
@@ -484,8 +618,8 @@
         "pixel-clay SUPERIOR boot mark"
       ],
       "atlasRect": {
-        "x": 852,
-        "y": 1424,
+        "x": 264,
+        "y": 1748,
         "width": 512,
         "height": 160
       },
@@ -506,8 +640,8 @@
         "small pixel boot progress pip"
       ],
       "atlasRect": {
-        "x": 1368,
-        "y": 1424,
+        "x": 780,
+        "y": 1748,
         "width": 96,
         "height": 64
       },

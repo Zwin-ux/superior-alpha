@@ -13,6 +13,11 @@ import {
   createBrowserPairingCompleteRequest,
   createCustomSkillImportRequest,
   createExplainPageRequest,
+  createGameRuntimeGoalRequest,
+  createGameRuntimeNudgeRequest,
+  createGameRuntimeStartRequest,
+  createGameServerRouteSaveRequest,
+  createGameTargetImportRequest,
   createRepoReaderRequest,
   createSuperiorFunctionRunRequest,
   createSuperiorBrowserActivePageReport,
@@ -68,7 +73,8 @@ describe("shared SUPERIOR contracts", () => {
     expect(botSkillLoadoutOptions.map((option) => `${option.slot}:${option.skillId}`)).toEqual([
       "badge:page-explainer",
       "eye:article-xray",
-      "side:repo-reader"
+      "side:repo-reader",
+      "crown:pi-status"
     ]);
 
     const scanner = createBotIdentityFromShape("scanner", {
@@ -109,6 +115,7 @@ describe("shared SUPERIOR contracts", () => {
     expect(premadeSkillPartOptions.map((option) => `${option.slot}:${option.shortLabel}:${option.state}`)).toEqual([
       "eye:X-Ray:runnable",
       "eye:Feed:preview",
+      "crown:Pi Status:runnable",
       "crown:Cite:preview",
       "crown:Transcript:stowed",
       "side:Repo:runnable",
@@ -161,7 +168,7 @@ describe("shared SUPERIOR contracts", () => {
     expect(skillCatalog["article-xray"].slot).toBe("eye");
     expect(skillCatalog["repo-reader"].slot).toBe("side");
     expect(skillSlotLabels.badge).toBe("Badge");
-    expect(runnableSkillShelf.map((skill) => skill.id)).toEqual(["page-explainer", "article-xray", "repo-reader"]);
+    expect(runnableSkillShelf.map((skill) => skill.id)).toEqual(["page-explainer", "article-xray", "repo-reader", "pi-status"]);
 
     const bot = updateBotIdentity(DEFAULT_BOT_IDENTITY, {
       skills: ["transcript-lens", "page-explainer"]
@@ -323,6 +330,134 @@ describe("shared SUPERIOR contracts", () => {
     expect(report.type).toBe("superior-browser-active-page");
     expect(report.requestId).toMatch(/^browser_page_/);
     expect(report.page.url).toContain("github.com");
+  });
+
+  it("defines local-only Game Rig target and session contracts", () => {
+    const importRequest = createGameTargetImportRequest({
+      executablePath: "C:\\Games\\GarrysMod\\hl2.exe",
+      label: "GMOD Sandbox",
+      launchArgs: ["-windowed"]
+    });
+    const startRequest = createGameRuntimeStartRequest({
+      targetId: "gmod-sandbox",
+      goal: "open spawn menu",
+      brainMode: "openai-default",
+      serverRouteId: "route_gmod_test"
+    });
+    const routeRequest = createGameServerRouteSaveRequest({
+      label: "DarkRP test route",
+      addressOrUrl: "https://www.battlemetrics.com/servers/gmod/1234567?server=203.0.113.20:27015",
+      password: "private",
+      playerName: "Clawd"
+    });
+    const goalRequest = createGameRuntimeGoalRequest({
+      goal: "build a car"
+    });
+    const nudgeRequest = createGameRuntimeNudgeRequest({
+      nudge: "stop messing with props"
+    });
+    const state = {
+      type: "game-runtime-state",
+      status: "acting",
+      activeSession: {
+        type: "game-session",
+        sessionId: "game_session_test",
+        targetId: "gmod-sandbox",
+        targetLabel: "GMOD Sandbox",
+        serverRoute: {
+          type: "game-server-route",
+          id: "route_gmod_test",
+          game: "gmod",
+          source: "battlemetrics",
+          label: "DarkRP test route",
+          address: "203.0.113.20:27015",
+          password: "private",
+          playerName: "Clawd",
+          battlemetricsUrl: "https://www.battlemetrics.com/servers/gmod/1234567",
+          status: "ready",
+          detail: "ready to connect",
+          createdAt: new Date(0).toISOString(),
+          updatedAt: new Date(0).toISOString()
+        },
+        status: "acting",
+        brainMode: "openai-default",
+        processId: 4000,
+        ownedProcess: true,
+        foregroundOnly: true,
+        emergencyStop: true,
+        safetyState: "foreground-owned",
+        goal: {
+          type: "game-goal",
+          text: "open spawn menu",
+          createdAt: new Date(0).toISOString()
+        },
+        observation: {
+          type: "game-observation",
+          observedAt: new Date(0).toISOString(),
+          source: "window-capture",
+          foregroundOwned: true,
+          framePersisted: false,
+          summary: "active owned game window"
+        },
+        lastAction: {
+          type: "game-action",
+          id: "game_action_test",
+          kind: "key",
+          label: "Press Q",
+          reason: "open spawn menu",
+          durationMs: 120,
+          key: "Q",
+          createdAt: new Date(0).toISOString()
+        },
+        confidence: 0.72,
+        startedAt: new Date(0).toISOString(),
+        updatedAt: new Date(0).toISOString()
+      },
+      safety: {
+        localOnly: true,
+        foregroundOnly: true,
+        emergencyStop: true,
+        processOwnership: true,
+        noStealthControl: true
+      },
+      budget: {
+        type: "game-runtime-budget",
+        plan: "free",
+        status: "available",
+        highQualityFreeSeconds: 900,
+        highQualityUsedSeconds: 0,
+        highQualityRemainingSeconds: 900,
+        meteredBrainModes: ["openai-default"],
+        localFixtureUnmetered: true,
+        localHostAvailable: true,
+        detail: "15 of 15 free high-quality minutes left.",
+        upgradePrompt: "Upgrade to Pro or switch to local-host mode.",
+        updatedAt: new Date(0).toISOString()
+      },
+      createdAt: new Date(0).toISOString()
+    } as const;
+    const serialized = JSON.stringify(state);
+
+    expect(importRequest.type).toBe("game-target-import");
+    expect(importRequest.requestId).toMatch(/^game_target_/);
+    expect(importRequest.executablePath).toContain("hl2.exe");
+    expect(startRequest.type).toBe("game-runtime-start");
+    expect(startRequest.requestId).toMatch(/^game_start_/);
+    expect(startRequest.brainMode).toBe("openai-default");
+    expect(startRequest.serverRouteId).toBe("route_gmod_test");
+    expect(routeRequest.type).toBe("game-server-route-save");
+    expect(routeRequest.addressOrUrl).toContain("battlemetrics.com");
+    expect(goalRequest.type).toBe("game-runtime-goal");
+    expect(nudgeRequest.type).toBe("game-runtime-nudge");
+    expect(state.safety.localOnly).toBe(true);
+    expect(state.safety.noStealthControl).toBe(true);
+    expect(state.budget.highQualityFreeSeconds).toBe(900);
+    expect(state.budget.meteredBrainModes).toEqual(["openai-default"]);
+    expect(state.budget.localFixtureUnmetered).toBe(true);
+    expect(state.activeSession.observation.framePersisted).toBe(false);
+    expect(serialized).not.toContain("OPENAI_API_KEY");
+    expect(serialized).not.toContain("supabase");
+    expect(serialized).not.toContain("data:image");
   });
 
   it("creates typed browser pairing completion requests", () => {

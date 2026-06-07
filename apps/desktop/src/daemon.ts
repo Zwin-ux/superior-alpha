@@ -20,12 +20,31 @@ import {
   SuperiorBrowserStartResult,
   SuperiorBrowserState,
   SuperiorBrowserStopResult,
+  SuperiorFunctionRunRequest,
+  SuperiorFunctionRunResult,
   createCustomSkillImportRequest,
   createRepoReaderRequest,
-  createSuperiorBrowserStartRequest
+  createSuperiorBrowserStartRequest,
+  createSuperiorFunctionRunRequest
 } from "@clawdbot/shared";
 
 const daemonUrl = "http://127.0.0.1:5317";
+
+export async function runSuperiorFunction(request: SuperiorFunctionRunRequest): Promise<SuperiorFunctionRunResult> {
+  const response = await fetch(`${daemonUrl}/functions/run`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json"
+    },
+    body: JSON.stringify(request)
+  });
+
+  if (!response.ok) {
+    throw new Error(await readDaemonError(response, "Function run failed."));
+  }
+
+  return (await response.json()) as SuperiorFunctionRunResult;
+}
 
 export interface DaemonLaunchResult {
   status: "already-running" | "started" | "starting" | "missing-node" | "missing-entry" | "failed";

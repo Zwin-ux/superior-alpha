@@ -13,6 +13,7 @@ import {
   SuperiorBotReaction,
   SuperiorBrowserEvent,
   SuperiorBrowserState,
+  SuperiorFunctionId,
   SuperiorFunctionRunSummary,
   SuperiorSetupState,
   botBodyCatalog,
@@ -24,7 +25,8 @@ import {
   skillCatalog,
   skillSlotLabels,
   skillSlots,
-  updateBotIdentity
+  updateBotIdentity,
+  createSuperiorFunctionRunRequest
 } from "@clawdbot/shared";
 import { loadBotIdentity, saveBotIdentity } from "./botStorage";
 import {
@@ -57,6 +59,7 @@ import {
   requestCustomSkillImportProposal,
   requestRepoReader,
   resetBrowserPairing,
+  runSuperiorFunction,
   saveDaemonBotIdentity,
   signOutAccount,
   startAccountOAuth,
@@ -104,6 +107,8 @@ export function App(): React.ReactElement {
   const [recentResults, setRecentResults] = useState<RecentSkillResult[]>([]);
   const [recentFunctionRuns, setRecentFunctionRuns] = useState<SuperiorFunctionRunSummary[]>([]);
   const [botReaction, setBotReaction] = useState<SuperiorBotReaction | null>(null);
+  const [functionBusy, setFunctionBusy] = useState(false);
+  const [functionError, setFunctionError] = useState<string | null>(null);
   const lastReactionPulseKeyRef = useRef<string | null>(null);
   const previousAccountStatusRef = useRef<SuperiorSetupState["account"]["status"] | null>(null);
 
@@ -658,6 +663,30 @@ export function App(): React.ReactElement {
     }
   }
 
+  async function triggerFunctionRun(functionId: SuperiorFunctionId): Promise<void> {
+    setFunctionBusy(true);
+    setFunctionError(null);
+
+    try {
+      const output = await runSuperiorFunction(
+        createSuperiorFunctionRunRequest({
+          functionId,
+          input: {},
+          bot
+        })
+      );
+
+      pulseBotReaction(output.botReaction);
+
+      const nextRuns = await fetchRecentFunctionRuns();
+      setRecentFunctionRuns(nextRuns.items);
+    } catch (error) {
+      setFunctionError(error instanceof Error ? error.message : "Function run failed.");
+    } finally {
+      setFunctionBusy(false);
+    }
+  }
+
   return (
     <main className="workshop-shell" style={botStyle}>
       <div className="workshop-window">
@@ -764,6 +793,7 @@ export function App(): React.ReactElement {
                 onFolderPathChange={setCustomSkillFolderPath}
                 onScan={() => void scanCustomSkillFolder()}
               />
+              <FunctionBench bot={bot} busy={functionBusy} error={functionError} onRun={(id) => void triggerFunctionRun(id)} />
               <SkillList bot={bot} />
             </>
           ) : null}
@@ -1088,6 +1118,51 @@ function FunctionProofStrip(props: { runs: SuperiorFunctionRunSummary[] }): Reac
         <strong>{latestRun ? latestRun.label : "empty"}</strong>
       </div>
       <em data-status={latestRun?.status ?? "idle"}>{latestRun ? latestRun.botReaction.label : "Run a part."}</em>
+    </section>
+  );
+}
+
+function FunctionBench(props: {
+  bot: BotIdentity;
+  busy: boolean;
+  error: string | null;
+  onRun: (functionId: SuperiorFunctionId) => void;
+}): React.ReactElement {
+  const equippedSkills = props.bot.skills.map((id) => skillCatalog[id]);
+  const runnableSkills = equippedSkills.filter((skill) => skill.status === "equipped");
+
+  return (
+    <section className="function-bench" aria-label="Function bench">
+      <h3>Function Bench</h3>
+      <div className="bench-parts">
+        {runnableSkills.map((skill) => {
+          // Only show run button for local skills in the Workshop for now
+          // Article X-Ray and Page Explainer need browser context (handled by extension)
+          const isWorkshopRunnable = skill.id === "pi-status";
+
+          if (!isWorkshopRunnable) {
+            return null;
+          }
+
+          return (
+            <div className="bench-part-row" key={skill.id}>
+              <span>{skill.shortLabel}</span>
+              <button
+                className="choice-chip service-action"
+                type="button"
+                disabled={props.busy}
+                onClick={() => props.onRun(skill.id as SuperiorFunctionId)}
+              >
+                {props.busy ? "Running..." : "Run Part"}
+              </button>
+            </div>
+          );
+        })}
+        {runnableSkills.filter((s) => s.id === "pi-status").length === 0 ? (
+          <p className="bench-empty-note">Equip a Workshop part like Pi Status to use the bench.</p>
+        ) : null}
+      </div>
+      {props.error ? <p className="bench-error">{props.error}</p> : null}
     </section>
   );
 }

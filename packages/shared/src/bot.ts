@@ -32,7 +32,8 @@ export const skillIds = [
   "job-scanner",
   "price-watch",
   "citation-checker",
-  "deal-scout"
+  "deal-scout",
+  "pi-status"
 ] as const;
 export type SkillId = (typeof skillIds)[number];
 
@@ -608,6 +609,19 @@ export const skillCatalog: Record<SkillId, SkillDefinition> = {
     effect: "Finds the catch.",
     description: "Summarizes offers, catches traps, and compares the actual value.",
     gameLoop: "Scan offer -> find catch -> decide"
+  },
+  "pi-status": {
+    id: "pi-status",
+    label: "Plant Pi Status",
+    shortLabel: "Pi Status",
+    source: "popular",
+    status: "equipped",
+    category: "monitor",
+    slot: "crown",
+    attachment: "Clay lens ring",
+    effect: "Reads Pi health.",
+    description: "Connects to the Raspberry Pi and reads its current status, uptime, and repo state.",
+    gameLoop: "Trigger check -> SSH to Pi -> show health reaction"
   }
 };
 
@@ -774,6 +788,7 @@ export const premadeSkillPartsBySlot: Record<SkillSlot, readonly PremadeSkillPar
     createPremadeSkillPart("feed-xray", "preview", ["scout"])
   ],
   crown: [
+    createPremadeSkillPart("pi-status", "runnable", ["builder", "scout", "sentinel"]),
     createPremadeSkillPart("citation-checker", "preview", ["sentinel", "scout"]),
     createPremadeSkillPart("transcript-lens", "stowed", ["scout"])
   ],

@@ -68,6 +68,7 @@
           <Button Content="Customize Bot" />
           <Button Content="Skills" />
           <Button Content="Browser Link" Click="OnPairClicked" />
+          <Button Content="Game Rig" Click="OnGameRigClicked" />
           <Button Content="Options" />
           <Button Content="Quit" Click="OnQuitClicked" />
         </StackPanel>
@@ -95,6 +96,63 @@
                              BotBody="orb"
                              BotColor="lavender"
                              BotEye="glow" />
+      <Border x:Name="GameShelfPanel"
+              Grid.Row="0"
+              Margin="38,340,38,12"
+              Padding="14"
+              Background="#2E4A4F"
+              BorderBrush="#F4DDAE"
+              BorderThickness="2"
+              CornerRadius="17">
+        <Grid>
+          <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="132" />
+            <ColumnDefinition Width="*" />
+          </Grid.ColumnDefinitions>
+          <Border Width="104"
+                  Height="84"
+                  HorizontalAlignment="Left"
+                  Background="#E0A548"
+                  BorderBrush="#9D6530"
+                  BorderThickness="3"
+                  CornerRadius="14">
+            <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center">
+              <TextBlock Text="GAME"
+                         FontSize="22"
+                         FontWeight="Black"
+                         Foreground="{StaticResource ClayText}"
+                         HorizontalAlignment="Center" />
+              <TextBlock Text="RIG"
+                         FontSize="22"
+                         FontWeight="Black"
+                         Foreground="{StaticResource ClayText}"
+                         HorizontalAlignment="Center" />
+            </StackPanel>
+          </Border>
+          <StackPanel Grid.Column="1">
+            <TextBlock Text="CLAY CARTRIDGE SHELF"
+                       FontSize="11"
+                       FontWeight="Black"
+                       Foreground="#F4DDAE" />
+            <TextBlock x:Name="GameShelfTitleText"
+                       Text="Fixture Cartridge"
+                       FontSize="24"
+                       FontWeight="Black"
+                       Foreground="#FFF1C8" />
+            <TextBlock x:Name="GameShelfDetailText"
+                       Text="ready / private-local-proof"
+                       FontWeight="Bold"
+                       Foreground="#EAC997"
+                       TextWrapping="Wrap" />
+            <TextBlock x:Name="GameShelfTargetsText"
+                       Margin="0,6,0,0"
+                       Text="loading shelf"
+                       FontSize="11"
+                       Foreground="#F4DDAE"
+                       TextWrapping="Wrap" />
+          </StackPanel>
+        </Grid>
+      </Border>
       <Border Grid.Row="1"
               Margin="38,0,38,24"
               Padding="18"
@@ -268,6 +326,90 @@
             <TextBlock x:Name="BrowserStatusText" Text="Checking" FontWeight="Bold" />
             <TextBlock x:Name="BrowserDetailText" Text="runtime pending" FontSize="11" Foreground="{StaticResource ClayMuted}" TextWrapping="Wrap" />
             <TextBlock x:Name="ExtensionStatusText" Text="extension pending" FontSize="11" Foreground="{StaticResource ClayMuted}" />
+          </StackPanel>
+        </Border>
+
+        <Border Style="{StaticResource TrayCardStyle}">
+          <StackPanel>
+            <TextBlock Text="GAME RIG" FontSize="11" FontWeight="Black" Foreground="{StaticResource ClayMuted}" />
+            <TextBlock x:Name="GameRigStatusText" Text="closed" FontWeight="Black" />
+            <TextBlock x:Name="GameRigDetailText" Text="fixture ready" FontSize="11" Foreground="{StaticResource ClayMuted}" TextWrapping="Wrap" />
+            <ComboBox x:Name="GameTargetSelect"
+                      Height="32"
+                      Margin="0,8,0,8"
+                      DisplayMemberPath="Label"
+                      SelectedValuePath="Id"
+                      SelectionChanged="OnGameTargetSelectionChanged" />
+            <TextBlock Text="GMOD SERVER ROUTER" FontSize="11" FontWeight="Black" Foreground="{StaticResource ClayMuted}" Margin="0,2,0,2" />
+            <ComboBox x:Name="GameServerRouteSelect"
+                      Height="32"
+                      Margin="0,0,0,8"
+                      DisplayMemberPath="Label"
+                      SelectedValuePath="Id"
+                      SelectionChanged="OnGameServerRouteSelectionChanged" />
+            <TextBox x:Name="GameServerAddressText"
+                     Text="paste BattleMetrics URL or ip:port"
+                     Height="34"
+                     Margin="0,0,0,8"
+                     Padding="8,5"
+                     FontWeight="Bold" />
+            <Grid>
+              <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*" />
+                <ColumnDefinition Width="*" />
+              </Grid.ColumnDefinitions>
+              <TextBox x:Name="GameServerLabelText"
+                       Grid.Column="0"
+                       Text="GMOD route"
+                       Height="34"
+                       Margin="0,0,4,8"
+                       Padding="8,5"
+                       FontWeight="Bold" />
+              <TextBox x:Name="GamePlayerNameText"
+                       Grid.Column="1"
+                       Text="Clawd"
+                       Height="34"
+                       Margin="4,0,0,8"
+                       Padding="8,5"
+                       FontWeight="Bold" />
+            </Grid>
+            <TextBox x:Name="GameServerPasswordText"
+                     Text=""
+                     Height="34"
+                     Margin="0,0,0,8"
+                     Padding="8,5"
+                     FontWeight="Bold" />
+            <WrapPanel>
+              <Button x:Name="SaveGameServerRouteButton" Content="Save Route" Click="OnSaveGameServerRouteClicked" />
+            </WrapPanel>
+            <TextBox x:Name="GameGoalText"
+                     Text="open spawn menu"
+                     Height="34"
+                     Margin="0,0,0,8"
+                     Padding="8,5"
+                     FontWeight="Bold" />
+            <WrapPanel>
+              <Button x:Name="StartGameRigButton" Content="Start" Click="OnStartGameRigClicked" />
+              <Button x:Name="PauseGameRigButton" Content="Pause Brain" Margin="8,0,0,10" Click="OnPauseGameRigClicked" />
+              <Button x:Name="ResumeGameRigButton" Content="Resume" Margin="0,0,0,10" Click="OnResumeGameRigClicked" />
+              <Button x:Name="StopGameRigButton" Content="Stop" Margin="8,0,0,10" Click="OnStopGameRigClicked" />
+            </WrapPanel>
+            <TextBox x:Name="GameNudgeText"
+                     Text="build a car"
+                     Height="34"
+                     Margin="0,0,0,8"
+                     Padding="8,5"
+                     FontWeight="Bold" />
+            <WrapPanel>
+              <Button x:Name="SetGameGoalButton" Content="Set Goal" Click="OnSetGameGoalClicked" />
+              <Button x:Name="NudgeGameRigButton" Content="Goat It" Margin="8,0,0,10" Click="OnNudgeGameRigClicked" />
+            </WrapPanel>
+            <WrapPanel>
+              <Button x:Name="ImportGameRigButton" Content="Import EXE" Click="OnImportGameRigClicked" />
+            </WrapPanel>
+            <TextBlock x:Name="GameRigSafetyText" Text="local-only / foreground-only / emergency stop" FontSize="11" Foreground="{StaticResource ClayMuted}" TextWrapping="Wrap" />
+            <TextBlock x:Name="GameRigBudgetText" Text="Free: 15 minutes high-quality gameplay" FontSize="11" Foreground="{StaticResource ClayMuted}" TextWrapping="Wrap" />
+            <TextBlock x:Name="GameRigEventText" Text="empty" Margin="0,4,0,0" FontWeight="Bold" TextWrapping="Wrap" />
           </StackPanel>
         </Border>
 

@@ -25,6 +25,10 @@ const requiredAssetIds = [
   "scene.right-tray",
   "scene.tray-slot.empty",
   "scene.tray-slot.equipped",
+  "scene.monitor",
+  "scene.battery",
+  "scene.data-spool",
+  "scene.lamp-switch",
   "scene.bottom-card",
   "scene.status-pill",
   "bot.clawd.body",
@@ -32,6 +36,8 @@ const requiredAssetIds = [
   "bot.clawd.skill.eye",
   "bot.clawd.skill.badge",
   "bot.clawd.skill.side",
+  "bot.clawd.skill.crown",
+  "bot.clawd.skill.charm",
   "boot.seed",
   "boot.wordmark",
   "boot.progress-pip"
@@ -405,6 +411,57 @@ function createAssetImage(asset) {
     case "scene.tray-slot.equipped":
       drawTraySlot(pixels, width, height, seed, true);
       break;
+    case "scene.monitor":
+      // Outer chunky clay frame
+      drawRoundRect(pixels, width, height, 20, 20, width - 40, height - 40, 32, palette.railBottom, 1);
+      drawRoundRect(pixels, width, height, 32, 28, width - 64, height - 60, 28, palette.railTop, 0.92);
+      // Recessed dark screen area
+      drawRoundRect(pixels, width, height, 64, 56, width - 128, height - 128, 16, palette.black, 1);
+      drawRoundRect(pixels, width, height, 72, 64, width - 144, height - 144, 12, hex("#1a1a1a"), 0.88);
+      // CRT scanline feel
+      for (let i = 0; i < 20; i += 1) {
+        const y = 70 + i * 8;
+        drawRoundRect(pixels, width, height, 72, y, width - 144, 2, 0, palette.black, 0.15);
+      }
+      // Small status bead
+      drawEllipse(pixels, width, height, width - 80, height - 54, 10, 10, 0, palette.good, 0.8);
+      addClayNoise(pixels, width, height, 9, seed);
+      break;
+    case "scene.battery":
+      // Chunky battery body
+      drawRoundRect(pixels, width, height, 32, 64, width - 64, height - 80, 24, palette.railBottom, 1);
+      drawRoundRect(pixels, width, height, 44, 76, width - 88, height - 104, 18, palette.railTop, 0.9);
+      // Contact pin
+      drawRoundRect(pixels, width, height, 80, 24, 32, 40, 6, palette.goldBottom, 1);
+      // Budget status pips
+      for (let i = 0; i < 4; i += 1) {
+        const y = 92 + i * 36;
+        drawRoundRect(pixels, width, height, 64, y, width - 128, 24, 4, palette.black, 1);
+        drawRoundRect(pixels, width, height, 68, y + 4, width - 136, 16, 2, palette.good, 0.7);
+      }
+      addClayNoise(pixels, width, height, 8, seed);
+      break;
+    case "scene.data-spool":
+      // Outer rim
+      drawEllipse(pixels, width, height, 128, 128, 112, 112, 0, palette.shadow, 1);
+      drawEllipse(pixels, width, height, 128, 128, 96, 96, 0, palette.railTop, 0.8);
+      // Inner core
+      drawEllipse(pixels, width, height, 128, 128, 48, 48, 0, palette.railBottom, 1);
+      // Data wire windings
+      for (let i = 0; i < 6; i += 1) {
+        const size = 54 + i * 6;
+        drawEllipse(pixels, width, height, 128, 128, size, size, 0, palette.blueTrace, 0.15);
+      }
+      addClayNoise(pixels, width, height, 10, seed);
+      break;
+    case "scene.lamp-switch":
+      // Base plate
+      drawRoundRect(pixels, width, height, 16, 16, 96, 96, 12, palette.railBottom, 1);
+      // Toggle nub
+      drawEllipse(pixels, width, height, 64, 42, 24, 32, 0, palette.paperBottom, 1);
+      drawEllipse(pixels, width, height, 64, 38, 20, 24, 0, palette.paperTop, 0.9);
+      addClayNoise(pixels, width, height, 6, seed);
+      break;
     case "scene.bottom-card":
       drawRoundRect(pixels, width, height, 16, 16, 448, 128, 18, palette.paperBottom, 1);
       drawRoundRect(pixels, width, height, 24, 22, 432, 116, 15, palette.paperTop, 0.88);
@@ -449,6 +506,24 @@ function createAssetImage(asset) {
     case "bot.clawd.skill.side":
       drawGear(pixels, width, height, 96, 96, 54, palette.goldTop, palette.goldBottom);
       drawEllipse(pixels, width, height, 96, 96, 24, 24, 0, hex("#584338"), 1);
+      break;
+    case "bot.clawd.skill.crown":
+      drawRoundRect(pixels, width, height, 42, 112, 108, 24, 8, palette.goldBottom, 1);
+      drawRoundRect(pixels, width, height, 52, 62, 22, 54, 4, palette.goldTop, 1);
+      drawRoundRect(pixels, width, height, 85, 48, 22, 68, 4, palette.goldTop, 1);
+      drawRoundRect(pixels, width, height, 118, 62, 22, 54, 4, palette.goldTop, 1);
+      drawEllipse(pixels, width, height, 96, 42, 12, 12, 0, hex("#ffffff"), 0.8);
+      drawPixelText(pixels, width, "C", 88, 116, palette.shadow, 1);
+      addClayNoise(pixels, width, height, 7, seed);
+      break;
+    case "bot.clawd.skill.charm":
+      drawEllipse(pixels, width, height, 96, 96, 72, 72, 0, hex("#5a493c"), 1);
+      drawEllipse(pixels, width, height, 96, 96, 62, 62, 0, palette.cream, 0.9);
+      drawRoundRect(pixels, width, height, 94, 52, 4, 34, 2, hex("#1a1a1a"), 1);
+      drawRoundRect(pixels, width, height, 94, 94, 38, 4, 2, hex("#1a1a1a"), 1);
+      drawEllipse(pixels, width, height, 96, 96, 6, 6, 0, hex("#1a1a1a"), 1);
+      drawRadial(pixels, width, height, 96, 96, 42, palette.blueTrace, 0.12);
+      addClayNoise(pixels, width, height, 6, seed);
       break;
     case "boot.seed":
       drawRadial(pixels, width, height, 128, 128, 96, palette.blueTrace, 0.16);

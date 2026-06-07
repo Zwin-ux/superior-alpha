@@ -32,6 +32,8 @@ var eye_lens_core: MeshInstance3D
 var badge_part: MeshInstance3D
 var side_part: MeshInstance3D
 var lens_part: MeshInstance3D
+var crown_part: MeshInstance3D
+var charm_part: MeshInstance3D
 var body_antenna_left: MeshInstance3D
 var body_antenna_right: MeshInstance3D
 var body_shield: MeshInstance3D
@@ -47,6 +49,16 @@ var workshop_tray_lights: Array[MeshInstance3D] = []
 var tray_row_key_labels: Array[Label3D] = []
 var tray_row_value_labels: Array[Label3D] = []
 var tray_title_label: Label3D
+var monitor_panel: MeshInstance3D
+var monitor_label: Label3D
+var monitor_text_target := ""
+var monitor_text_current := ""
+var monitor_typing_clock := 0.0
+
+var battery_node: MeshInstance3D
+var spool_node: MeshInstance3D
+var switch_node: MeshInstance3D
+
 var status_pill_panels: Array[MeshInstance3D] = []
 var status_pill_title_labels: Array[Label3D] = []
 var status_pill_state_labels: Array[Label3D] = []
@@ -118,6 +130,17 @@ func _process(delta: float) -> void:
 			_sync_signal_prompt()
 	if reaction_timer > 0.0:
 		reaction_timer = max(0.0, reaction_timer - delta)
+	
+	# Monitor typing effect
+	if monitor_label and monitor_text_current != monitor_text_target:
+		monitor_typing_clock += delta
+		if monitor_typing_clock > 0.04:
+			monitor_typing_clock = 0.0
+			monitor_text_current = monitor_text_target.left(monitor_text_current.length() + 1)
+			monitor_label.text = monitor_text_current
+			if sfx_player and int(pulse * 100) % 2 == 0:
+				sfx_player.play_sfx("step", 0.08)
+
 	_tick_setup_poll(delta)
 	_update_video_proof_reactions()
 	_update_bot_motion()
@@ -149,6 +172,10 @@ func _input(event: InputEvent) -> void:
 			_focus_tray_row(1)
 		if event.keycode == KEY_3:
 			_focus_tray_row(2)
+		if event.keycode == KEY_4:
+			_focus_tray_row(3)
+		if event.keycode == KEY_5:
+			_focus_tray_row(4)
 
 func _build_runtime_probes() -> void:
 	setup_request = HTTPRequest.new()
@@ -304,6 +331,8 @@ func _build_room() -> void:
 
 	_build_left_rail()
 	_build_parts_tray()
+	_build_monitor()
+	_build_polish_props()
 	_build_bench()
 	_build_clawd()
 	_build_status_pills()
@@ -325,9 +354,9 @@ func _build_left_rail() -> void:
 func _build_parts_tray() -> void:
 	_add_panel("PartsTray", "scene.right-tray", Vector2(1.68, 2.16), Vector3(2.56, 1.64, -0.12))
 	tray_title_label = _add_world_label("PARTS RACK", Vector3(2.56, 2.52, 0.3), 19, Color("#23170f"))
-	for index in range(3):
-		var y := 2.14 - float(index) * 0.48
-		var slot := _add_panel("TraySlot%s" % index, "scene.tray-slot.empty", Vector2(1.34, 0.36), Vector3(2.58, y, 0.16))
+	for index in range(5):
+		var y := 2.22 - float(index) * 0.4
+		var slot := _add_panel("TraySlot%s" % index, "scene.tray-slot.empty", Vector2(1.34, 0.3), Vector3(2.58, y, 0.16))
 		var light := _add_sphere(self, "TrayLight%s" % index, 0.034, Vector3(2.05, y - 0.02, 0.32), Color("#6b6259"))
 		var key_label := _add_world_label("ROW", Vector3(2.34, y - 0.02, 0.28), 15, Color("#23170f"))
 		var value_label := _add_world_label("...", Vector3(2.87, y - 0.02, 0.28), 12, Color("#4c3524"))
@@ -335,7 +364,27 @@ func _build_parts_tray() -> void:
 		workshop_tray_lights.append(light)
 		tray_row_key_labels.append(key_label)
 		tray_row_value_labels.append(value_label)
-		_add_click_area("ClickTrayRow%s" % index, Vector3(2.58, y, 0.16), Vector3(1.36, 0.42, 0.54), "tray:%s" % index)
+		_add_click_area("ClickTrayRow%s" % index, Vector3(2.58, y, 0.16), Vector3(1.36, 0.38, 0.54), "tray:%s" % index)
+
+func _build_monitor() -> void:
+	monitor_panel = _add_panel("AgentMonitor", "scene.monitor", Vector2(1.2, 1.0), Vector3(1.65, 0.92, 0.42))
+	monitor_panel.rotation_degrees.y = -18.0
+	monitor_label = _add_world_label("AGENT / IDLE", Vector3(1.58, 0.94, 0.58), 11, Color("#e5f6bd"))
+	monitor_label.rotation_degrees.y = -18.0
+	monitor_label.modulate.a = 0.82
+	monitor_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	monitor_label.custom_minimum_size = Vector2(160, 100)
+
+func _build_polish_props() -> void:
+	battery_node = _add_panel("BudgetBattery", "scene.battery", Vector2(0.6, 0.8), Vector3(-1.82, 1.15, -1.82))
+	battery_node.rotation_degrees.y = 22.0
+	spool_node = _add_panel("DataSpool", "scene.data-spool", Vector2(0.72, 0.72), Vector3(-3.24, -1.18, 1.05))
+	spool_node.rotation_degrees.x = -80.0
+	switch_node = _add_panel("LampSwitch", "scene.lamp-switch", Vector2(0.4, 0.4), Vector3(1.2, 2.5, -1.72))
+	switch_node.rotation_degrees.y = -5.0
+	_add_world_label("BATTERY", Vector3(-1.82, 0.65, -1.6), 10, Color("#d7c999"))
+	_add_world_label("SPOOL", Vector3(-3.24, -0.74, 1.25), 12, Color("#f8e6b2"))
+	_add_world_label("LINK", Vector3(1.2, 2.15, -1.6), 11, Color("#f8e6b2"))
 
 func _build_bench() -> void:
 	_add_panel("PedestalPlate", "scene.pedestal", Vector2(2.58, 1.27), Vector3(0, 0.42, 0.14))
@@ -359,6 +408,8 @@ func _build_clawd() -> void:
 	lens_part = _add_panel_to(bot_rig, "XRayLens", "bot.clawd.skill.eye", Vector2(0.43, 0.43), Vector3(-0.64, 0.56, 0.42))
 	badge_part = _add_panel_to(bot_rig, "ExplainBadge", "bot.clawd.skill.badge", Vector2(0.38, 0.38), Vector3(0.72, 0.56, 0.42))
 	side_part = _add_panel_to(bot_rig, "RepoSidePart", "bot.clawd.skill.side", Vector2(0.42, 0.42), Vector3(-0.84, 0.25, 0.28))
+	crown_part = _add_panel_to(bot_rig, "CiteCrown", "bot.clawd.skill.crown", Vector2(0.44, 0.44), Vector3(0.02, 1.15, 0.28))
+	charm_part = _add_panel_to(bot_rig, "WatchCharm", "bot.clawd.skill.charm", Vector2(0.34, 0.34), Vector3(0.84, 0.25, 0.28))
 	body_antenna_left = _add_box(bot_rig, "BodyAntennaLeft", Vector3(0.06, 0.42, 0.06), Vector3(-0.26, 1.12, 0.18), Color("#4f6848"))
 	body_antenna_right = _add_box(bot_rig, "BodyAntennaRight", Vector3(0.06, 0.32, 0.06), Vector3(0.23, 1.05, 0.18), Color("#4f6848"))
 	body_shield = _add_box(bot_rig, "BodyShield", Vector3(0.28, 0.2, 0.08), Vector3(0.58, 0.78, 0.38), Color("#ffe0a3"))
@@ -461,6 +512,15 @@ func _refresh_all_ui() -> void:
 	_refresh_identity_card()
 	_refresh_runtime_status()
 	_sync_signal_prompt()
+	
+	# UI Cleanup: Focus on bot and monitor during agent activity
+	var agent_active := reaction_timer > 0.0 and (reaction_kind == "agent" or reaction_kind == "repo" or reaction_kind == "browser")
+	if identity_title_label: identity_title_label.visible = not agent_active
+	if identity_name_label: identity_name_label.visible = not agent_active
+	if identity_meta_label: identity_meta_label.visible = not agent_active
+	if identity_skill_label: identity_skill_label.visible = not agent_active
+	if identity_note_label: identity_note_label.visible = not agent_active
+	if stats_label: stats_label.visible = not agent_active and showcase_mode
 
 func _refresh_runtime_status() -> void:
 	if not status_label:
@@ -599,7 +659,11 @@ func _build_row_model(index: int) -> Dictionary:
 	return _active_row(index, "EYE", BotCatalog.eye_label(str(workshop_bot.get("eye", "glow"))), true)
 
 func _loadout_row_model(index: int) -> Dictionary:
-	var slot_id := str(BotCatalog.slot_order()[index])
+	var slot_order := BotCatalog.slot_order()
+	if index >= slot_order.size():
+		return {"key": "ROW", "value": "...", "filled": false, "lightColor": Color("#6b6259"), "keyColor": Color("#23170f"), "valueColor": Color("#4c3524")}
+	
+	var slot_id := str(slot_order[index])
 	var skill_id := BotCatalog.equipped_skill_for_slot(workshop_bot, slot_id)
 	var filled := skill_id != ""
 	var value := "%s FIT" % BotCatalog.skill_short_label(skill_id) if filled else "EMPTY"
@@ -630,11 +694,14 @@ func _browser_row_model(index: int) -> Dictionary:
 			key_text = "READY" if key_ready else "MISSING"
 			key_light = Color("#72d968") if key_ready else Color("#c39a66")
 		return _active_row(index, "KEY", key_text, key_ready, key_light)
-	var browser_status := _setup_browser_status()
-	var browser_text := browser_status.to_upper()
-	var filled := browser_status == "paired"
-	var light_color := Color("#72d968") if filled else Color("#d8a849") if browser_status == "pairing" else Color("#6b6259")
-	return _active_row(index, "HAND", browser_text if browser_text != "" else "WAIT", filled, light_color)
+	if index == 2:
+		var browser_status := _setup_browser_status()
+		var browser_text := browser_status.to_upper()
+		var filled := browser_status == "paired"
+		var light_color := Color("#72d968") if filled else Color("#d8a849") if browser_status == "pairing" else Color("#6b6259")
+		return _active_row(index, "HAND", browser_text if browser_text != "" else "WAIT", filled, light_color)
+	
+	return {"key": "ROW", "value": "...", "filled": false, "lightColor": Color("#6b6259"), "keyColor": Color("#23170f"), "valueColor": Color("#4c3524")}
 
 func _active_row(index: int, key: String, value: String, filled: bool, light_color: Color = Color("#8fe8ff")) -> Dictionary:
 	var active := tray_focus_index == index
@@ -716,6 +783,8 @@ func _apply_skill_style(pigment: Dictionary) -> void:
 	var eye_skill := BotCatalog.equipped_skill_for_slot(workshop_bot, "eye")
 	var side_skill := BotCatalog.equipped_skill_for_slot(workshop_bot, "side")
 	var badge_skill := BotCatalog.equipped_skill_for_slot(workshop_bot, "badge")
+	var crown_skill := BotCatalog.equipped_skill_for_slot(workshop_bot, "crown")
+	var charm_skill := BotCatalog.equipped_skill_for_slot(workshop_bot, "charm")
 	if lens_part and lens_part.material_override:
 		lens_part.visible = eye_skill != ""
 		lens_part.material_override.albedo_color = highlight
@@ -725,6 +794,12 @@ func _apply_skill_style(pigment: Dictionary) -> void:
 	if badge_part and badge_part.material_override:
 		badge_part.visible = badge_skill != ""
 		badge_part.material_override.albedo_color = Color("#f0cd7a")
+	if crown_part and crown_part.material_override:
+		crown_part.visible = crown_skill != ""
+		crown_part.material_override.albedo_color = Color("#dbad52")
+	if charm_part and charm_part.material_override:
+		charm_part.visible = charm_skill != ""
+		charm_part.material_override.albedo_color = Color("#f2e3c0")
 
 func _sync_selection_indices_from_bot() -> void:
 	build_body_index = _option_index_by_id(_body_options(), str(workshop_bot.get("body", "orb")))
@@ -772,6 +847,14 @@ func _update_bot_motion() -> void:
 	if eye_panel and eye_panel.visible:
 		var blink := int(pulse * 2.0) % 6 == 0 or (reaction_kind == "browser" and reaction_timer > 0.26)
 		eye_panel.scale.y = 0.18 if blink else 1.0
+		
+		# Eye tracking: follow mouse within constrained range
+		var mouse_pos := get_viewport().get_mouse_position()
+		var view_size := get_viewport().get_visible_rect().size
+		var normalized_mouse := (mouse_pos / view_size) * 2.0 - Vector2.ONE
+		var eye_offset := normalized_mouse * 0.05
+		eye_panel.position = Vector3(0.02 + eye_offset.x, 0.62 - eye_offset.y, 0.34)
+
 	if eye_orb_left and eye_orb_left.visible:
 		eye_orb_left.scale.z = 0.78 if int(pulse * 2.0) % 7 == 0 else 1.0
 	if eye_orb_right and eye_orb_right.visible:
@@ -779,11 +862,33 @@ func _update_bot_motion() -> void:
 	if eye_lens_core and eye_lens_core.visible:
 		eye_lens_core.scale = Vector3.ONE * (1.0 + sin(pulse * 2.2) * 0.04)
 	if lens_part:
-		lens_part.scale = Vector3.ONE * (1.0 + (sin(reaction_timer * 14.0) * 0.11 if reaction_kind == "browser" else 0.0))
+		var lens_glow := (sin(reaction_timer * 14.0) * 0.11 if reaction_kind == "browser" or reaction_kind == "loadout" else 0.0)
+		if reaction_kind == "agent" and reaction_timer > 0.0:
+			lens_glow = 0.08 + absf(sin(pulse * 8.0)) * 0.06
+		lens_part.scale = Vector3.ONE * (1.0 + lens_glow)
+		if lens_part.material_override:
+			var base_color = lens_part.material_override.albedo_color
+			lens_part.material_override.emission_enabled = reaction_timer > 0.0 and (reaction_kind == "agent" or reaction_kind == "browser")
+			lens_part.material_override.emission = Color("#8fe8ff") if reaction_kind == "agent" else Color("#fff0b1")
+			lens_part.material_override.emission_energy_multiplier = 0.8 * (reaction_timer / 0.65)
+
 	if badge_part:
-		badge_part.scale = Vector3.ONE * (1.0 + (sin(reaction_timer * 12.0) * 0.13 if reaction_kind == "agent" else 0.0))
+		badge_part.scale = Vector3.ONE * (1.0 + (sin(reaction_timer * 12.0) * 0.13 if reaction_kind == "agent" or reaction_kind == "loadout" else 0.0))
 	if side_part:
-		side_part.scale = Vector3.ONE * (1.0 + (sin(reaction_timer * 10.0) * 0.12 if reaction_kind == "repo" else 0.0))
+		var gear_spin := (sin(reaction_timer * 10.0) * 0.12 if reaction_kind == "repo" or reaction_kind == "loadout" else 0.0)
+		if reaction_kind == "repo" and reaction_timer > 0.0:
+			side_part.rotation.z += delta * 12.0
+		side_part.scale = Vector3.ONE * (1.0 + gear_spin)
+	if crown_part:
+		var crown_pulse := (sin(reaction_timer * 11.0) * 0.14 if reaction_kind == "loadout" else 0.0)
+		if reaction_kind == "market" and reaction_timer > 0.0:
+			crown_pulse = 0.06 + absf(sin(pulse * 6.0)) * 0.08
+		crown_part.scale = Vector3.ONE * (1.0 + crown_pulse)
+	if charm_part:
+		var charm_pulse := (sin(reaction_timer * 13.0) * 0.15 if reaction_kind == "loadout" else 0.0)
+		if reaction_kind == "system" and reaction_timer > 0.0:
+			charm_pulse = absf(sin(pulse * 10.0)) * 0.12
+		charm_part.scale = Vector3.ONE * (1.0 + charm_pulse)
 
 func _update_lights() -> void:
 	if lamp_light:
@@ -839,6 +944,24 @@ func _update_prop_animation() -> void:
 	if prop_nodes.has("signal_fruit"):
 		var fruit: MeshInstance3D = prop_nodes["signal_fruit"]
 		fruit.position.y = -1.22 + sin(pulse * 2.2) * 0.025
+	
+	if battery_node:
+		var low_budget := setup_state_error != ""
+		battery_node.scale = Vector3.ONE * (1.0 + absf(sin(pulse * 0.8)) * 0.02 if low_budget else 1.0)
+		if battery_node.material_override:
+			battery_node.material_override.emission_enabled = low_budget
+			battery_node.material_override.emission = Color("#9e5c49")
+			battery_node.material_override.emission_energy_multiplier = absf(sin(pulse * 4.0)) * 0.4
+
+	if spool_node:
+		var spinning := reaction_timer > 0.0 and (reaction_kind == "repo" or reaction_kind == "agent")
+		if spinning:
+			spool_node.rotation.z += delta * 15.0
+		spool_node.scale = Vector3.ONE * (1.05 if spinning else 1.0)
+
+	if switch_node:
+		var state := 1.0 if reaction_timer > 0.0 and reaction_kind == "agent" else 0.0
+		switch_node.rotation.x = lerp_angle(switch_node.rotation.x, deg_to_rad(-15.0 if state > 0.5 else 15.0), 0.15)
 
 func _update_stats() -> void:
 	if stats_label and stats_label.visible:
@@ -861,6 +984,12 @@ func _on_realtime_message(message: Dictionary) -> void:
 		var label := "%s / %s" % [kind.to_upper(), event_label]
 		if bool(message.get("mock", false)) and not showcase_mode:
 			label = "MOCK " + label
+		
+		if monitor_label:
+			monitor_text_target = label
+			monitor_typing_clock = 0.0
+			monitor_label.modulate = Color("#e5f6bd") if kind != "system" else Color("#f6bdbe")
+		
 		_trigger_reaction(kind)
 		_add_terminal_line(label)
 		_show_signal_message("LAST / %s" % label)
@@ -1043,7 +1172,7 @@ func _mutate_build_row(row_index: int, direction: int) -> void:
 	_refresh_all_ui()
 
 func _toggle_loadout_row(row_index: int) -> void:
-	var slot_id := str(BotCatalog.slot_order()[clamp(row_index, 0, 2)])
+	var slot_id := str(BotCatalog.slot_order()[clamp(row_index, 0, 4)])
 	var equipped := BotCatalog.equipped_skill_for_slot(workshop_bot, slot_id) != ""
 	workshop_bot = BotCatalog.set_slot_equipped(workshop_bot, slot_id, not equipped)
 	_add_terminal_line("LOADOUT / %s %s" % [BotCatalog.slot_label(slot_id), "STOWED" if equipped else "FITTED"])

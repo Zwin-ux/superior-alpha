@@ -5,7 +5,7 @@
   "atlas": "superior-clay-factory-atlas.png",
   "width": 2048,
   "height": 2048,
-  "generatedAt": "2026-05-31T19:54:34.035Z",
+  "generatedAt": "2026-06-07T18:33:07.724Z",
   "assets": [
     {
       "id": "scene.wall",
@@ -396,14 +396,136 @@
       ]
     },
     {
+      "id": "bot.clawd.skill.crown",
+      "kind": "bot-part",
+      "state": "approved-runtime",
+      "sourceKind": "generated-fallback",
+      "approvedPath": "assets/bots/0.14/approved-runtime/generated/bot.clawd.skill.crown.png",
+      "atlasRect": {
+        "x": 592,
+        "y": 1424,
+        "width": 192,
+        "height": 192
+      },
+      "godotTarget": "res://assets/clay/superior-clay-factory-atlas.png#bot.clawd.skill.crown",
+      "qualityNotes": [
+        "clay crown citation part"
+      ],
+      "zones": [
+        "center-bot",
+        "right-tray"
+      ]
+    },
+    {
+      "id": "bot.clawd.skill.charm",
+      "kind": "bot-part",
+      "state": "approved-runtime",
+      "sourceKind": "generated-fallback",
+      "approvedPath": "assets/bots/0.14/approved-runtime/generated/bot.clawd.skill.charm.png",
+      "atlasRect": {
+        "x": 788,
+        "y": 1424,
+        "width": 192,
+        "height": 192
+      },
+      "godotTarget": "res://assets/clay/superior-clay-factory-atlas.png#bot.clawd.skill.charm",
+      "qualityNotes": [
+        "clay watch charm part"
+      ],
+      "zones": [
+        "center-bot",
+        "right-tray"
+      ]
+    },
+    {
+      "id": "scene.monitor",
+      "kind": "clay-world",
+      "state": "approved-runtime",
+      "sourceKind": "generated-fallback",
+      "approvedPath": "assets/bots/0.14/approved-runtime/generated/scene.monitor.png",
+      "atlasRect": {
+        "x": 984,
+        "y": 1424,
+        "width": 384,
+        "height": 320
+      },
+      "godotTarget": "res://assets/clay/superior-clay-factory-atlas.png#scene.monitor",
+      "qualityNotes": [
+        "chunky CRT clay monitor for agent feedback"
+      ],
+      "zones": [
+        "center-bot"
+      ]
+    },
+    {
+      "id": "scene.battery",
+      "kind": "clay-world",
+      "state": "approved-runtime",
+      "sourceKind": "generated-fallback",
+      "approvedPath": "assets/bots/0.14/approved-runtime/generated/scene.battery.png",
+      "atlasRect": {
+        "x": 1372,
+        "y": 1424,
+        "width": 192,
+        "height": 256
+      },
+      "godotTarget": "res://assets/clay/superior-clay-factory-atlas.png#scene.battery",
+      "qualityNotes": [
+        "clay battery pack for budget display"
+      ],
+      "zones": [
+        "center-bot"
+      ]
+    },
+    {
+      "id": "scene.data-spool",
+      "kind": "clay-world",
+      "state": "approved-runtime",
+      "sourceKind": "generated-fallback",
+      "approvedPath": "assets/bots/0.14/approved-runtime/generated/scene.data-spool.png",
+      "atlasRect": {
+        "x": 1568,
+        "y": 1424,
+        "width": 256,
+        "height": 256
+      },
+      "godotTarget": "res://assets/clay/superior-clay-factory-atlas.png#scene.data-spool",
+      "qualityNotes": [
+        "clay spool for active data transfer"
+      ],
+      "zones": [
+        "center-bot"
+      ]
+    },
+    {
+      "id": "scene.lamp-switch",
+      "kind": "clay-world",
+      "state": "approved-runtime",
+      "sourceKind": "generated-fallback",
+      "approvedPath": "assets/bots/0.14/approved-runtime/generated/scene.lamp-switch.png",
+      "atlasRect": {
+        "x": 1828,
+        "y": 1424,
+        "width": 128,
+        "height": 128
+      },
+      "godotTarget": "res://assets/clay/superior-clay-factory-atlas.png#scene.lamp-switch",
+      "qualityNotes": [
+        "interactive clay toggle for lamp control"
+      ],
+      "zones": [
+        "center-bot"
+      ]
+    },
+    {
       "id": "boot.seed",
       "kind": "onboarding",
       "state": "approved-runtime",
       "sourceKind": "generated-fallback",
       "approvedPath": "assets/bots/0.14/approved-runtime/generated/boot.seed.png",
       "atlasRect": {
-        "x": 592,
-        "y": 1424,
+        "x": 4,
+        "y": 1748,
         "width": 256,
         "height": 256
       },
@@ -422,8 +544,8 @@
       "sourceKind": "generated-fallback",
       "approvedPath": "assets/bots/0.14/approved-runtime/generated/boot.wordmark.png",
       "atlasRect": {
-        "x": 852,
-        "y": 1424,
+        "x": 264,
+        "y": 1748,
         "width": 512,
         "height": 160
       },
@@ -442,8 +564,8 @@
       "sourceKind": "generated-fallback",
       "approvedPath": "assets/bots/0.14/approved-runtime/generated/boot.progress-pip.png",
       "atlasRect": {
-        "x": 1368,
-        "y": 1424,
+        "x": 780,
+        "y": 1748,
         "width": 96,
         "height": 64
       },

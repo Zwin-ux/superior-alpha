@@ -1,3 +1,5 @@
+import { exec } from "node:child_process";
+import { promisify } from "node:util";
 import {
   ArticleXrayRequest,
   CustomSkillImportRequest,
@@ -14,10 +16,14 @@ import {
   SuperiorFunctionRunRequest,
   SuperiorFunctionRunResult,
   SuperiorFunctionRunSummary,
+  SuperiorSignalKind,
   createLocalId,
   hasUsablePageText,
   skillLabels
 } from "@clawdbot/shared";
+
+const execAsync = promisify(exec);
+
 import { hasArticleContent, runArticleXray } from "../articleXray.js";
 import { touchBrowserPairing } from "../browserLinkStore.js";
 import {
@@ -38,6 +44,7 @@ import { RepoReaderError, runRepoReader } from "../repoReader.js";
 import { rememberRepoWorkspaceRecord } from "../repoWorkspaceStore.js";
 import { getSuperiorFunctionDefinition } from "./catalog.js";
 import { rememberFunctionRun } from "./runEventsStore.js";
+import { emitSuperiorSignal } from "../signalClient.js";
 
 export interface SuperiorFunctionRunContext {
   config: DaemonConfig;
@@ -111,8 +118,56 @@ async function runFunctionAdapter(
       return runBrowserStopAdapter();
     case "custom-skill-import-proposal":
       return runCustomSkillImportAdapter(request);
+    case "pi-status":
+      return runPiStatusAdapter(request, context, runId, events);
     default:
       throw new FunctionRunError("unknown_function", "That robot part is not registered.");
+  }
+}
+
+async function runPiStatusAdapter(
+  request: SuperiorFunctionRunRequest,
+  context: SuperiorFunctionRunContext,
+  runId: string,
+  events: SuperiorFunctionRunEvent[]
+): Promise<unknown> {
+  const SshHost = "pi@192.168.137.142";
+  const RemotePath = "/home/pi/plant";
+
+  const remoteScript = `
+set -euo pipefail
+printf 'timestamp='; date --iso-8601=seconds
+printf 'hostname='; hostname
+printf 'uptime='; uptime -p
+printf 'memory='; free -h | awk 'NR==2 {print $3 "/" $2 " used"}'
+printf 'disk='; df -h / | awk 'NR==2 {print $3 "/" $2 " used (" $5 ")"}'
+printf 'venv='; if [ -d '${RemotePath}/.venv' ]; then echo present; else echo missing; fi
+printf 'repo='; if [ -d '${RemotePath}/.git' ]; then echo present; else echo missing; fi
+`.trim();
+
+  addEvent(events, runId, request, "running", "Connecting to Pi...", SshHost);
+
+  try {
+    const { stdout } = await execAsync(`echo "${remoteScript}" | ssh ${SshHost} "bash -s"`);
+    const lines = stdout.trim().split("\n");
+    const result: Record<string, string> = {};
+
+    for (const line of lines) {
+      const [key, ...values] = line.split("=");
+      if (key) {
+        result[key] = values.join("=");
+      }
+    }
+
+    return {
+      type: "pi-status-result",
+      status: "ready",
+      summary: `Pi is ${result.uptime || "up"}. Mem: ${result.memory || "unknown"}.`,
+      details: result,
+      createdAt: new Date().toISOString()
+    };
+  } catch (error) {
+    throw new FunctionRunError("runner_failed", `Could not connect to Pi at ${SshHost}.`);
   }
 }
 
@@ -287,6 +342,11 @@ function addEvent(
     ...(detail ? { detail } : {}),
     createdAt: new Date().toISOString()
   });
+
+  // Emit real-time signal for the Godot Workshop
+  const signalKind: SuperiorSignalKind =
+    kind === "running" ? "agent" : kind === "model_called" ? "agent" : kind === "failed" ? "system" : "system";
+  emitSuperiorSignal(signalKind, label, kind === "failed" ? 2 : 1, detail);
 }
 
 function createBotReaction(

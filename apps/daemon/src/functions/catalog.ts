@@ -82,6 +82,18 @@ export const superiorFunctionCatalog: Record<SuperiorFunctionId, SuperiorFunctio
     permissions: ["local-files"],
     attachment: "Blank clay socket",
     effect: "Scans a JS/TS folder."
+  },
+  "pi-status": {
+    type: "superior-function-definition",
+    id: "pi-status",
+    label: "Check Plant Pi",
+    shortLabel: "Pi Status",
+    status: "runnable",
+    runnerKind: "local",
+    surfaces: ["workshop"],
+    permissions: ["pi-network"],
+    attachment: "Clay lens ring",
+    effect: "Checks the Raspberry Pi status."
   }
 };
 

@@ -138,6 +138,7 @@ await runCheck("function-catalog", async () => {
   assert(catalog.type === "superior-function-catalog", "Expected function catalog type.");
   assert(ids.includes("article-xray"), "Expected Article X-Ray function.");
   assert(ids.includes("repo-reader"), "Expected Repo Reader function.");
+  assert(ids.includes("pi-status"), "Expected Pi Status function.");
 
   return {
     count: ids.length,
@@ -191,6 +192,42 @@ await runCheck("workshop-function-validation", async () => {
   return {
     code: result.code,
     reaction: result.botReaction.label
+  };
+});
+
+await runCheck("pi-status-smoke", async () => {
+  // We allow 200 OR 502 because the Pi might be unreachable in the test environment.
+  const response = await fetch(`${host}/functions/run`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json"
+    },
+    body: JSON.stringify({
+      type: "superior-function-run",
+      requestId: createFixtureId("pi_smoke"),
+      functionId: "pi-status",
+      input: {},
+      createdAt: new Date().toISOString()
+    })
+  });
+
+  const result = await response.json().catch(() => null);
+
+  if (response.status === 502 && result?.type === "superior-function-error") {
+    assert(result.code === "runner_failed", `Expected runner_failed for unreachable Pi, got ${result.code}`);
+    assert(result.message.includes("Could not connect to Pi"), "Expected Pi connection error message.");
+    return { status: "error_as_expected", message: result.message };
+  }
+
+  assert(response.status === 200, `Expected HTTP 200 or 502, got ${response.status}`);
+  assert(result.type === "superior-function-run-result", "Expected superior-function-run-result type.");
+  assert(result.result.type === "pi-status-result", "Expected pi-status-result type.");
+  assert(typeof result.result.summary === "string", "Expected summary string.");
+
+  return {
+    status: "success",
+    summary: result.result.summary,
+    hostname: result.result.details?.hostname
   };
 });
 
